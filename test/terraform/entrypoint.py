@@ -11,3 +11,11 @@ print(json.dumps({
 
 with open('build-output-test', 'w') as f:
     f.write('build output')
+
+try:
+    with open('/code/source-dir-write-test', 'w') as f:
+        f.write('source output')
+    raise Exception('should not have been able to write to /code')
+except OSError as e:
+    # expected that we cannot write here
+    pass
