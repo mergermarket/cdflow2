@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -79,5 +80,13 @@ func TestRelease(t *testing.T) {
 
 	if output.File != "sample content" {
 		log.Fatalf("code not mapped as /code - file contents: %v", output.File)
+	}
+
+	buildOutput, err := ioutil.ReadFile(buildDir + "/build-output-test")
+	if err != nil {
+		log.Fatalf("could not read build output: %v", err)
+	}
+	if string(buildOutput) != "build output" {
+		log.Fatalf("unexpected contents of test build output file: %v", string(buildOutput))
 	}
 }
