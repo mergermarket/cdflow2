@@ -21,6 +21,7 @@ func TestConfig(t *testing.T) {
 	defer os.RemoveAll(buildDir)
 
 	configContainer := NewConfigContainer(dockerClient, getConfig("TEST_CONFIG_IMAGE"), buildDir)
+
 	if err := configContainer.start(); err != nil {
 		log.Fatalf("error running config container: %v", err)
 	}

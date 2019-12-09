@@ -97,8 +97,19 @@ func (self *configContainer) wait() error {
 	return nil
 }
 
+type stopRequest struct {
+	Action string
+}
+
 func (self *configContainer) stop() error {
-	self.dockerClient.StopContainer(self.container.ID, 5)
+	request, err := json.Marshal(&stopRequest{Action: "stop"})
+	if err != nil {
+		return err
+	}
+	if err := self.write(append(request, '\n')); err != nil {
+		return err
+	}
+	// no response for a stop
 	self.readStream.Close()
 	self.writeStream.Close()
 	return self.wait()

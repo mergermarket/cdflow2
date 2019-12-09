@@ -10,5 +10,7 @@ for line in sys.stdin:
                 'TEST_RELEASE_VAR_FROM_CONFIG': request['Config']['TEST_CONFIG_VAR']
             }
         }))
+    elif request['Action'] == 'stop':
+        break
     else:
         raise Exception(f'unsupported action {request["Action"]}')
