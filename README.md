@@ -43,7 +43,7 @@ Request (contents of `env` are full set of environment variables `cdflow2` was i
         "key-from-config-in-cdflow-yaml": "value-from-config-in-cdflow-yaml"
     },
     "env": {
-        "ENV_NAME_FROM_CDFLOW2_INVOKATION": "ENV_VALUE_FROM_CDFLOW2_INVOKATION"
+        "ENV_NAME_FROM_CDFLOW2_INVOCATION": "ENV_VALUE_FROM_CDFLOW2_INVOCATION"
     }
 }
 ```

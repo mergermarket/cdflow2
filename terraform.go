@@ -13,7 +13,7 @@ func terraformInit(dockerClient *docker.Client, image, codeDir, buildDir string,
 		return err
 	}
 
-	if err := awaitContainer(dockerClient, container, outputStream, errorStream); err != nil {
+	if err := awaitContainer(dockerClient, container, nil, outputStream, errorStream, nil); err != nil {
 		return err
 	}
 
