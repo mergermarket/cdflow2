@@ -29,7 +29,7 @@ func terraformInit(dockerClient *docker.Client, image, codeDir, buildDir string,
 		return err
 	}
 	if props.State.ExitCode != 0 {
-		return errors.New("container failed")
+		return errors.New("terraform container failed")
 	}
 	return nil
 }

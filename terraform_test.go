@@ -33,7 +33,16 @@ func TestTerraform(t *testing.T) {
 		log.Fatalf("could not make tempdir: %v", err)
 	}
 	defer os.RemoveAll(buildDir)
-	terraformInit(dockerClient, getConfig("TEST_TERRAFORM_IMAGE"), getConfig("TEST_ROOT")+"/test/terraform/sample-code", buildDir, &outputBuffer, &errorBuffer)
+	if err := terraformInit(
+		dockerClient,
+		getConfig("TEST_TERRAFORM_IMAGE"),
+		getConfig("TEST_ROOT")+"/test/terraform/sample-code",
+		buildDir,
+		&outputBuffer,
+		&errorBuffer,
+	); err != nil {
+		log.Fatalln("unexpected error: ", err)
+	}
 
 	if errorBuffer.String() != "message to stderr\n" {
 		log.Fatalf("unexpected stderr output: '%v'", errorBuffer.String())

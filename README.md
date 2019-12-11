@@ -64,7 +64,9 @@ Once the release container has created and published some kind of release artefa
 
 ### Release
 
+The config container is created from the image specified in `config_image` in `cdflow.yaml`. It is responsible for building and publishing a release package (e.g. a container image or lambda zip).
 
+The container's entrypoint is invoked with the working directory (i.e. the source code) mapped in as the working directory and environment variables provided by the config container. Output from the container to stdout and stderr will be preserved, apart from the final line to stdout which should be a JSON object containing release metadata - this will be added to the `release` map variable passed to terraform (more info below).
 
 ### Terraform
 
