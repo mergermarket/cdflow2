@@ -23,31 +23,7 @@ func runRelease(dockerClient *docker.Client, image, codeDir, buildDir string, ou
 	outputReadStream, outputWriteStream := io.Pipe()
 
 	resultChannel := make(chan readReleaseMetadataResult)
-	go func() {
-		readScanner := bufio.NewScanner(outputReadStream)
-		var last []byte
-		for readScanner.Scan() {
-			last = readScanner.Bytes()
-			n, err := outputStream.Write(last)
-			if err != nil {
-				resultChannel <- readReleaseMetadataResult{nil, err}
-				return
-			}
-			if n != len(last) {
-				resultChannel <- readReleaseMetadataResult{nil, errors.New("incomplete write")}
-				return
-			}
-		}
-		if err := readScanner.Err(); err != nil {
-			resultChannel <- readReleaseMetadataResult{nil, err}
-			return
-		}
-		var result map[string]string
-		if err := json.Unmarshal(last, &result); err != nil {
-			resultChannel <- readReleaseMetadataResult{nil, err}
-		}
-		resultChannel <- readReleaseMetadataResult{result, nil}
-	}()
+	go handleReleaseOutput(outputReadStream, outputStream, resultChannel)
 
 	if err := awaitContainer(dockerClient, container, nil, outputWriteStream, errorStream, nil); err != nil {
 		return nil, err
@@ -72,6 +48,32 @@ func runRelease(dockerClient *docker.Client, image, codeDir, buildDir string, ou
 
 	result := <-resultChannel
 	return result.metadata, result.err
+}
+
+func handleReleaseOutput(readStream io.Reader, outputStream io.Writer, resultChannel chan readReleaseMetadataResult) {
+	readScanner := bufio.NewScanner(readStream)
+	var last []byte
+	for readScanner.Scan() {
+		last = readScanner.Bytes()
+		n, err := outputStream.Write(last)
+		if err != nil {
+			resultChannel <- readReleaseMetadataResult{nil, err}
+			return
+		}
+		if n != len(last) {
+			resultChannel <- readReleaseMetadataResult{nil, errors.New("incomplete write")}
+			return
+		}
+	}
+	if err := readScanner.Err(); err != nil {
+		resultChannel <- readReleaseMetadataResult{nil, err}
+		return
+	}
+	var result map[string]string
+	if err := json.Unmarshal(last, &result); err != nil {
+		resultChannel <- readReleaseMetadataResult{nil, err}
+	}
+	resultChannel <- readReleaseMetadataResult{result, nil}
 }
 
 func createReleaseContainer(dockerClient *docker.Client, image, codeDir, buildDir string) (*docker.Container, error) {
