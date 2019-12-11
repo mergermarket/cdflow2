@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"os"
 
 	docker "github.com/fsouza/go-dockerclient"
 )
@@ -30,7 +29,7 @@ func NewConfigContainer(dockerClient *docker.Client, image, dir string) *configC
 	}
 }
 
-func (self *configContainer) start() error {
+func (self *configContainer) start(errorStream io.Writer) error {
 	container, err := self.createContainer()
 	if err != nil {
 		return err
@@ -46,7 +45,7 @@ func (self *configContainer) start() error {
 
 	started := make(chan error)
 	go func() {
-		self.completion <- awaitContainer(self.dockerClient, container, inputReadStream, outputWriteStream, os.Stderr, started)
+		self.completion <- awaitContainer(self.dockerClient, container, inputReadStream, outputWriteStream, errorStream, started)
 	}()
 	return <-started
 }
@@ -142,4 +141,31 @@ func (self *configContainer) configureRelease(config map[string]interface{}, env
 		return nil, err
 	}
 	return response.Env, nil
+}
+
+type uploadReleaseRequest struct {
+	Action         string
+	TerraformImage string
+}
+
+type uploadReleaseResponse struct {
+}
+
+func (self *configContainer) uploadRelease(terraformImage string) error {
+	request, err := json.Marshal(&uploadReleaseRequest{Action: "upload_release", TerraformImage: terraformImage})
+	if err != nil {
+		return err
+	}
+	if err := self.write(append(request, '\n')); err != nil {
+		return err
+	}
+	received, err := self.read()
+	if err != nil {
+		return err
+	}
+	var response uploadReleaseResponse
+	if err := json.Unmarshal(received, &response); err != nil {
+		return err
+	}
+	return nil
 }
