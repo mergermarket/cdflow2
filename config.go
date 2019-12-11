@@ -46,6 +46,8 @@ func (self *configContainer) start(errorStream io.Writer) error {
 	started := make(chan error)
 	go func() {
 		self.completion <- awaitContainer(self.dockerClient, container, inputReadStream, outputWriteStream, errorStream, started)
+		inputReadStream.Close()
+		outputWriteStream.Close()
 	}()
 	return <-started
 }

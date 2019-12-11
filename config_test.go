@@ -29,7 +29,6 @@ func TestConfig(t *testing.T) {
 	if err := configContainer.start(errWriter); err != nil {
 		log.Fatalf("error running config container: %v", err)
 	}
-
 	env, err := configContainer.configureRelease(
 		map[string]interface{}{
 			"TEST_CONFIG_VAR": "config value",
@@ -53,6 +52,7 @@ func TestConfig(t *testing.T) {
 	if !errScanner.Scan() {
 		log.Fatalln("could not read from stderr: ", errScanner.Err())
 	}
+
 	if errScanner.Text() != "uploading release (terraform:image)" {
 		log.Fatalf("unexpected output to stderr: '%s'", errScanner.Text())
 	}
