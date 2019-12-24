@@ -14,8 +14,8 @@ type readReleaseMetadataResult struct {
 	err      error
 }
 
-func runRelease(dockerClient *docker.Client, image, codeDir, buildDir string, outputStream, errorStream io.Writer) (map[string]string, error) {
-	container, err := createReleaseContainer(dockerClient, image, codeDir, buildDir)
+func runRelease(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, outputStream, errorStream io.Writer) (map[string]string, error) {
+	container, err := createReleaseContainer(dockerClient, image, codeDir, buildVolume)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func handleReleaseOutput(readStream io.Reader, outputStream io.Writer, resultCha
 	resultChannel <- readReleaseMetadataResult{result, nil}
 }
 
-func createReleaseContainer(dockerClient *docker.Client, image, codeDir, buildDir string) (*docker.Container, error) {
+func createReleaseContainer(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume) (*docker.Container, error) {
 	return dockerClient.CreateContainer(docker.CreateContainerOptions{
 		Name: "release",
 		Config: &docker.Config{
@@ -88,7 +88,7 @@ func createReleaseContainer(dockerClient *docker.Client, image, codeDir, buildDi
 		},
 		HostConfig: &docker.HostConfig{
 			LogConfig: docker.LogConfig{Type: "none"},
-			Binds:     []string{codeDir + ":/code:ro", buildDir + ":/build"},
+			Binds:     []string{codeDir + ":/code:ro", buildVolume.Name + ":/build"},
 		},
 	})
 }

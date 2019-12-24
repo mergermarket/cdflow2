@@ -7,8 +7,32 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 )
 
-func terraformInit(dockerClient *docker.Client, image, codeDir, buildDir string, outputStream, errorStream io.Writer) error {
-	container, err := createTerraformContainer(dockerClient, image, codeDir, buildDir)
+/*
+type terraformContainer struct {
+	dockerClient *docker.Client
+	container    *docker.Container
+}
+
+func NewTerraformContainer(dockerClient *docker.Client, image, releaseDir, codeDir string) *configContainer {
+	container, err := dockerClient.CreateContainer(docker.CreateContainerOptions{
+		Config: &docker.Config{
+			Image:        image,
+			AttachStdin:  false,
+			AttachStdout: true,
+			AttachStderr: true,
+			WorkingDir:   "/release",
+			Entrypoint:   []string{"/bin/sleep"},
+			Cmd:          []string{"init", "86400"},
+		},
+		HostConfig: &docker.HostConfig{
+			LogConfig: docker.LogConfig{Type: "none"},
+			Binds:     []string{codeDir + ":/code:ro", releaseDir + ":/release"},
+		},
+	})
+}
+*/
+func terraformInit(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, outputStream, errorStream io.Writer) error {
+	container, err := createTerraformContainer(dockerClient, image, codeDir, buildVolume)
 	if err != nil {
 		return err
 	}
@@ -34,7 +58,7 @@ func terraformInit(dockerClient *docker.Client, image, codeDir, buildDir string,
 	return nil
 }
 
-func createTerraformContainer(dockerClient *docker.Client, image, codeDir, buildDir string) (*docker.Container, error) {
+func createTerraformContainer(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume) (*docker.Container, error) {
 	return dockerClient.CreateContainer(docker.CreateContainerOptions{
 		Name: "terraform",
 		Config: &docker.Config{
@@ -47,7 +71,7 @@ func createTerraformContainer(dockerClient *docker.Client, image, codeDir, build
 		},
 		HostConfig: &docker.HostConfig{
 			LogConfig: docker.LogConfig{Type: "none"},
-			Binds:     []string{codeDir + ":/code:ro", buildDir + ":/build"},
+			Binds:     []string{codeDir + ":/code:ro", buildVolume.Name + ":/build"},
 		},
 	})
 }

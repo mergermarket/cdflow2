@@ -3,9 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"log"
-	"os"
 	"reflect"
 	"testing"
 
@@ -20,7 +18,7 @@ type ReflectedInput struct {
 	File  string
 }
 
-func TestTerraform(t *testing.T) {
+func TestTerraformInit(t *testing.T) {
 	dockerClient, err := docker.NewClientFromEnv()
 	if err != nil {
 		log.Fatal(err)
@@ -28,16 +26,14 @@ func TestTerraform(t *testing.T) {
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
-	buildDir, err := tempdir()
-	if err != nil {
-		log.Fatalf("could not make tempdir: %v", err)
-	}
-	defer os.RemoveAll(buildDir)
+	buildVolume := createVolume(dockerClient)
+	defer removeVolume(dockerClient, buildVolume)
+
 	if err := terraformInit(
 		dockerClient,
 		getConfig("TEST_TERRAFORM_IMAGE"),
 		getConfig("TEST_ROOT")+"/test/terraform/sample-code",
-		buildDir,
+		buildVolume,
 		&outputBuffer,
 		&errorBuffer,
 	); err != nil {
@@ -65,11 +61,36 @@ func TestTerraform(t *testing.T) {
 		log.Fatalf("code not mapped as /code - file contents: %v", output.File)
 	}
 
-	buildOutput, err := ioutil.ReadFile(buildDir + "/build-output-test")
+	buildOutput, err := readVolume(dockerClient, buildVolume)
 	if err != nil {
-		log.Fatalf("could not read build output: %v", err)
+		log.Panicln("could not read build volume:", err)
 	}
-	if string(buildOutput) != "build output" {
-		log.Fatalf("unexpected contents of test build output file: %v", string(buildOutput))
+
+	if !reflect.DeepEqual(buildOutput, map[string]string{"build-output-test": "build output"}) {
+		log.Panicln("unexpected build output:", buildOutput)
 	}
 }
+
+/*func TestTerraformCommand(t *testing.T) {
+	dockerClient, err := docker.NewClientFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	releaseDir, err := tempdir()
+	if err != nil {
+		log.Fatalln("could not make tempdir: ", err)
+	}
+	defer os.RemoveAll(releaseDir)
+
+	container, err := NewTerraformContainer(
+		dockerClient,
+		getConfig("TEST_TERRAFORM_IMAGE"),
+		releaseDir,
+		getConfig("TEST_ROOT")+"/test/terraform/sample-code",
+	)
+	if err != nil {
+		log.Fatalln()
+	}
+
+}*/

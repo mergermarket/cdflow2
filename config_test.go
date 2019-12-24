@@ -8,28 +8,6 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 )
 
-func createDockerClient() *docker.Client {
-	client, err := docker.NewClientFromEnv()
-	if err != nil {
-		log.Panicln(err)
-	}
-	return client
-}
-
-func createVolume(dockerClient *docker.Client) *docker.Volume {
-	volume, err := dockerClient.CreateVolume(docker.CreateVolumeOptions{})
-	if err != nil {
-		log.Panicln("could not create volume:", err)
-	}
-	return volume
-}
-
-func removeVolume(dockerClient *docker.Client, volume *docker.Volume) {
-	if err := dockerClient.RemoveVolume(volume.Name); err != nil {
-		log.Panicf("error removing volume %v: %v", volume.Name, err)
-	}
-}
-
 func removeConfigContainer(configContainer *configContainer) {
 	configContainer.stopContainer(5)
 	if err := configContainer.removeContainer(); err != nil {
