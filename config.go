@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"os"
 
 	docker "github.com/fsouza/go-dockerclient"
 )
@@ -14,22 +15,22 @@ type configContainer struct {
 	container    *docker.Container
 	completion   chan error
 	image        string
-	dir          string
-	readScanner  *bufio.Scanner
-	readStream   *io.PipeReader
-	writeStream  *io.PipeWriter
+	buildVolume  *docker.Volume
+	reader       *bufio.Reader
+	readStream   io.Reader
+	writeStream  io.Writer
 }
 
-func NewConfigContainer(dockerClient *docker.Client, image, dir string) *configContainer {
+func NewConfigContainer(dockerClient *docker.Client, image string, buildVolume *docker.Volume) *configContainer {
 	return &configContainer{
 		dockerClient: dockerClient,
 		completion:   make(chan error),
 		image:        image,
-		dir:          dir,
+		buildVolume:  buildVolume,
 	}
 }
 
-func (self *configContainer) start(errorStream io.Writer) error {
+func (self *configContainer) start() error {
 	container, err := self.createContainer()
 	if err != nil {
 		return err
@@ -40,12 +41,12 @@ func (self *configContainer) start(errorStream io.Writer) error {
 	outputReadStream, outputWriteStream := io.Pipe()
 
 	self.readStream = outputReadStream
-	self.readScanner = bufio.NewScanner(outputReadStream)
+	self.reader = bufio.NewReader(outputReadStream)
 	self.writeStream = inputWriteStream
 
 	started := make(chan error)
 	go func() {
-		self.completion <- awaitContainer(self.dockerClient, container, inputReadStream, outputWriteStream, errorStream, started)
+		self.completion <- awaitContainer(self.dockerClient, container, inputReadStream, outputWriteStream, os.Stderr, started)
 		inputReadStream.Close()
 		outputWriteStream.Close()
 	}()
@@ -65,7 +66,7 @@ func (self *configContainer) createContainer() (*docker.Container, error) {
 		},
 		HostConfig: &docker.HostConfig{
 			LogConfig: docker.LogConfig{Type: "none"},
-			Binds:     []string{self.dir + ":/build"},
+			Binds:     []string{self.buildVolume.Name + ":/build"},
 		},
 	})
 }
@@ -77,23 +78,6 @@ func (self *configContainer) write(message []byte) error {
 	}
 	if n != len(message) {
 		return errors.New("incomplete write to container")
-	}
-	return nil
-}
-
-func (self *configContainer) read() ([]byte, error) {
-	if !self.readScanner.Scan() {
-		return nil, self.readScanner.Err()
-	}
-	return self.readScanner.Bytes(), nil
-}
-
-func (self *configContainer) wait() error {
-	if err := <-self.completion; err != nil {
-		return err
-	}
-	if err := self.dockerClient.RemoveContainer(docker.RemoveContainerOptions{ID: self.container.ID}); err != nil {
-		return err
 	}
 	return nil
 }
@@ -110,31 +94,29 @@ func (self *configContainer) stop() error {
 	if err := self.write(append(request, '\n')); err != nil {
 		return err
 	}
-	// no response for a stop
-	self.readStream.Close()
-	self.writeStream.Close()
-	return self.wait()
+	return <-self.completion
 }
 
 type configureReleaseConfigRequest struct {
-	Action string
-	Config map[string]interface{}
-	Env    map[string]string
+	Action  string
+	Version string
+	Config  map[string]interface{}
+	Env     map[string]string
 }
 
 type configureReleaseConfigResponse struct {
 	Env map[string]string
 }
 
-func (self *configContainer) configureRelease(config map[string]interface{}, env map[string]string) (map[string]string, error) {
-	request, err := json.Marshal(&configureReleaseConfigRequest{Action: "configure_release", Config: config, Env: env})
+func (self *configContainer) configureRelease(version string, config map[string]interface{}, env map[string]string) (map[string]string, error) {
+	request, err := json.Marshal(&configureReleaseConfigRequest{Action: "configure_release", Version: version, Config: config, Env: env})
 	if err != nil {
 		return nil, err
 	}
 	if err := self.write(append(request, '\n')); err != nil {
 		return nil, err
 	}
-	received, err := self.read()
+	received, err := self.reader.ReadBytes('\n')
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +143,7 @@ func (self *configContainer) uploadRelease(terraformImage string) error {
 	if err := self.write(append(request, '\n')); err != nil {
 		return err
 	}
-	received, err := self.read()
+	received, err := self.reader.ReadBytes('\n')
 	if err != nil {
 		return err
 	}
@@ -170,4 +152,43 @@ func (self *configContainer) uploadRelease(terraformImage string) error {
 		return err
 	}
 	return nil
+}
+
+type prepareTerraformRequest struct {
+	Action  string
+	Version string
+}
+
+type prepareTerraformResponse struct {
+	TerraformImage string
+	Env            map[string]string
+}
+
+func (self *configContainer) prepareTerraform(version string) (string, map[string]string, error) {
+	request, err := json.Marshal(&prepareTerraformRequest{Action: "prepare_terraform", Version: version})
+	if err != nil {
+		return "", nil, err
+	}
+	if err := self.write(append(request, '\n')); err != nil {
+		return "", nil, err
+	}
+	received, err := self.reader.ReadBytes('\n')
+	if err != nil {
+		return "", nil, err
+	}
+	var response prepareTerraformResponse
+	if err := json.Unmarshal(received, &response); err != nil {
+		return "", nil, err
+	}
+	return response.TerraformImage, response.Env, nil
+}
+
+func (self *configContainer) stopContainer(n uint) error {
+	return self.dockerClient.StopContainer(self.container.ID, n)
+}
+
+func (self *configContainer) removeContainer() error {
+	return self.dockerClient.RemoveContainer(docker.RemoveContainerOptions{
+		ID: self.container.ID,
+	})
 }

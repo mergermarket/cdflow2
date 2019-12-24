@@ -8,7 +8,7 @@ import (
 
 func awaitContainer(dockerClient *docker.Client, container *docker.Container, inputStream io.Reader, outputStream, errorStream io.Writer, started chan error) error {
 	attached := make(chan error)
-	finished := make(chan error)
+	detached := make(chan error)
 	go func() {
 		waiter, err := dockerClient.AttachToContainerNonBlocking(docker.AttachToContainerOptions{
 			Container:    container.ID,
@@ -24,7 +24,7 @@ func awaitContainer(dockerClient *docker.Client, container *docker.Container, in
 		if err != nil {
 			return
 		}
-		finished <- waiter.Wait()
+		detached <- waiter.Wait()
 	}()
 
 	if err := <-attached; err != nil {
@@ -44,8 +44,5 @@ func awaitContainer(dockerClient *docker.Client, container *docker.Container, in
 		started <- nil
 	}
 
-	if err := <-finished; err != nil {
-		return err
-	}
-	return nil
+	return <-detached
 }
