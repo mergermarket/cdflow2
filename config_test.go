@@ -33,7 +33,7 @@ func TestConfigRelease(t *testing.T) {
 	defer removeVolume(dockerClient, buildVolume)
 	defer removeConfigContainer(configContainer)
 
-	env, err := configContainer.configureRelease(
+	response, err := configContainer.configureRelease(
 		"test-version",
 		map[string]interface{}{
 			"TEST_CONFIG_VAR": "config value",
@@ -46,16 +46,26 @@ func TestConfigRelease(t *testing.T) {
 		log.Panicln("error in configureRelease:", err)
 	}
 
-	if !reflect.DeepEqual(env, map[string]string{
+	if !reflect.DeepEqual(response.Env, map[string]string{
 		"TEST_VERSION":                 "test-version",
 		"TEST_RELEASE_VAR_FROM_CONFIG": "config value",
 		"TEST_RELEASE_VAR_FROM_ENV":    "env value",
 	}) {
-		log.Panicln("unexpected env in response:", env)
+		log.Panicln("unexpected env in response:", response.Env)
 	}
 
-	if err := configContainer.uploadRelease("terraform:image"); err != nil {
+	uploadReleaseResponse, err := configContainer.uploadRelease(
+		"terraform:image",
+		map[string]string{
+			"metadata-key": "metadata-value",
+		},
+	)
+	if err != nil {
 		log.Panicln("error in uploadRelease:", err)
+	}
+
+	if uploadReleaseResponse.Message != "uploaded test-version" {
+		log.Panicln("unexpected message:", uploadReleaseResponse.Message)
 	}
 
 	if err := configContainer.stop(); err != nil {
@@ -69,17 +79,36 @@ func TestConfigDeploy(t *testing.T) {
 	defer removeVolume(dockerClient, buildVolume)
 	defer removeConfigContainer(configContainer)
 
-	terraformImage, env, err := configContainer.prepareTerraform("test-version")
+	response, err := configContainer.prepareTerraform(
+		"test-version",
+		map[string]interface{}{
+			"TEST_CONFIG_VAR": "config value",
+		},
+		map[string]string{
+			"TEST_ENV_VAR": "env value",
+		},
+	)
 	if err != nil {
 		log.Panicln(err)
 	}
 
-	if !reflect.DeepEqual(env, map[string]string{"EnvKey": "EnvValue"}) {
-		log.Panicln("unexpected env:", env)
+	if !reflect.DeepEqual(response.Env, map[string]string{
+		"TEST_ENV_VAR":    "env value",
+		"TEST_CONFIG_VAR": "config value",
+	}) {
+		log.Panicln("unexpected env:", response.Env)
 	}
 
-	if terraformImage != "terraform:image-for-test-version" {
-		log.Panicln("unexpected terraform image:", terraformImage)
+	if response.TerraformImage != "terraform:image-for-test-version" {
+		log.Panicln("unexpected terraform image:", response.TerraformImage)
+	}
+
+	if response.TerraformBackendType != "a-terraform-backend-type" {
+		log.Panicln("unexpected terraform backend type:", response.TerraformBackendType)
+	}
+
+	if !reflect.DeepEqual(response.TerraformBackendConfig, map[string]string{"backend-config-key": "backend-config-value"}) {
+		log.Panicln("unexpected terraform backend config:", response.TerraformBackendConfig)
 	}
 
 	if err := configContainer.stop(); err != nil {

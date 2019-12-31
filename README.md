@@ -8,7 +8,7 @@ Must be exactly `2`.
 
 ### `config_image`
 
-The docker image used to create the config container - described in more detail below. This container image will be pulled each time you invoke `cdflow2` within your component, so it is a good idea to pin it enough to be confident you won't have compatibility surprises as your pipeline runs through its stages (i.e. through multiple invocations of `cdflow2`).
+The docker image used to create the config container - described in more detail below. This container image will be pulled each time you invoke `cdflow2` within your component, so it is a good idea to pin the version to be confident you won't have compatibility surprises as your pipeline runs through its stages (i.e. through multiple invocations of `cdflow2`).
 
 ### `release_image`
 
@@ -20,13 +20,13 @@ The docker image used to create the terraform container - described in more deta
 
 ## Containers
 
-`cdflow2` creates and uses three containers: one to perform configuration, one to create a release (i.e. for the `release` subcommand), and one to run `terraform`.
+`cdflow2` creates containers from the three images specified in your `cdflow.yaml`: one to perform configuration, one to create a release (i.e. for the `release` subcommand), and one to run `terraform`.
 
 ### Config
 
 The config container is created from the image specified in `config_image` in `cdflow.yaml`. Its job is to apply any conventions (e.g. use of AWS or GCP, assuming roles in given accounts, etc) and setting up the environment for a relase or for terraform.
 
-The container's entrypoint is invoked and communicated via a simple protocol over stdio. Any output to stderr from the container appears on stderr from cdflow2 so the user can see any warnings or errors. Requests to the config container are sent as json lines to its stdin stream and responses are returned as json lines from its stdout stream. The format of these messages are described here - the JSON documents are formatted over multiple lines for readability:
+The container's entrypoint is invoked and communicated via a simple protocol over stdin and stdout. Any output to stderr from the container appears on stderr from cdflow2 so the user can see any warnings or errors. Requests to the config container are sent as json lines to its stdin stream and responses are returned as json lines from its stdout stream. The format of these messages are described here - the JSON examples here are formatted over multiple lines for readability:
 
 #### `configure_release`
 
@@ -38,11 +38,11 @@ Request (contents of `env` are full set of environment variables `cdflow2` was i
 
 ```json
 {
-    "action": "configure_release",
-    "config": {
+    "Action": "configure_release",
+    "Config": {
         "key-from-config-in-cdflow-yaml": "value-from-config-in-cdflow-yaml"
     },
-    "env": {
+    "Env": {
         "ENV_NAME_FROM_CDFLOW2_INVOCATION": "ENV_VALUE_FROM_CDFLOW2_INVOCATION"
     }
 }
@@ -52,15 +52,89 @@ Response:
 
 ```json
 {
-    "env": {
+    "Env": {
         "ENV_NAME_FOR_RELEASE_CONTAINER": "ENV_VALUE_FOR_RELEASE_CONTAINER"
     }
 }
 ```
 
-#### `publish_release`
+#### `upload_release`
 
-Once the release container has created and published some kind of release artefact (e.g. pushing a docker image to a docker registry), the config contianer is invoked again to store release meatadata (e.g. to an S3 bucket) - the config container is free to assume that `publish_release` will always follow `configure_release` and persist state in memory between.
+Once the release container has created and published some kind of release artefact (e.g. pushing a docker image to a docker registry), the config contianer is invoked again to store release meatadata (e.g. to an S3 bucket) - the config container is free to assume that `upload_release` will always follow `configure_release` and persist state in memory between.
+
+`TerraformImage` contains the image digest for terraform so it can be stored to ensure the exact same image is used throughout the pipeline. `ReleaseMetadata` is a map of string keys to string values that will be passed to terraform as the `release` map variable.
+
+The following keys will always be present in `ReleaseMetadata`:
+
+* `commit` - the git commit cloned for the release.
+* `version` - the version string passed on the command line to release.
+* `team` - the value of the `team` key in `cdflow.yaml` (useful for tagging resources).
+* `component` - the name of the component, derived from the git repository name.
+
+In addition any keys and values returned from the release container will be present (typically used to add details of the release artefact - e.g. docker image).
+
+##### Example:
+
+Request:
+
+```json
+{
+    "Action": "upload_release",
+    "TerraformImage": "hashicorp/terraform@sha256:aac4f7c61e8bd04c1ca14681b099cb8434788881bbe08febe5b7f9c0d2eabf1c",
+    "ReleaseMetadata": {
+        "commit": "3eaf7bcf155b7cd354083ab551ceb15d4290bebb",        
+        "version": "101-",
+        "team": "my-team",
+        "component": "my-component",
+        "image_id": "someco/my-component:101-3eaf7bcf"
+    }
+}
+```
+
+Response:
+
+```json
+{
+}
+```
+
+#### `prepare_terraform`
+
+Invoked at the start of a command that uses terraform against an environment and release (e.g. deploy, destroy, shell). Downloads and unpacks the release and configures terraform.
+
+##### Example:
+
+Request:
+
+```json
+{
+    "Action": "prepare_terraform",
+    "Version": "101-3eaf7bcf",
+    "Config": {
+        "key-from-config-in-cdflow-yaml": "value-from-config-in-cdflow-yaml"
+    },
+    "Env": {
+        "ENV_NAME_FROM_CDFLOW2_INVOCATION": "ENV_VALUE_FROM_CDFLOW2_INVOCATION"
+    }
+}
+```
+
+Response:
+
+```json
+{
+    "TerraformImage": "hashicorp/terraform@sha256:aac4f7c61e8bd04c1ca14681b099cb8434788881bbe08febe5b7f9c0d2eabf1c",
+    "Env": {
+        "ENV_NAME_FOR_TERRAFORM_CONTAINER": "ENV_VALUE_FOR_TERRAFORM_CONTAINER"
+    },
+    "TerraformBackendType": "s3",
+    "TerraformBackendConfig": {
+        "bucket": "mybucket",
+        "key": "path/to/my/key",
+        "region": "eu-west-1"
+    }
+}
+```
 
 ### Release
 
