@@ -11,22 +11,22 @@ import (
 )
 
 type configContainer struct {
-	dockerClient *docker.Client
-	container    *docker.Container
-	completion   chan error
-	image        string
-	buildVolume  *docker.Volume
-	reader       *bufio.Reader
-	readStream   io.Reader
-	writeStream  io.Writer
+	dockerClient  *docker.Client
+	container     *docker.Container
+	completion    chan error
+	image         string
+	releaseVolume *docker.Volume
+	reader        *bufio.Reader
+	readStream    io.Reader
+	writeStream   io.Writer
 }
 
-func NewConfigContainer(dockerClient *docker.Client, image string, buildVolume *docker.Volume) *configContainer {
+func NewConfigContainer(dockerClient *docker.Client, image string, releaseVolume *docker.Volume) *configContainer {
 	return &configContainer{
-		dockerClient: dockerClient,
-		completion:   make(chan error, 1),
-		image:        image,
-		buildVolume:  buildVolume,
+		dockerClient:  dockerClient,
+		completion:    make(chan error, 1),
+		image:         image,
+		releaseVolume: releaseVolume,
 	}
 }
 
@@ -62,11 +62,11 @@ func (self *configContainer) createContainer() (*docker.Container, error) {
 			StdinOnce:    true,
 			AttachStdout: true,
 			AttachStderr: true,
-			WorkingDir:   "/build",
+			WorkingDir:   "/release",
 		},
 		HostConfig: &docker.HostConfig{
 			LogConfig: docker.LogConfig{Type: "none"},
-			Binds:     []string{self.buildVolume.Name + ":/build"},
+			Binds:     []string{self.releaseVolume.Name + ":/release"},
 		},
 	})
 }

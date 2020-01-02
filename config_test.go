@@ -18,19 +18,19 @@ func removeConfigContainer(configContainer *configContainer) {
 func setupConfigContainer() (*docker.Client, *configContainer, *docker.Volume) {
 	dockerClient := createDockerClient()
 
-	buildVolume := createVolume(dockerClient)
+	releaseVolume := createVolume(dockerClient)
 
-	configContainer := NewConfigContainer(dockerClient, getConfig("TEST_CONFIG_IMAGE"), buildVolume)
+	configContainer := NewConfigContainer(dockerClient, getConfig("TEST_CONFIG_IMAGE"), releaseVolume)
 
 	if err := configContainer.start(); err != nil {
 		log.Panicln("error running config container:", err)
 	}
-	return dockerClient, configContainer, buildVolume
+	return dockerClient, configContainer, releaseVolume
 }
 
 func TestConfigRelease(t *testing.T) {
-	dockerClient, configContainer, buildVolume := setupConfigContainer()
-	defer removeVolume(dockerClient, buildVolume)
+	dockerClient, configContainer, releaseVolume := setupConfigContainer()
+	defer removeVolume(dockerClient, releaseVolume)
 	defer removeConfigContainer(configContainer)
 
 	response, err := configContainer.configureRelease(
@@ -75,8 +75,8 @@ func TestConfigRelease(t *testing.T) {
 
 func TestConfigDeploy(t *testing.T) {
 
-	dockerClient, configContainer, buildVolume := setupConfigContainer()
-	defer removeVolume(dockerClient, buildVolume)
+	dockerClient, configContainer, releaseVolume := setupConfigContainer()
+	defer removeVolume(dockerClient, releaseVolume)
 	defer removeConfigContainer(configContainer)
 
 	response, err := configContainer.prepareTerraform(
@@ -109,6 +109,15 @@ func TestConfigDeploy(t *testing.T) {
 
 	if !reflect.DeepEqual(response.TerraformBackendConfig, map[string]string{"backend-config-key": "backend-config-value"}) {
 		log.Panicln("unexpected terraform backend config:", response.TerraformBackendConfig)
+	}
+
+	releaseData, err := readVolume(dockerClient, releaseVolume)
+	if err != nil {
+		log.Panicln("could not read release volume:", err)
+	}
+
+	if !reflect.DeepEqual(releaseData, map[string]string{"test": "unpacked"}) {
+		log.Panicln("unexpected release data:", releaseData)
 	}
 
 	if err := configContainer.stop(); err != nil {

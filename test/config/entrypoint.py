@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 
 version = None
@@ -20,6 +21,9 @@ for line in sys.stdin:
             'Message': f'uploaded {version}' 
         }))
     elif request['Action'] == 'prepare_terraform':
+        assert os.getcwd() == '/release'
+        with open('/release/test', 'w') as f:
+            f.write('unpacked')
         version = request['Version']
         config = request['Config']
         env = request['Env']
@@ -32,7 +36,7 @@ for line in sys.stdin:
             'TerraformBackendType': 'a-terraform-backend-type',
             'TerraformBackendConfig': {
                 'backend-config-key': 'backend-config-value',
-            }
+            },
         }))
     elif request['Action'] == 'stop':
         break
