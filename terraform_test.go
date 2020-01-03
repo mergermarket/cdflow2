@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/mergermarket/cdflow2/terraform"
 )
 
 // ReflectedInput is the message format returned from the fake terraform container that reflects its inputs.
@@ -30,7 +31,7 @@ func TestTerraformInitInitial(t *testing.T) {
 	buildVolume := createVolume(dockerClient)
 	defer removeVolume(dockerClient, buildVolume)
 
-	if err := terraformInitInitial(
+	if err := terraform.InitInitial(
 		dockerClient,
 		getConfig("TEST_TERRAFORM_IMAGE"),
 		getConfig("TEST_ROOT")+"/test/terraform/sample-code",
@@ -86,7 +87,7 @@ func TestTerraformDeployCommands(t *testing.T) {
 
 	//terraformContainer, err := NewTerraformContainer()
 
-	if err := terraformConfigureBackend(
+	if err := terraform.ConfigureBackend(
 		dockerClient,
 		getConfig("TEST_TERRAFORM_IMAGE"),
 		getConfig("TEST_ROOT")+"/test/terraform/sample-code",

@@ -1,10 +1,11 @@
-package main
+package terraform
 
 import (
 	"errors"
 	"io"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/mergermarket/cdflow2/containers"
 )
 
 // createTerraformContainer creates and returns a container for running terraform.
@@ -26,14 +27,14 @@ func createTerraformContainer(dockerClient *docker.Client, image, codeDir string
 	})
 }
 
-// terraformInitInitial runs terraform init as part of the release in order to download providers and modules.
-func terraformInitInitial(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, outputStream, errorStream io.Writer) error {
+// InitInitial runs terraform init as part of the release in order to download providers and modules.
+func InitInitial(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, outputStream, errorStream io.Writer) error {
 	container, err := createTerraformContainer(dockerClient, image, codeDir, buildVolume)
 	if err != nil {
 		return err
 	}
 
-	if err := awaitContainer(dockerClient, container, nil, outputStream, errorStream, nil); err != nil {
+	if err := containers.Await(dockerClient, container, nil, outputStream, errorStream, nil); err != nil {
 		return err
 	}
 
@@ -54,14 +55,14 @@ func terraformInitInitial(dockerClient *docker.Client, image, codeDir string, bu
 	return nil
 }
 
-// terraformConfigureBackend runs terraform init as part of the release in order to download providers and modules.
-func terraformConfigureBackend(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, outputStream, errorStream io.Writer) error {
+// ConfigureBackend runs terraform init as part of the release in order to download providers and modules.
+func ConfigureBackend(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, outputStream, errorStream io.Writer) error {
 	container, err := createTerraformContainer(dockerClient, image, codeDir, buildVolume)
 	if err != nil {
 		return err
 	}
 
-	if err := awaitContainer(dockerClient, container, nil, outputStream, errorStream, nil); err != nil {
+	if err := containers.Await(dockerClient, container, nil, outputStream, errorStream, nil); err != nil {
 		return err
 	}
 

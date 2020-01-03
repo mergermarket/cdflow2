@@ -16,4 +16,4 @@ docker build -t $TEST_TERRAFORM_IMAGE test/terraform
 docker build -t $TEST_CONFIG_IMAGE test/config
 docker build -t $TEST_RELEASE_IMAGE test/release
 
-go test -v .
+go test -v ./...

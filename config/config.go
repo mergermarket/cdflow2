@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"bufio"
@@ -8,9 +8,10 @@ import (
 	"os"
 
 	docker "github.com/fsouza/go-dockerclient"
+	containers "github.com/mergermarket/cdflow2/containers"
 )
 
-type configContainer struct {
+type ConfigContainer struct {
 	dockerClient  *docker.Client
 	container     *docker.Container
 	completion    chan error
@@ -21,8 +22,8 @@ type configContainer struct {
 	writeStream   io.Writer
 }
 
-func NewConfigContainer(dockerClient *docker.Client, image string, releaseVolume *docker.Volume) *configContainer {
-	return &configContainer{
+func NewConfigContainer(dockerClient *docker.Client, image string, releaseVolume *docker.Volume) *ConfigContainer {
+	return &ConfigContainer{
 		dockerClient:  dockerClient,
 		completion:    make(chan error, 1),
 		image:         image,
@@ -30,7 +31,7 @@ func NewConfigContainer(dockerClient *docker.Client, image string, releaseVolume
 	}
 }
 
-func (self *configContainer) start() error {
+func (self *ConfigContainer) Start() error {
 	container, err := self.createContainer()
 	if err != nil {
 		return err
@@ -46,14 +47,14 @@ func (self *configContainer) start() error {
 
 	started := make(chan error)
 	go func() {
-		self.completion <- awaitContainer(self.dockerClient, container, inputReadStream, outputWriteStream, os.Stderr, started)
+		self.completion <- containers.Await(self.dockerClient, container, inputReadStream, outputWriteStream, os.Stderr, started)
 		inputReadStream.Close()
 		outputWriteStream.Close()
 	}()
 	return <-started
 }
 
-func (self *configContainer) createContainer() (*docker.Container, error) {
+func (self *ConfigContainer) createContainer() (*docker.Container, error) {
 	return self.dockerClient.CreateContainer(docker.CreateContainerOptions{
 		Name: "config",
 		Config: &docker.Config{
@@ -71,7 +72,7 @@ func (self *configContainer) createContainer() (*docker.Container, error) {
 	})
 }
 
-func (self *configContainer) readline() ([]byte, error) {
+func (self *ConfigContainer) readline() ([]byte, error) {
 	line, err := self.reader.ReadBytes('\n')
 	if err == io.EOF {
 		return line, errors.New("config container disconnected")
@@ -79,7 +80,7 @@ func (self *configContainer) readline() ([]byte, error) {
 	return line, err
 }
 
-func (self *configContainer) write(message []byte) error {
+func (self *ConfigContainer) write(message []byte) error {
 	n, err := self.writeStream.Write(message)
 	if err != nil {
 		return err
@@ -90,11 +91,11 @@ func (self *configContainer) write(message []byte) error {
 	return nil
 }
 
-func (self *configContainer) stopContainer(n uint) error {
+func (self *ConfigContainer) StopContainer(n uint) error {
 	return self.dockerClient.StopContainer(self.container.ID, n)
 }
 
-func (self *configContainer) removeContainer() error {
+func (self *ConfigContainer) Remove() error {
 	return self.dockerClient.RemoveContainer(docker.RemoveContainerOptions{
 		ID: self.container.ID,
 	})
@@ -104,7 +105,7 @@ type stopRequest struct {
 	Action string
 }
 
-func (self *configContainer) stop() error {
+func (self *ConfigContainer) Stop() error {
 	request, err := json.Marshal(&stopRequest{Action: "stop"})
 	if err != nil {
 		return err
@@ -126,7 +127,7 @@ type configureReleaseConfigResponse struct {
 	Env map[string]string
 }
 
-func (self *configContainer) configureRelease(
+func (self *ConfigContainer) ConfigureRelease(
 	version string,
 	config map[string]interface{},
 	env map[string]string,
@@ -159,7 +160,7 @@ type uploadReleaseResponse struct {
 	Message string
 }
 
-func (self *configContainer) uploadRelease(
+func (self *ConfigContainer) UploadRelease(
 	terraformImage string,
 	releaseMetadata map[string]string,
 ) (*uploadReleaseResponse, error) {
@@ -195,7 +196,7 @@ type prepareTerraformResponse struct {
 	TerraformBackendConfig map[string]string
 }
 
-func (self *configContainer) prepareTerraform(
+func (self *ConfigContainer) PrepareTerraform(
 	version string,
 	config map[string]interface{},
 	env map[string]string,

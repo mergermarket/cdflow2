@@ -5,6 +5,8 @@ import (
 	"log"
 	"reflect"
 	"testing"
+
+	"github.com/mergermarket/cdflow2/release"
 )
 
 func TestRelese(t *testing.T) {
@@ -16,7 +18,7 @@ func TestRelese(t *testing.T) {
 	buildVolume := createVolume(dockerClient)
 	defer removeVolume(dockerClient, buildVolume)
 
-	releaseMetadata, err := runRelease(
+	releaseMetadata, err := release.Run(
 		dockerClient,
 		getConfig("TEST_RELEASE_IMAGE"),
 		getConfig("TEST_ROOT")+"/test/release/sample-code",

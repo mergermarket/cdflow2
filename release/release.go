@@ -1,4 +1,4 @@
-package main
+package release
 
 import (
 	"bufio"
@@ -7,6 +7,7 @@ import (
 	"io"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/mergermarket/cdflow2/containers"
 )
 
 type readReleaseMetadataResult struct {
@@ -14,7 +15,7 @@ type readReleaseMetadataResult struct {
 	err      error
 }
 
-func runRelease(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, outputStream, errorStream io.Writer) (map[string]string, error) {
+func Run(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, outputStream, errorStream io.Writer) (map[string]string, error) {
 	container, err := createReleaseContainer(dockerClient, image, codeDir, buildVolume)
 	if err != nil {
 		return nil, err
@@ -25,7 +26,7 @@ func runRelease(dockerClient *docker.Client, image, codeDir string, buildVolume 
 	resultChannel := make(chan readReleaseMetadataResult)
 	go handleReleaseOutput(outputReadStream, outputStream, resultChannel)
 
-	if err := awaitContainer(dockerClient, container, nil, outputWriteStream, errorStream, nil); err != nil {
+	if err := containers.Await(dockerClient, container, nil, outputWriteStream, errorStream, nil); err != nil {
 		return nil, err
 	}
 

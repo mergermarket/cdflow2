@@ -1,4 +1,4 @@
-package main
+package containers
 
 import (
 	"io"
@@ -6,7 +6,7 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 )
 
-func awaitContainer(dockerClient *docker.Client, container *docker.Container, inputStream io.Reader, outputStream, errorStream io.Writer, started chan error) error {
+func Await(dockerClient *docker.Client, container *docker.Container, inputStream io.Reader, outputStream, errorStream io.Writer, started chan error) error {
 	attached := make(chan error)
 	detached := make(chan error)
 	go func() {

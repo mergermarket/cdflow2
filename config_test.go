@@ -6,23 +6,24 @@ import (
 	"testing"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/mergermarket/cdflow2/config"
 )
 
-func removeConfigContainer(configContainer *configContainer) {
-	configContainer.stopContainer(5)
-	if err := configContainer.removeContainer(); err != nil {
+func removeConfigContainer(configContainer *config.ConfigContainer) {
+	configContainer.StopContainer(5)
+	if err := configContainer.Remove(); err != nil {
 		log.Panicln("could not remove config container:", err)
 	}
 }
 
-func setupConfigContainer() (*docker.Client, *configContainer, *docker.Volume) {
+func setupConfigContainer() (*docker.Client, *config.ConfigContainer, *docker.Volume) {
 	dockerClient := createDockerClient()
 
 	releaseVolume := createVolume(dockerClient)
 
-	configContainer := NewConfigContainer(dockerClient, getConfig("TEST_CONFIG_IMAGE"), releaseVolume)
+	configContainer := config.NewConfigContainer(dockerClient, getConfig("TEST_CONFIG_IMAGE"), releaseVolume)
 
-	if err := configContainer.start(); err != nil {
+	if err := configContainer.Start(); err != nil {
 		log.Panicln("error running config container:", err)
 	}
 	return dockerClient, configContainer, releaseVolume
@@ -33,7 +34,7 @@ func TestConfigRelease(t *testing.T) {
 	defer removeVolume(dockerClient, releaseVolume)
 	defer removeConfigContainer(configContainer)
 
-	response, err := configContainer.configureRelease(
+	response, err := configContainer.ConfigureRelease(
 		"test-version",
 		map[string]interface{}{
 			"TEST_CONFIG_VAR": "config value",
@@ -54,7 +55,7 @@ func TestConfigRelease(t *testing.T) {
 		log.Panicln("unexpected env in response:", response.Env)
 	}
 
-	uploadReleaseResponse, err := configContainer.uploadRelease(
+	uploadReleaseResponse, err := configContainer.UploadRelease(
 		"terraform:image",
 		map[string]string{
 			"metadata-key": "metadata-value",
@@ -68,7 +69,7 @@ func TestConfigRelease(t *testing.T) {
 		log.Panicln("unexpected message:", uploadReleaseResponse.Message)
 	}
 
-	if err := configContainer.stop(); err != nil {
+	if err := configContainer.Stop(); err != nil {
 		log.Panicln("error stopping config container:", err)
 	}
 }
@@ -79,7 +80,7 @@ func TestConfigDeploy(t *testing.T) {
 	defer removeVolume(dockerClient, releaseVolume)
 	defer removeConfigContainer(configContainer)
 
-	response, err := configContainer.prepareTerraform(
+	response, err := configContainer.PrepareTerraform(
 		"test-version",
 		map[string]interface{}{
 			"TEST_CONFIG_VAR": "config value",
@@ -120,7 +121,7 @@ func TestConfigDeploy(t *testing.T) {
 		log.Panicln("unexpected release data:", releaseData)
 	}
 
-	if err := configContainer.stop(); err != nil {
+	if err := configContainer.Stop(); err != nil {
 		log.Panicln("error stopping config container:", err)
 	}
 }
