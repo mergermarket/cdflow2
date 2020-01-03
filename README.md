@@ -83,7 +83,7 @@ Request:
     "TerraformImage": "hashicorp/terraform@sha256:aac4f7c61e8bd04c1ca14681b099cb8434788881bbe08febe5b7f9c0d2eabf1c",
     "ReleaseMetadata": {
         "commit": "3eaf7bcf155b7cd354083ab551ceb15d4290bebb",        
-        "version": "101-",
+        "version": "101-3eaf7bcf",
         "team": "my-team",
         "component": "my-component",
         "image_id": "someco/my-component:101-3eaf7bcf"
@@ -95,12 +95,13 @@ Response:
 
 ```json
 {
+    "Message": "Uploaded release metadata to s3://my-bucket/releases/101-3eaf7bcf.zip"
 }
 ```
 
 #### `prepare_terraform`
 
-Invoked at the start of a command that uses terraform against an environment and release (e.g. deploy, destroy, shell). Downloads and unpacks the release and configures terraform.
+Invoked at the start of a command that uses terraform against an environment and release (e.g. deploy, destroy, shell). The config container is created with a volume mapped in `/release` (also the working directory), where it should download and unpack the release. The response data is then used to configure terraform.
 
 ##### Example:
 
@@ -144,7 +145,60 @@ The container's entrypoint is invoked with the working directory (i.e. the sourc
 
 ### Terraform
 
+A single terraform container is created from the image specified in the `terraform_image` key in `cdflow.yaml` and reused for each terraform command. In order to achieve this the entrypoint and command of the container is overridden to `/bin/sleep` and the actual terraform commands are exec'd in the container (i.e. the terraform image must include `/bin/sleep`, as the official images do).
 
+#### Release
+
+During release a terraform is run to download providers and modules - essentially running `terraform init infra/` and saving the downloaded providers and modules.
+
+#### Backend configuration
+
+When a non-release command is exected the config container is invoked to prepare terraform - downloading and unpacking the release (including the terraform providers and modules) and returning terraform backend config.
+
+If it doesn't already exist then an empty backend [partial configuration](https://www.terraform.io/docs/backends/config.html#partial-configuration) is written to `infra/terraform.tf` with the backend type returned from the config container:
+
+```terraform
+terraform {
+  backend "RETURNED_BACKEND_TYPE" {}
+}
+```
+
+Terraform is then run to complete backend configuration based on the config keys and values returned from the config container - similar to the following:
+
+```shell
+terraform init \
+    -get=false \
+    -get-plugins=false \
+    -backend-config="key1=value1" \
+    -backend-config="key2=value2"
+```
+
+#### `deploy ENV VERSION`
+
+Following backend configuration, deploy does a terraform plan and apply equivalent to the following:
+
+```shell
+export TF_IN_AUTOMATION=true
+
+if terraform workspace list | grep -q '\bENV\b'; then
+    terraform workspace select ENV
+else
+    terraform workspace new ENV
+fi
+
+terraform plan \
+    -input=false \
+    -var-file release-metadata-VERSION.json \
+    -var-file config/ENV.json \
+    -out=plan-TIMESTAMP \
+    infra/
+
+terraform apply \
+    -input=false \
+    plan-TIMESTAMP
+```
+
+Note that the only built in variables are the `release` map defined in the release metadata file (you can access the environment name via the workspace - i.e. `${terraform.workspace}`).
 
 ## Subcommands
 

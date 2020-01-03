@@ -10,6 +10,7 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 )
 
+// ReflectedInput is the message format returned from the fake terraform container that reflects its inputs.
 type ReflectedInput struct {
 	Args  []string
 	Env   map[string]string
@@ -18,7 +19,7 @@ type ReflectedInput struct {
 	File  string
 }
 
-func TestTerraformInit(t *testing.T) {
+func TestTerraformInitInitial(t *testing.T) {
 	dockerClient, err := docker.NewClientFromEnv()
 	if err != nil {
 		log.Fatal(err)
@@ -29,7 +30,7 @@ func TestTerraformInit(t *testing.T) {
 	buildVolume := createVolume(dockerClient)
 	defer removeVolume(dockerClient, buildVolume)
 
-	if err := terraformInit(
+	if err := terraformInitInitial(
 		dockerClient,
 		getConfig("TEST_TERRAFORM_IMAGE"),
 		getConfig("TEST_ROOT")+"/test/terraform/sample-code",
@@ -71,26 +72,36 @@ func TestTerraformInit(t *testing.T) {
 	}
 }
 
-/*func TestTerraformCommand(t *testing.T) {
+func TestTerraformDeployCommands(t *testing.T) {
 	dockerClient, err := docker.NewClientFromEnv()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	releaseDir, err := tempdir()
-	if err != nil {
-		log.Fatalln("could not make tempdir: ", err)
-	}
-	defer os.RemoveAll(releaseDir)
+	var outputBuffer bytes.Buffer
+	var errorBuffer bytes.Buffer
 
-	container, err := NewTerraformContainer(
+	releaseVolume := createVolume(dockerClient)
+	defer removeVolume(dockerClient, releaseVolume)
+
+	//terraformContainer, err := NewTerraformContainer()
+
+	if err := terraformConfigureBackend(
 		dockerClient,
 		getConfig("TEST_TERRAFORM_IMAGE"),
-		releaseDir,
 		getConfig("TEST_ROOT")+"/test/terraform/sample-code",
-	)
-	if err != nil {
-		log.Fatalln()
+		releaseVolume,
+		&outputBuffer,
+		&errorBuffer,
+	); err != nil {
+		log.Fatalln("unexpected error: ", err)
 	}
 
-}*/
+	if errorBuffer.String() != "message to stderr\n" {
+		log.Fatalf("unexpected stderr output: '%v'", errorBuffer.String())
+	}
+
+	var output ReflectedInput
+	json.Unmarshal(outputBuffer.Bytes(), &output)
+
+}
