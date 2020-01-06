@@ -1,4 +1,4 @@
-package main
+package release_test
 
 import (
 	"bytes"
@@ -7,21 +7,22 @@ import (
 	"testing"
 
 	"github.com/mergermarket/cdflow2/release"
+	"github.com/mergermarket/cdflow2/test"
 )
 
 func TestRelese(t *testing.T) {
-	dockerClient := createDockerClient()
+	dockerClient := test.CreateDockerClient()
 
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
-	buildVolume := createVolume(dockerClient)
-	defer removeVolume(dockerClient, buildVolume)
+	buildVolume := test.CreateVolume(dockerClient)
+	defer test.RemoveVolume(dockerClient, buildVolume)
 
 	releaseMetadata, err := release.Run(
 		dockerClient,
-		getConfig("TEST_RELEASE_IMAGE"),
-		getConfig("TEST_ROOT")+"/test/release/sample-code",
+		test.GetConfig("TEST_RELEASE_IMAGE"),
+		test.GetConfig("TEST_ROOT")+"/test/release/sample-code",
 		buildVolume,
 		&outputBuffer,
 		&errorBuffer,

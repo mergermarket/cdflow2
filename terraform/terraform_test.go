@@ -1,4 +1,4 @@
-package main
+package terraform_test
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/mergermarket/cdflow2/terraform"
+	"github.com/mergermarket/cdflow2/test"
 )
 
 // ReflectedInput is the message format returned from the fake terraform container that reflects its inputs.
@@ -28,13 +29,13 @@ func TestTerraformInitInitial(t *testing.T) {
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
-	buildVolume := createVolume(dockerClient)
-	defer removeVolume(dockerClient, buildVolume)
+	buildVolume := test.CreateVolume(dockerClient)
+	defer test.RemoveVolume(dockerClient, buildVolume)
 
 	if err := terraform.InitInitial(
 		dockerClient,
-		getConfig("TEST_TERRAFORM_IMAGE"),
-		getConfig("TEST_ROOT")+"/test/terraform/sample-code",
+		test.GetConfig("TEST_TERRAFORM_IMAGE"),
+		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 		buildVolume,
 		&outputBuffer,
 		&errorBuffer,
@@ -63,7 +64,7 @@ func TestTerraformInitInitial(t *testing.T) {
 		log.Fatalf("code not mapped as /code - file contents: %v", output.File)
 	}
 
-	buildOutput, err := readVolume(dockerClient, buildVolume)
+	buildOutput, err := test.ReadVolume(dockerClient, buildVolume)
 	if err != nil {
 		log.Panicln("could not read build volume:", err)
 	}
@@ -82,15 +83,15 @@ func TestTerraformDeployCommands(t *testing.T) {
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
-	releaseVolume := createVolume(dockerClient)
-	defer removeVolume(dockerClient, releaseVolume)
+	releaseVolume := test.CreateVolume(dockerClient)
+	defer test.RemoveVolume(dockerClient, releaseVolume)
 
 	//terraformContainer, err := NewTerraformContainer()
 
 	if err := terraform.ConfigureBackend(
 		dockerClient,
-		getConfig("TEST_TERRAFORM_IMAGE"),
-		getConfig("TEST_ROOT")+"/test/terraform/sample-code",
+		test.GetConfig("TEST_TERRAFORM_IMAGE"),
+		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 		releaseVolume,
 		&outputBuffer,
 		&errorBuffer,

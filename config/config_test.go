@@ -1,4 +1,4 @@
-package main
+package config_test
 
 import (
 	"log"
@@ -7,6 +7,7 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/mergermarket/cdflow2/config"
+	"github.com/mergermarket/cdflow2/test"
 )
 
 func removeConfigContainer(configContainer *config.ConfigContainer) {
@@ -17,11 +18,11 @@ func removeConfigContainer(configContainer *config.ConfigContainer) {
 }
 
 func setupConfigContainer() (*docker.Client, *config.ConfigContainer, *docker.Volume) {
-	dockerClient := createDockerClient()
+	dockerClient := test.CreateDockerClient()
 
-	releaseVolume := createVolume(dockerClient)
+	releaseVolume := test.CreateVolume(dockerClient)
 
-	configContainer := config.NewConfigContainer(dockerClient, getConfig("TEST_CONFIG_IMAGE"), releaseVolume)
+	configContainer := config.NewConfigContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume)
 
 	if err := configContainer.Start(); err != nil {
 		log.Panicln("error running config container:", err)
@@ -31,7 +32,7 @@ func setupConfigContainer() (*docker.Client, *config.ConfigContainer, *docker.Vo
 
 func TestConfigRelease(t *testing.T) {
 	dockerClient, configContainer, releaseVolume := setupConfigContainer()
-	defer removeVolume(dockerClient, releaseVolume)
+	defer test.RemoveVolume(dockerClient, releaseVolume)
 	defer removeConfigContainer(configContainer)
 
 	response, err := configContainer.ConfigureRelease(
@@ -77,7 +78,7 @@ func TestConfigRelease(t *testing.T) {
 func TestConfigDeploy(t *testing.T) {
 
 	dockerClient, configContainer, releaseVolume := setupConfigContainer()
-	defer removeVolume(dockerClient, releaseVolume)
+	defer test.RemoveVolume(dockerClient, releaseVolume)
 	defer removeConfigContainer(configContainer)
 
 	response, err := configContainer.PrepareTerraform(
@@ -112,7 +113,7 @@ func TestConfigDeploy(t *testing.T) {
 		log.Panicln("unexpected terraform backend config:", response.TerraformBackendConfig)
 	}
 
-	releaseData, err := readVolume(dockerClient, releaseVolume)
+	releaseData, err := test.ReadVolume(dockerClient, releaseVolume)
 	if err != nil {
 		log.Panicln("could not read release volume:", err)
 	}

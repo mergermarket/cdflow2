@@ -1,16 +1,17 @@
-package main
+package test
 
 import (
 	"archive/tar"
 	"bytes"
 	"io"
 	"log"
+	"os"
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
 )
 
-func createDockerClient() *docker.Client {
+func CreateDockerClient() *docker.Client {
 	client, err := docker.NewClientFromEnv()
 	if err != nil {
 		log.Panicln(err)
@@ -18,7 +19,7 @@ func createDockerClient() *docker.Client {
 	return client
 }
 
-func createVolume(dockerClient *docker.Client) *docker.Volume {
+func CreateVolume(dockerClient *docker.Client) *docker.Volume {
 	volume, err := dockerClient.CreateVolume(docker.CreateVolumeOptions{})
 	if err != nil {
 		log.Panicln("could not create volume:", err)
@@ -26,16 +27,22 @@ func createVolume(dockerClient *docker.Client) *docker.Volume {
 	return volume
 }
 
-func removeVolume(dockerClient *docker.Client, volume *docker.Volume) {
+func RemoveVolume(dockerClient *docker.Client, volume *docker.Volume) {
 	if err := dockerClient.RemoveVolume(volume.Name); err != nil {
 		log.Panicf("error removing volume %v: %v", volume.Name, err)
 	}
 }
 
-func readVolume(dockerClient *docker.Client, volume *docker.Volume) (map[string]string, error) {
+func ReadVolume(dockerClient *docker.Client, volume *docker.Volume) (map[string]string, error) {
+	image := "alpine:latest"
+	if err := dockerClient.PullImage(docker.PullImageOptions{
+		Repository: image,
+	}, docker.AuthConfiguration{}); err != nil {
+		log.Panicln("error pulling:", err)
+	}
 	container, err := dockerClient.CreateContainer(docker.CreateContainerOptions{
 		Config: &docker.Config{
-			Image: "hello-world",
+			Image: image,
 		},
 		HostConfig: &docker.HostConfig{
 			Binds: []string{volume.Name + ":/root:ro"},
@@ -70,4 +77,12 @@ func readVolume(dockerClient *docker.Client, volume *docker.Volume) (map[string]
 		result[strings.TrimPrefix(header.Name, "root/")] = contents.String()
 	}
 	return result, nil
+}
+
+func GetConfig(name string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		log.Fatalf("environment variable %v not set - did you run ./test.sh?", name)
+	}
+	return value
 }
