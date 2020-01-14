@@ -6,6 +6,15 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 )
 
+func EnsureImage(dockerClient *docker.Client, image string) error {
+	if _, err := dockerClient.InspectImage(image); err == nil {
+		return nil
+	}
+	return dockerClient.PullImage(docker.PullImageOptions{
+		Repository: image,
+	}, docker.AuthConfiguration{})
+}
+
 func Await(dockerClient *docker.Client, container *docker.Container, inputStream io.Reader, outputStream, errorStream io.Writer, started chan error) error {
 	attached := make(chan error)
 	detached := make(chan error)

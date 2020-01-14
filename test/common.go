@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/mergermarket/cdflow2/containers"
 )
 
 func CreateDockerClient() *docker.Client {
@@ -35,9 +36,7 @@ func RemoveVolume(dockerClient *docker.Client, volume *docker.Volume) {
 
 func ReadVolume(dockerClient *docker.Client, volume *docker.Volume) (map[string]string, error) {
 	image := "alpine:latest"
-	if err := dockerClient.PullImage(docker.PullImageOptions{
-		Repository: image,
-	}, docker.AuthConfiguration{}); err != nil {
+	if err := containers.EnsureImage(dockerClient, image); err != nil {
 		log.Panicln("error pulling:", err)
 	}
 	container, err := dockerClient.CreateContainer(docker.CreateContainerOptions{

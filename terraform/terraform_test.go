@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"reflect"
+	"strings"
 	"testing"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -86,13 +87,14 @@ func TestTerraformDeployCommands(t *testing.T) {
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 
-	//terraformContainer, err := NewTerraformContainer()
-
-	if err := terraform.ConfigureBackend(
+	terraformContainer, err := terraform.NewTerraformContainer(
 		dockerClient,
 		test.GetConfig("TEST_TERRAFORM_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 		releaseVolume,
+	)
+
+	if err := terraformContainer.ConfigureBackend(
 		&outputBuffer,
 		&errorBuffer,
 	); err != nil {
@@ -103,7 +105,13 @@ func TestTerraformDeployCommands(t *testing.T) {
 		log.Fatalf("unexpected stderr output: '%v'", errorBuffer.String())
 	}
 
-	var output ReflectedInput
-	json.Unmarshal(outputBuffer.Bytes(), &output)
+	for _, line := range strings.Split(outputBuffer.String(), "\n") {
+		if line == "" {
+			continue
+		}
+		var output ReflectedInput
+		json.Unmarshal(outputBuffer.Bytes(), &output)
+	}
 
+	terraformContainer.Done()
 }

@@ -17,10 +17,8 @@ func TestAwait(t *testing.T) {
 	var errorBuffer bytes.Buffer
 
 	image := "alpine:latest"
-	if err := dockerClient.PullImage(docker.PullImageOptions{
-		Repository: image,
-	}, docker.AuthConfiguration{}); err != nil {
-		log.Panicln("error pulling:", err)
+	if err := containers.EnsureImage(dockerClient, image); err != nil {
+		log.Panicln("could not pull image:", err)
 	}
 	container, err := dockerClient.CreateContainer(docker.CreateContainerOptions{
 		Config: &docker.Config{

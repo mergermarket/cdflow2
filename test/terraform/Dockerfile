@@ -1,4 +1,5 @@
-FROM python:3-alpine
-ADD entrypoint.py /entrypoint.py
-ENV PYTHONUNBUFFERED 1
-ENTRYPOINT ["python", "/entrypoint.py"]
+FROM golang:latest
+WORKDIR /app
+ADD . .
+RUN go build -o /bin/terraform .
+ENTRYPOINT ["/bin/terraform"]
