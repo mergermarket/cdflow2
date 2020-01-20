@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"reflect"
-	"strings"
 	"testing"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -110,25 +109,16 @@ func TestTerraformConfigureBackend(t *testing.T) {
 		log.Panicf("unexpected stderr output: '%v'", errorBuffer.String())
 	}
 
-	lines := make([]ReflectedInput, 0)
-	for i, line := range strings.Split(outputBuffer.String(), "\n") {
-		if line == "" {
-			continue
-		}
-		lines = append(lines, ReflectedInput{})
-		json.Unmarshal(outputBuffer.Bytes(), &lines[i])
-	}
-	if len(lines) != 1 {
-		log.Panicln("unexpected number of lines:", len(lines))
-	}
+	var input ReflectedInput
+	json.Unmarshal(outputBuffer.Bytes(), &input)
 
-	if !reflect.DeepEqual(lines[0].Args, []string{
+	if !reflect.DeepEqual(input.Args, []string{
 		"init",
 		"-get=false",
 		"-get-plugins=false",
 		"-backend-config=key1=value1",
 		"-backend-config=key2=value2",
 	}) {
-		log.Panicln("unexpected args:", lines[0].Args)
+		log.Panicln("unexpected args:", input.Args)
 	}
 }
