@@ -97,14 +97,29 @@ func NewTerraformContainer(dockerClient *docker.Client, image, codeDir string, r
 	return &self, nil
 }
 
+type BackendConfigParameter struct {
+	Key   string
+	Value string
+}
+
 // ConfigureBackend runs terraform init as part of the release in order to download providers and modules.
-func (self *terraformContainer) ConfigureBackend(outputStream, errorStream io.Writer) error {
+func (self *terraformContainer) ConfigureBackend(outputStream, errorStream io.Writer, backendConfig []BackendConfigParameter) error {
+
+	command := make([]string, 0)
+	command = append(command, "terraform")
+	command = append(command, "init")
+	command = append(command, "-get=false")
+	command = append(command, "-get-plugins=false")
+
+	for _, param := range backendConfig {
+		command = append(command, "-backend-config="+param.Key+"="+param.Value)
+	}
 
 	exec, err := self.dockerClient.CreateExec(docker.CreateExecOptions{
 		Container:    self.container.ID,
 		AttachStdout: true,
 		AttachStderr: true,
-		Cmd:          []string{"terraform"},
+		Cmd:          command,
 	})
 	if err != nil {
 		return err

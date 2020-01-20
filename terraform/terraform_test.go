@@ -75,7 +75,7 @@ func TestTerraformInitInitial(t *testing.T) {
 	}
 }
 
-func TestTerraformDeployCommands(t *testing.T) {
+func TestTerraformConfigureBackend(t *testing.T) {
 	dockerClient, err := docker.NewClientFromEnv()
 	if err != nil {
 		log.Fatal(err)
@@ -93,25 +93,42 @@ func TestTerraformDeployCommands(t *testing.T) {
 		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 		releaseVolume,
 	)
+	defer terraformContainer.Done()
 
 	if err := terraformContainer.ConfigureBackend(
 		&outputBuffer,
 		&errorBuffer,
+		[]terraform.BackendConfigParameter{
+			terraform.BackendConfigParameter{"key1", "value1"},
+			terraform.BackendConfigParameter{"key2", "value2"},
+		},
 	); err != nil {
-		log.Fatalln("unexpected error: ", err)
+		log.Panicln("unexpected error: ", err)
 	}
 
 	if errorBuffer.String() != "message to stderr\n" {
-		log.Fatalf("unexpected stderr output: '%v'", errorBuffer.String())
+		log.Panicf("unexpected stderr output: '%v'", errorBuffer.String())
 	}
 
-	for _, line := range strings.Split(outputBuffer.String(), "\n") {
+	lines := make([]ReflectedInput, 0)
+	for i, line := range strings.Split(outputBuffer.String(), "\n") {
 		if line == "" {
 			continue
 		}
-		var output ReflectedInput
-		json.Unmarshal(outputBuffer.Bytes(), &output)
+		lines = append(lines, ReflectedInput{})
+		json.Unmarshal(outputBuffer.Bytes(), &lines[i])
+	}
+	if len(lines) != 1 {
+		log.Panicln("unexpected number of lines:", len(lines))
 	}
 
-	terraformContainer.Done()
+	if !reflect.DeepEqual(lines[0].Args, []string{
+		"init",
+		"-get=false",
+		"-get-plugins=false",
+		"-backend-config=key1=value1",
+		"-backend-config=key2=value2",
+	}) {
+		log.Panicln("unexpected args:", lines[0].Args)
+	}
 }
