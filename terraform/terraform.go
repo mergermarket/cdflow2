@@ -1,9 +1,11 @@
 package terraform
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"strconv"
+	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/mergermarket/cdflow2/containers"
@@ -115,6 +117,51 @@ func (self *terraformContainer) ConfigureBackend(outputStream, errorStream io.Wr
 		command = append(command, "-backend-config="+param.Key+"="+param.Value)
 	}
 
+	if err := self.runCommand(command, outputStream, errorStream); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (self *terraformContainer) SwitchWorkspace(name string, outputStream, errorStream io.Writer) error {
+	workspaces, err := self.listWorkspaces(errorStream)
+	if err != nil {
+		return err
+	}
+
+	command := "new"
+	if workspaces[name] {
+		command = "select"
+	}
+
+	if err := self.runCommand([]string{"terraform", "workspace", command, name}, outputStream, errorStream); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (self *terraformContainer) listWorkspaces(errorStream io.Writer) (map[string]bool, error) {
+	var outputBuffer bytes.Buffer
+
+	if err := self.runCommand([]string{"terraform", "workspace", "list"}, &outputBuffer, errorStream); err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]bool)
+	for _, line := range strings.Split(outputBuffer.String(), "\n") {
+		for _, word := range strings.Fields(line) {
+			if word != "*" {
+				result[word] = true
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func (self *terraformContainer) runCommand(command []string, outputStream, errorStream io.Writer) error {
 	exec, err := self.dockerClient.CreateExec(docker.CreateExecOptions{
 		Container:    self.container.ID,
 		AttachStdout: true,
@@ -131,7 +178,6 @@ func (self *terraformContainer) ConfigureBackend(outputStream, errorStream io.Wr
 	}); err != nil {
 		return err
 	}
-
 	return nil
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -20,8 +21,15 @@ func getEnv() map[string]string {
 }
 
 func main() {
-	os.Stderr.WriteString("message to stderr\n")
-	encoder := json.NewEncoder(os.Stdout)
+
+	if len(os.Args) == 3 && os.Args[1] == "workspace" && os.Args[2] == "list" {
+		fmt.Println("* default")
+		fmt.Println("  existing-workspace")
+	} else {
+		fmt.Println("message to stdout")
+	}
+
+	encoder := json.NewEncoder(os.Stderr)
 
 	fileContents, err := ioutil.ReadFile("/code/mapped-dir-test")
 	if err != nil {
