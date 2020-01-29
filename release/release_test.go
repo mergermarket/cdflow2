@@ -43,5 +43,50 @@ func TestRelese(t *testing.T) {
 	}) {
 		log.Panicf("unexpected release metadata: %v\n", releaseMetadata)
 	}
+}
 
+func TestParseArgsDefaults(t *testing.T) {
+	args, err := release.ParseArgs([]string{})
+	if err != nil {
+		log.Fatalln("error parsing empty args:", err)
+	}
+	if *args.NoPullConfig {
+		log.Fatalln("default for --no-pull-config true when it should be false")
+	}
+	if *args.NoPullRelease {
+		log.Fatalln("default for --no-pull-release true when it should be false")
+	}
+	if *args.NoPullTerraform {
+		log.Fatalln("default for --no-pull-terraform true when it should be false")
+	}
+}
+
+func TestParseArgsNoPullConfig(t *testing.T) {
+	args, err := release.ParseArgs([]string{"--no-pull-config"})
+	if err != nil {
+		log.Fatalln("error parsing --no-pull-config args:", err)
+	}
+	if !*args.NoPullConfig {
+		log.Fatalln("--no-pull-config should be true")
+	}
+}
+
+func TestParseArgsNoPullRelease(t *testing.T) {
+	args, err := release.ParseArgs([]string{"--no-pull-release"})
+	if err != nil {
+		log.Fatalln("error parsing --no-pull-release args:", err)
+	}
+	if !*args.NoPullRelease {
+		log.Fatalln("--no-pull-release should be true")
+	}
+}
+
+func TestParseArgsNoPullTerraform(t *testing.T) {
+	args, err := release.ParseArgs([]string{"--no-pull-terraform"})
+	if err != nil {
+		log.Fatalln("error parsing --no-pull-terraform args:", err)
+	}
+	if !*args.NoPullTerraform {
+		log.Fatalln("--no-pull-terraform should be true")
+	}
 }
