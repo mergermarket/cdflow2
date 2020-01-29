@@ -47,6 +47,10 @@ func main() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error loading cdflow.yaml:", err)
 	}
+	if manifest.Version != 2 {
+		fmt.Fprintf(os.Stderr, "cdflow.yaml version must be 2 for cdflow2")
+		os.Exit(1)
+	}
 	dockerClient, err := docker.NewClientFromEnv()
 	if err != nil {
 		log.Fatalln("could not initialise docker client:", err)
