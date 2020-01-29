@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"log"
 	"reflect"
+	"strings"
 	"testing"
 
+	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/release"
 	"github.com/mergermarket/cdflow2/test"
 )
@@ -89,4 +91,34 @@ func TestParseArgsNoPullTerraform(t *testing.T) {
 	if !*args.NoPullTerraform {
 		log.Fatalln("--no-pull-terraform should be true")
 	}
+}
+
+func TestRunCommand(t *testing.T) {
+	dockerClient := test.CreateDockerClient()
+
+	var outputBuffer bytes.Buffer
+	var errorBuffer bytes.Buffer
+
+	if err := release.RunCommand(
+		dockerClient,
+		&outputBuffer,
+		&errorBuffer,
+		test.GetConfig("TEST_ROOT")+"/test/release/sample-code",
+		[]string{"--no-pull-release", "--no-pull-config", "--no-pull-terraform"},
+		&config.Manifest{
+			Version:        2,
+			ReleaseImage:   test.GetConfig("TEST_RELEASE_IMAGE"),
+			ConfigImage:    test.GetConfig("TEST_CONFIG_IMAGE"),
+			TerraformImage: test.GetConfig("TEST_TERRAFORM_IMAGE"),
+		},
+	); err != nil {
+		log.Fatalln("error running command:", err, errorBuffer.String())
+	}
+
+	lines := strings.Split(errorBuffer.String(), "\n")
+	if len(lines) != 2 || lines[1] != "" {
+		log.Panicln("expected one line with a trailing newline (empty string), got lines:", lines)
+	}
+
+	// TODO
 }

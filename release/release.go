@@ -6,9 +6,12 @@ import (
 	"errors"
 	"flag"
 	"io"
+	"os"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/containers"
+	"github.com/mergermarket/cdflow2/terraform"
 )
 
 type readReleaseMetadataResult struct {
@@ -82,7 +85,7 @@ func handleReleaseOutput(readStream io.Reader, outputStream io.Writer, resultCha
 
 func createReleaseContainer(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume) (*docker.Container, error) {
 	return dockerClient.CreateContainer(docker.CreateContainerOptions{
-		Name: "release",
+		Name: containers.RandomName("cdflow2-release"),
 		Config: &docker.Config{
 			Image:        image,
 			AttachStdin:  false,
@@ -118,4 +121,41 @@ func ParseArgs(args []string) (*Args, error) {
 	}
 
 	return &result, nil
+}
+
+// RunCommand runs the release command.
+func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer, codeDir string, inputArgs []string, manifest *config.Manifest) error {
+	args, err := ParseArgs(inputArgs)
+	if err != nil {
+		return err
+	}
+
+	if !*args.NoPullTerraform {
+		if err := dockerClient.PullImage(docker.PullImageOptions{
+			Repository:   manifest.TerraformImage,
+			OutputStream: os.Stderr,
+		}, docker.AuthConfiguration{}); err != nil {
+			return err
+		}
+	}
+
+	buildVolume, err := dockerClient.CreateVolume(docker.CreateVolumeOptions{})
+	if err != nil {
+		return err
+	}
+	defer dockerClient.RemoveVolume(buildVolume.Name)
+
+	if err := terraform.InitInitial(
+		dockerClient,
+		manifest.TerraformImage,
+		codeDir,
+		buildVolume,
+		outputStream,
+		errorStream,
+	); err != nil {
+		return err
+
+	}
+
+	return nil
 }

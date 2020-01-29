@@ -1,7 +1,9 @@
 package containers
 
 import (
+	"fmt"
 	"io"
+	"math/rand"
 
 	docker "github.com/fsouza/go-dockerclient"
 )
@@ -54,4 +56,9 @@ func Await(dockerClient *docker.Client, container *docker.Container, inputStream
 	}
 
 	return <-detached
+}
+
+// RandomName creates a random name with a prefix so container names don't clash.
+func RandomName(prefix string) string {
+	return fmt.Sprintf("%s-%x", prefix, rand.Int())
 }

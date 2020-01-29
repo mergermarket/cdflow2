@@ -3,6 +3,7 @@ package containers_test
 import (
 	"bytes"
 	"log"
+	"strings"
 	"testing"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -42,5 +43,12 @@ func TestAwait(t *testing.T) {
 
 	if outputBuffer.String() != "hello\n" {
 		log.Panicln("unexpected output:", outputBuffer.String())
+	}
+}
+
+func TestRandomContainerName(test *testing.T) {
+	randomContainerName := containers.RandomName("foo")
+	if !strings.HasPrefix(randomContainerName, "foo-") {
+		log.Fatalln("unexpected prefix:", randomContainerName)
 	}
 }

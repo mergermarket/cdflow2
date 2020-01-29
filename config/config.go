@@ -56,7 +56,7 @@ func (self *ConfigContainer) Start() error {
 
 func (self *ConfigContainer) createContainer() (*docker.Container, error) {
 	return self.dockerClient.CreateContainer(docker.CreateContainerOptions{
-		Name: "config",
+		Name: containers.RandomName("cdflow2-config"),
 		Config: &docker.Config{
 			Image:        self.image,
 			OpenStdin:    true,

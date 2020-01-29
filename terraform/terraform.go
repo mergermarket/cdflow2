@@ -14,7 +14,7 @@ import (
 // createTerraformInitContainer creates and returns a container for running terraform init to download providers and modules.
 func createTerraformInitContainer(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume) (*docker.Container, error) {
 	return dockerClient.CreateContainer(docker.CreateContainerOptions{
-		Name: "terraform",
+		Name: containers.RandomName("cdflow2-terraform"),
 		Config: &docker.Config{
 			Image:        image,
 			AttachStdin:  false,
