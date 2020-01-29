@@ -58,11 +58,13 @@ func InitInitial(dockerClient *docker.Client, image, codeDir string, buildVolume
 	return nil
 }
 
+// terraformContainer stores information about a running terraform container for running terraform commands in.
 type terraformContainer struct {
 	dockerClient *docker.Client
 	container    *docker.Container
 }
 
+// NewTerraformContainer creates and returns a terraformContainer for running terraform commands in.
 func NewTerraformContainer(dockerClient *docker.Client, image, codeDir string, releaseVolume *docker.Volume) (*terraformContainer, error) {
 
 	container, err := dockerClient.CreateContainer(docker.CreateContainerOptions{
@@ -99,6 +101,7 @@ func NewTerraformContainer(dockerClient *docker.Client, image, codeDir string, r
 	return &self, nil
 }
 
+// BackendConfigParameter is like a tuple of key and value for use in a slice (rather than a map as that wouldn't preserve order).
 type BackendConfigParameter struct {
 	Key   string
 	Value string
@@ -124,6 +127,7 @@ func (self *terraformContainer) ConfigureBackend(outputStream, errorStream io.Wr
 	return nil
 }
 
+// SwitchWorkspace switched to a named workspace, creating it if necessary.
 func (self *terraformContainer) SwitchWorkspace(name string, outputStream, errorStream io.Writer) error {
 	workspaces, err := self.listWorkspaces(errorStream)
 	if err != nil {
@@ -142,6 +146,7 @@ func (self *terraformContainer) SwitchWorkspace(name string, outputStream, error
 	return nil
 }
 
+// listWorkspaces lists the terraform workspaces and returns them as a set
 func (self *terraformContainer) listWorkspaces(errorStream io.Writer) (map[string]bool, error) {
 	var outputBuffer bytes.Buffer
 
@@ -161,6 +166,7 @@ func (self *terraformContainer) listWorkspaces(errorStream io.Writer) (map[strin
 	return result, nil
 }
 
+// runCommand execs a command inside the terraform container.
 func (self *terraformContainer) runCommand(command []string, outputStream, errorStream io.Writer) error {
 	exec, err := self.dockerClient.CreateExec(docker.CreateExecOptions{
 		Container:    self.container.ID,
