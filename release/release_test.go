@@ -120,5 +120,6 @@ func TestRunCommand(t *testing.T) {
 		log.Panicln("expected one line with a trailing newline (empty string), got lines:", lines)
 	}
 
+	test.CheckTerraformInitInitialReflectedInput([]byte(lines[0]))
 	// TODO
 }

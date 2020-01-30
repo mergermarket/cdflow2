@@ -13,15 +13,6 @@ import (
 	"github.com/mergermarket/cdflow2/test"
 )
 
-// ReflectedInput is the message format returned from the fake terraform container that reflects its inputs.
-type ReflectedInput struct {
-	Args  []string
-	Env   map[string]string
-	Input string
-	Cwd   string
-	File  string
-}
-
 func TestTerraformInitInitial(t *testing.T) {
 	dockerClient, err := docker.NewClientFromEnv()
 	if err != nil {
@@ -48,24 +39,7 @@ func TestTerraformInitInitial(t *testing.T) {
 		log.Fatalf("unexpected stdout output: '%v'", outputBuffer.String())
 	}
 
-	var input ReflectedInput
-	if err := json.Unmarshal(errorBuffer.Bytes(), &input); err != nil {
-		log.Panicln("error parsing json:", err)
-	}
-
-	// interface is that the code is mapped to /code and the terraform is in the infra subfolder
-	if !reflect.DeepEqual(input.Args, []string{"init", "/code/infra"}) {
-		log.Fatalf("unexpected args: %v", input.Args)
-	}
-
-	// interface is that the mapped in cwd is /build
-	if input.Cwd != "/build" {
-		log.Fatalf("unexpected cwd: %v", input.Cwd)
-	}
-
-	if input.File != "sample content" {
-		log.Fatalf("code not mapped as /code - file contents: %v", input.File)
-	}
+	test.CheckTerraformInitInitialReflectedInput(errorBuffer.Bytes())
 
 	buildOutput, err := test.ReadVolume(dockerClient, buildVolume)
 	if err != nil {
@@ -86,7 +60,7 @@ func TestTerraformConfigureBackend(t *testing.T) {
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 
-	terraformContainer, err := terraform.NewTerraformContainer(
+	terraformContainer, err := terraform.NewContainer(
 		dockerClient,
 		test.GetConfig("TEST_TERRAFORM_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
@@ -112,7 +86,7 @@ func TestTerraformConfigureBackend(t *testing.T) {
 		log.Panicf("unexpected stdout output: '%v'", outputBuffer.String())
 	}
 
-	var input ReflectedInput
+	var input test.ReflectedInput
 	if err := json.Unmarshal(errorBuffer.Bytes(), &input); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
@@ -136,7 +110,7 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 
-	terraformContainer, err := terraform.NewTerraformContainer(
+	terraformContainer, err := terraform.NewContainer(
 		dockerClient,
 		test.GetConfig("TEST_TERRAFORM_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
@@ -162,7 +136,7 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 		log.Panicln("expected two lines with a trailing newline (empty string), got lines:", lines)
 	}
 
-	var listInput ReflectedInput
+	var listInput test.ReflectedInput
 	if err := json.Unmarshal([]byte(lines[0]), &listInput); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
@@ -171,7 +145,7 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 		log.Panicln("unexpected args for workspace list:", listInput.Args)
 	}
 
-	var selectInput ReflectedInput
+	var selectInput test.ReflectedInput
 	if err := json.Unmarshal([]byte(lines[1]), &selectInput); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
@@ -190,7 +164,7 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 
-	terraformContainer, err := terraform.NewTerraformContainer(
+	terraformContainer, err := terraform.NewContainer(
 		dockerClient,
 		test.GetConfig("TEST_TERRAFORM_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
@@ -216,7 +190,7 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 		log.Panicln("expected two lines with a trailing newline (empty string), got lines:", lines)
 	}
 
-	var listInput ReflectedInput
+	var listInput test.ReflectedInput
 	if err := json.Unmarshal([]byte(lines[0]), &listInput); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
@@ -225,7 +199,7 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 		log.Panicln("unexpected args for workspace list:", listInput.Args)
 	}
 
-	var newInput ReflectedInput
+	var newInput test.ReflectedInput
 	if err := json.Unmarshal([]byte(lines[1]), &newInput); err != nil {
 		log.Panicln("error parsing json:", err)
 	}

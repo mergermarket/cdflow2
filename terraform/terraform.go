@@ -58,14 +58,14 @@ func InitInitial(dockerClient *docker.Client, image, codeDir string, buildVolume
 	return nil
 }
 
-// terraformContainer stores information about a running terraform container for running terraform commands in.
-type terraformContainer struct {
+// Container stores information about a running terraform container for running terraform commands in.
+type Container struct {
 	dockerClient *docker.Client
 	container    *docker.Container
 }
 
-// NewTerraformContainer creates and returns a terraformContainer for running terraform commands in.
-func NewTerraformContainer(dockerClient *docker.Client, image, codeDir string, releaseVolume *docker.Volume) (*terraformContainer, error) {
+// NewContainer creates and returns a terraformContainer for running terraform commands in.
+func NewContainer(dockerClient *docker.Client, image, codeDir string, releaseVolume *docker.Volume) (*Container, error) {
 
 	container, err := dockerClient.CreateContainer(docker.CreateContainerOptions{
 		Name: "terraform",
@@ -92,7 +92,7 @@ func NewTerraformContainer(dockerClient *docker.Client, image, codeDir string, r
 		return nil, err
 	}
 
-	self := terraformContainer{
+	self := Container{
 		dockerClient: dockerClient,
 		container:    container,
 	}
@@ -108,7 +108,7 @@ type BackendConfigParameter struct {
 }
 
 // ConfigureBackend runs terraform init as part of the release in order to download providers and modules.
-func (self *terraformContainer) ConfigureBackend(outputStream, errorStream io.Writer, backendConfig []BackendConfigParameter) error {
+func (container *Container) ConfigureBackend(outputStream, errorStream io.Writer, backendConfig []BackendConfigParameter) error {
 
 	command := make([]string, 0)
 	command = append(command, "terraform")
@@ -120,7 +120,7 @@ func (self *terraformContainer) ConfigureBackend(outputStream, errorStream io.Wr
 		command = append(command, "-backend-config="+param.Key+"="+param.Value)
 	}
 
-	if err := self.runCommand(command, outputStream, errorStream); err != nil {
+	if err := container.runCommand(command, outputStream, errorStream); err != nil {
 		return err
 	}
 
@@ -128,8 +128,8 @@ func (self *terraformContainer) ConfigureBackend(outputStream, errorStream io.Wr
 }
 
 // SwitchWorkspace switched to a named workspace, creating it if necessary.
-func (self *terraformContainer) SwitchWorkspace(name string, outputStream, errorStream io.Writer) error {
-	workspaces, err := self.listWorkspaces(errorStream)
+func (container *Container) SwitchWorkspace(name string, outputStream, errorStream io.Writer) error {
+	workspaces, err := container.listWorkspaces(errorStream)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (self *terraformContainer) SwitchWorkspace(name string, outputStream, error
 		command = "select"
 	}
 
-	if err := self.runCommand([]string{"terraform", "workspace", command, name}, outputStream, errorStream); err != nil {
+	if err := container.runCommand([]string{"terraform", "workspace", command, name}, outputStream, errorStream); err != nil {
 		return err
 	}
 
@@ -147,10 +147,10 @@ func (self *terraformContainer) SwitchWorkspace(name string, outputStream, error
 }
 
 // listWorkspaces lists the terraform workspaces and returns them as a set
-func (self *terraformContainer) listWorkspaces(errorStream io.Writer) (map[string]bool, error) {
+func (container *Container) listWorkspaces(errorStream io.Writer) (map[string]bool, error) {
 	var outputBuffer bytes.Buffer
 
-	if err := self.runCommand([]string{"terraform", "workspace", "list"}, &outputBuffer, errorStream); err != nil {
+	if err := container.runCommand([]string{"terraform", "workspace", "list"}, &outputBuffer, errorStream); err != nil {
 		return nil, err
 	}
 
@@ -167,9 +167,9 @@ func (self *terraformContainer) listWorkspaces(errorStream io.Writer) (map[strin
 }
 
 // runCommand execs a command inside the terraform container.
-func (self *terraformContainer) runCommand(command []string, outputStream, errorStream io.Writer) error {
-	exec, err := self.dockerClient.CreateExec(docker.CreateExecOptions{
-		Container:    self.container.ID,
+func (container *Container) runCommand(command []string, outputStream, errorStream io.Writer) error {
+	exec, err := container.dockerClient.CreateExec(docker.CreateExecOptions{
+		Container:    container.container.ID,
 		AttachStdout: true,
 		AttachStderr: true,
 		Cmd:          command,
@@ -178,7 +178,7 @@ func (self *terraformContainer) runCommand(command []string, outputStream, error
 		return err
 	}
 
-	if err := self.dockerClient.StartExec(exec.ID, docker.StartExecOptions{
+	if err := container.dockerClient.StartExec(exec.ID, docker.StartExecOptions{
 		OutputStream: outputStream,
 		ErrorStream:  errorStream,
 	}); err != nil {
@@ -188,11 +188,11 @@ func (self *terraformContainer) runCommand(command []string, outputStream, error
 }
 
 // Done stops and removes the terraform container.
-func (self *terraformContainer) Done() error {
-	if err := self.dockerClient.StopContainer(self.container.ID, 10); err != nil {
+func (container *Container) Done() error {
+	if err := container.dockerClient.StopContainer(container.container.ID, 10); err != nil {
 		return err
 	}
-	return self.dockerClient.RemoveContainer(docker.RemoveContainerOptions{
-		ID: self.container.ID,
+	return container.dockerClient.RemoveContainer(docker.RemoveContainerOptions{
+		ID: container.container.ID,
 	})
 }

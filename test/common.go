@@ -3,9 +3,11 @@ package test
 import (
 	"archive/tar"
 	"bytes"
+	"encoding/json"
 	"io"
 	"log"
 	"os"
+	"reflect"
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -84,4 +86,34 @@ func GetConfig(name string) string {
 		log.Fatalf("environment variable %v not set - did you run ./test.sh?", name)
 	}
 	return value
+}
+
+// ReflectedInput is the message format returned from the fake terraform container that reflects its inputs.
+type ReflectedInput struct {
+	Args  []string
+	Env   map[string]string
+	Input string
+	Cwd   string
+	File  string
+}
+
+func CheckTerraformInitInitialReflectedInput(output []byte) {
+	var input ReflectedInput
+	if err := json.Unmarshal(output, &input); err != nil {
+		log.Panicln("error parsing json:", err)
+	}
+
+	// interface is that the code is mapped to /code and the terraform is in the infra subfolder
+	if !reflect.DeepEqual(input.Args, []string{"init", "/code/infra"}) {
+		log.Fatalf("unexpected args: %v", input.Args)
+	}
+
+	// interface is that the mapped in cwd is /build
+	if input.Cwd != "/build" {
+		log.Fatalf("unexpected cwd: %v", input.Cwd)
+	}
+
+	if input.File != "sample content" {
+		log.Fatalf("code not mapped as /code - file contents: %v", input.File)
+	}
 }
