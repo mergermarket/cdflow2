@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -23,8 +22,8 @@ type readReleaseMetadataResult struct {
 }
 
 // Run creates and runs the release container, returning a map of release metadata.
-func Run(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, outputStream, errorStream io.Writer) (map[string]string, error) {
-	container, err := createReleaseContainer(dockerClient, image, codeDir, buildVolume)
+func Run(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, outputStream, errorStream io.Writer, env map[string]string) (map[string]string, error) {
+	container, err := createReleaseContainer(dockerClient, image, codeDir, buildVolume, env)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +85,7 @@ func handleReleaseOutput(readStream io.Reader, outputStream io.Writer, resultCha
 	resultChannel <- readReleaseMetadataResult{result, nil}
 }
 
-func createReleaseContainer(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume) (*docker.Container, error) {
+func createReleaseContainer(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, env map[string]string) (*docker.Container, error) {
 	return dockerClient.CreateContainer(docker.CreateContainerOptions{
 		Name: containers.RandomName("cdflow2-release"),
 		Config: &docker.Config{
@@ -95,6 +94,7 @@ func createReleaseContainer(dockerClient *docker.Client, image, codeDir string, 
 			AttachStdout: true,
 			AttachStderr: true,
 			WorkingDir:   "/code",
+			Env:          containers.MapToDockerEnv(env),
 		},
 		HostConfig: &docker.HostConfig{
 			LogConfig: docker.LogConfig{Type: "none"},
@@ -190,12 +190,34 @@ func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer
 		return err
 	}
 
-	response, err := configContainer.ConfigureRelease(args.Version, map[string]interface{}{}, env())
+	configureReleaseResponse, err := configContainer.ConfigureRelease(args.Version, map[string]interface{}{}, env())
 	if err != nil {
 		return err
 	}
 
-	log.Println("TODO:", response)
+	env := configureReleaseResponse.Env
+	// these are built in and cannot be overridden by the config container (since choosing the clashing name would likely be an accident)
+	env["VERSION"] = args.Version
+	env["TEAM"] = manifest.Team
+	env["COMPONENT"] = "TODO"
+	env["COMMIT"] = "TODO"
+
+	releaseMetadata, err := Run(
+		dockerClient,
+		manifest.ReleaseImage,
+		codeDir,
+		buildVolume,
+		outputStream,
+		errorStream,
+		env,
+	)
+
+	uploadReleaseResponse, err := configContainer.UploadRelease(
+		"TODO-terraform-image",
+		releaseMetadata,
+	)
+
+	fmt.Fprintln(errorStream, uploadReleaseResponse.Message)
 
 	return nil
 }

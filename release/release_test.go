@@ -28,20 +28,32 @@ func TestRelese(t *testing.T) {
 		buildVolume,
 		&outputBuffer,
 		&errorBuffer,
+		map[string]string{
+			"VERSION":      "test-version",
+			"TEAM":         "test-team",
+			"COMPONENT":    "test_component",
+			"COMMIT":       "test-commit",
+			"TEST_VERSION": "test-version",
+		},
 	)
 	if err != nil {
 		log.Panicln("unexpected error: ", err)
 	}
 
-	if errorBuffer.String() != "message to stderr\n" {
+	if errorBuffer.String() != "message to stderr from release\n" {
 		log.Panicf("unexpected stderr output: '%v'", errorBuffer.String())
 	}
-	if errorBuffer.String() != "message to stderr\n" {
+	if errorBuffer.String() != "message to stderr from release\n" {
 		log.Panicf("unexpected stderr output: '%v'", errorBuffer.String())
 	}
 
 	if !reflect.DeepEqual(releaseMetadata, map[string]string{
-		"release_var_from_env": "release value from env",
+		"release_var_from_env":    "release value from env",
+		"version_from_defaults":   "test-version",
+		"team_from_defaults":      "test-team",
+		"component_from_defaults": "test_component",
+		"commit_from_defaults":    "test-commit",
+		"test_from_config":        "test-version",
 	}) {
 		log.Panicf("unexpected release metadata: %v\n", releaseMetadata)
 	}
@@ -116,13 +128,25 @@ func TestRunCommand(t *testing.T) {
 	}
 
 	lines := strings.Split(errorBuffer.String(), "\n")
-	if len(lines) != 3 || lines[2] != "" {
-		log.Panicln("expected two lines with a trailing newline (empty string), got lines:", lines)
+	if len(lines) != 6 || lines[5] != "" {
+		log.Panicln("expected six lines with a trailing newline (empty string), got lines:", len(lines))
 	}
 
 	test.CheckTerraformInitInitialReflectedInput([]byte(lines[0]))
 
 	if lines[1] != "configure_release" {
 		log.Panicln("expected configure_release in config container, found:", lines[1])
+	}
+
+	if lines[2] != "message to stderr from release" {
+		log.Panicln("unexpected output of release:", lines[2])
+	}
+
+	if lines[3] != "upload_release" {
+		log.Panic("expected upload_release in config container, found:", lines[3])
+	}
+
+	if lines[4] != "uploaded test-version" {
+		log.Panic("expected 'uploaded test-version' message from config container, got:", lines[4])
 	}
 }

@@ -3,6 +3,7 @@ package containers_test
 import (
 	"bytes"
 	"log"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -50,5 +51,15 @@ func TestRandomContainerName(test *testing.T) {
 	randomContainerName := containers.RandomName("foo")
 	if !strings.HasPrefix(randomContainerName, "foo-") {
 		log.Fatalln("unexpected prefix:", randomContainerName)
+	}
+}
+
+func TestMapToDockerEnv(test *testing.T) {
+	result := containers.MapToDockerEnv(map[string]string{
+		"key1": "value1",
+		"key2": "value2",
+	})
+	if !reflect.DeepEqual(result, []string{"key1=value1", "key2=value2"}) {
+		log.Fatalln("unexpected docker env:", result)
 	}
 }

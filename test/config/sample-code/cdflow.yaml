@@ -2,3 +2,4 @@ version: 2
 config_image: test-config-image
 release_image: test-release-image
 terraform_image: test-terraform-image
+team: test-team

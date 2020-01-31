@@ -25,4 +25,7 @@ func TestLoadManifest(t *testing.T) {
 	if manifest.TerraformImage != "test-terraform-image" {
 		log.Fatalln("unexpected terraform image:", manifest.TerraformImage)
 	}
+	if manifest.Team != "test-team" {
+		log.Fatalln("unexpected team:", manifest.Team)
+	}
 }

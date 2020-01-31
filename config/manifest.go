@@ -14,6 +14,7 @@ type Manifest struct {
 	ConfigImage    string `yaml:"config_image"`
 	ReleaseImage   string `yaml:"release_image"`
 	TerraformImage string `yaml:"terraform_image"`
+	Team           string `yaml:"team"`
 }
 
 func parseManifest(content []byte) (*Manifest, error) {
