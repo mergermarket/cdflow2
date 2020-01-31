@@ -185,7 +185,7 @@ func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer
 		}
 	}
 
-	configContainer := config.NewConfigContainer(dockerClient, manifest.ConfigImage, buildVolume, errorStream)
+	configContainer := config.NewContainer(dockerClient, manifest.ConfigImage, buildVolume, errorStream)
 	if err := configContainer.Start(); err != nil {
 		return err
 	}

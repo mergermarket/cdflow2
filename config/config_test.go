@@ -12,19 +12,19 @@ import (
 	"github.com/mergermarket/cdflow2/test"
 )
 
-func removeConfigContainer(configContainer *config.ConfigContainer) {
-	configContainer.StopContainer(5)
+func removeConfigContainer(configContainer *config.Container) {
+	configContainer.Stop(5)
 	if err := configContainer.Remove(); err != nil {
 		log.Panicln("could not remove config container:", err)
 	}
 }
 
-func setupConfigContainer(errorStream io.Writer) (*docker.Client, *config.ConfigContainer, *docker.Volume) {
+func setupConfigContainer(errorStream io.Writer) (*docker.Client, *config.Container, *docker.Volume) {
 	dockerClient := test.CreateDockerClient()
 
 	releaseVolume := test.CreateVolume(dockerClient)
 
-	configContainer := config.NewConfigContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, errorStream)
+	configContainer := config.NewContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, errorStream)
 
 	if err := configContainer.Start(); err != nil {
 		log.Panicln("error running config container:", err)
@@ -73,7 +73,7 @@ func TestConfigRelease(t *testing.T) {
 		log.Panicln("unexpected message:", uploadReleaseResponse.Message)
 	}
 
-	if err := configContainer.Stop(); err != nil {
+	if err := configContainer.RequestStop(); err != nil {
 		log.Panicln("error stopping config container:", err)
 	}
 
@@ -129,7 +129,7 @@ func TestConfigDeploy(t *testing.T) {
 		log.Panicln("unexpected release data:", releaseData)
 	}
 
-	if err := configContainer.Stop(); err != nil {
+	if err := configContainer.RequestStop(); err != nil {
 		log.Panicln("error stopping config container:", err)
 	}
 
