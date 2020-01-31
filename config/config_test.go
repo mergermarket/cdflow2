@@ -1,6 +1,8 @@
 package config_test
 
 import (
+	"bytes"
+	"io"
 	"log"
 	"reflect"
 	"testing"
@@ -17,12 +19,12 @@ func removeConfigContainer(configContainer *config.ConfigContainer) {
 	}
 }
 
-func setupConfigContainer() (*docker.Client, *config.ConfigContainer, *docker.Volume) {
+func setupConfigContainer(errorStream io.Writer) (*docker.Client, *config.ConfigContainer, *docker.Volume) {
 	dockerClient := test.CreateDockerClient()
 
 	releaseVolume := test.CreateVolume(dockerClient)
 
-	configContainer := config.NewConfigContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume)
+	configContainer := config.NewConfigContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, errorStream)
 
 	if err := configContainer.Start(); err != nil {
 		log.Panicln("error running config container:", err)
@@ -31,7 +33,8 @@ func setupConfigContainer() (*docker.Client, *config.ConfigContainer, *docker.Vo
 }
 
 func TestConfigRelease(t *testing.T) {
-	dockerClient, configContainer, releaseVolume := setupConfigContainer()
+	var errorBuffer bytes.Buffer
+	dockerClient, configContainer, releaseVolume := setupConfigContainer(&errorBuffer)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 	defer removeConfigContainer(configContainer)
 
@@ -73,11 +76,15 @@ func TestConfigRelease(t *testing.T) {
 	if err := configContainer.Stop(); err != nil {
 		log.Panicln("error stopping config container:", err)
 	}
+
+	if errorBuffer.String() != "configure_release\nupload_release\n" {
+		log.Panicln("unexpected stderr output from config container:", errorBuffer.String())
+	}
 }
 
 func TestConfigDeploy(t *testing.T) {
-
-	dockerClient, configContainer, releaseVolume := setupConfigContainer()
+	var errorBuffer bytes.Buffer
+	dockerClient, configContainer, releaseVolume := setupConfigContainer(&errorBuffer)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 	defer removeConfigContainer(configContainer)
 
@@ -124,5 +131,9 @@ func TestConfigDeploy(t *testing.T) {
 
 	if err := configContainer.Stop(); err != nil {
 		log.Panicln("error stopping config container:", err)
+	}
+
+	if errorBuffer.String() != "prepare_terraform\n" {
+		log.Panicln("unexpected stderr output from config container:", errorBuffer.String())
 	}
 }

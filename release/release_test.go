@@ -48,47 +48,47 @@ func TestRelese(t *testing.T) {
 }
 
 func TestParseArgsDefaults(t *testing.T) {
-	args, err := release.ParseArgs([]string{})
+	args, err := release.ParseArgs([]string{"test-version"})
 	if err != nil {
 		log.Fatalln("error parsing empty args:", err)
 	}
-	if *args.NoPullConfig {
+	if args.NoPullConfig {
 		log.Fatalln("default for --no-pull-config true when it should be false")
 	}
-	if *args.NoPullRelease {
+	if args.NoPullRelease {
 		log.Fatalln("default for --no-pull-release true when it should be false")
 	}
-	if *args.NoPullTerraform {
+	if args.NoPullTerraform {
 		log.Fatalln("default for --no-pull-terraform true when it should be false")
 	}
 }
 
 func TestParseArgsNoPullConfig(t *testing.T) {
-	args, err := release.ParseArgs([]string{"--no-pull-config"})
+	args, err := release.ParseArgs([]string{"test-version", "--no-pull-config"})
 	if err != nil {
 		log.Fatalln("error parsing --no-pull-config args:", err)
 	}
-	if !*args.NoPullConfig {
+	if !args.NoPullConfig {
 		log.Fatalln("--no-pull-config should be true")
 	}
 }
 
 func TestParseArgsNoPullRelease(t *testing.T) {
-	args, err := release.ParseArgs([]string{"--no-pull-release"})
+	args, err := release.ParseArgs([]string{"--no-pull-release", "test-version"})
 	if err != nil {
 		log.Fatalln("error parsing --no-pull-release args:", err)
 	}
-	if !*args.NoPullRelease {
+	if !args.NoPullRelease {
 		log.Fatalln("--no-pull-release should be true")
 	}
 }
 
 func TestParseArgsNoPullTerraform(t *testing.T) {
-	args, err := release.ParseArgs([]string{"--no-pull-terraform"})
+	args, err := release.ParseArgs([]string{"test-version", "--no-pull-terraform"})
 	if err != nil {
 		log.Fatalln("error parsing --no-pull-terraform args:", err)
 	}
-	if !*args.NoPullTerraform {
+	if !args.NoPullTerraform {
 		log.Fatalln("--no-pull-terraform should be true")
 	}
 }
@@ -104,7 +104,7 @@ func TestRunCommand(t *testing.T) {
 		&outputBuffer,
 		&errorBuffer,
 		test.GetConfig("TEST_ROOT")+"/test/release/sample-code",
-		[]string{"--no-pull-release", "--no-pull-config", "--no-pull-terraform"},
+		[]string{"test-version", "--no-pull-release", "--no-pull-config", "--no-pull-terraform"},
 		&config.Manifest{
 			Version:        2,
 			ReleaseImage:   test.GetConfig("TEST_RELEASE_IMAGE"),
@@ -116,10 +116,13 @@ func TestRunCommand(t *testing.T) {
 	}
 
 	lines := strings.Split(errorBuffer.String(), "\n")
-	if len(lines) != 2 || lines[1] != "" {
-		log.Panicln("expected one line with a trailing newline (empty string), got lines:", lines)
+	if len(lines) != 3 || lines[2] != "" {
+		log.Panicln("expected two lines with a trailing newline (empty string), got lines:", lines)
 	}
 
 	test.CheckTerraformInitInitialReflectedInput([]byte(lines[0]))
-	// TODO
+
+	if lines[1] != "configure_release" {
+		log.Panicln("expected configure_release in config container, found:", lines[1])
+	}
 }

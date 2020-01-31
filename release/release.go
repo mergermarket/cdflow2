@@ -4,14 +4,17 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"flag"
+	"fmt"
 	"io"
+	"log"
 	"os"
+	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/containers"
 	"github.com/mergermarket/cdflow2/terraform"
+	flag "github.com/spf13/pflag"
 )
 
 type readReleaseMetadataResult struct {
@@ -102,25 +105,42 @@ func createReleaseContainer(dockerClient *docker.Client, image, codeDir string, 
 
 // Args contains parsed command line options.
 type Args struct {
-	NoPullConfig    *bool
-	NoPullTerraform *bool
-	NoPullRelease   *bool
+	Version         string
+	NoPullConfig    bool
+	NoPullTerraform bool
+	NoPullRelease   bool
 }
 
 // ParseArgs takes the command line arguments to the release command, and returns then parsed into an Args struct.
 func ParseArgs(args []string) (*Args, error) {
-	flagset := flag.NewFlagSet("cdflow2 release", flag.ContinueOnError)
+	flagset := flag.NewFlagSet("cdflow2 release", flag.ExitOnError)
 
 	var result Args
-	result.NoPullConfig = flagset.Bool("no-pull-config", false, "don't pull the config image (image must exist)")
-	result.NoPullTerraform = flagset.Bool("no-pull-terraform", false, "don't pull the terraform image (image must exist)")
-	result.NoPullRelease = flagset.Bool("no-pull-release", false, "don't pull the release image (image must exist)")
+	flagset.BoolVar(&result.NoPullConfig, "no-pull-config", false, "don't pull the config image (image must exist)")
+	flagset.BoolVar(&result.NoPullTerraform, "no-pull-terraform", false, "don't pull the terraform image (image must exist)")
+	flagset.BoolVar(&result.NoPullRelease, "no-pull-release", false, "don't pull the release image (image must exist)")
 
 	if err := flagset.Parse(args); err != nil {
 		return nil, err
 	}
 
+	if flagset.NArg() != 1 {
+		fmt.Println(flagset)
+		flagset.Usage()
+		os.Exit(1)
+	}
+	result.Version = flagset.Arg(0)
+
 	return &result, nil
+}
+
+func env() map[string]string {
+	result := make(map[string]string)
+	for _, e := range os.Environ() {
+		pair := strings.SplitN(e, "=", 2)
+		result[pair[0]] = pair[1]
+	}
+	return result
 }
 
 // RunCommand runs the release command.
@@ -130,7 +150,7 @@ func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer
 		return err
 	}
 
-	if !*args.NoPullTerraform {
+	if !args.NoPullTerraform {
 		if err := dockerClient.PullImage(docker.PullImageOptions{
 			Repository:   manifest.TerraformImage,
 			OutputStream: os.Stderr,
@@ -154,8 +174,28 @@ func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer
 		errorStream,
 	); err != nil {
 		return err
-
 	}
+
+	if !args.NoPullConfig {
+		if err := dockerClient.PullImage(docker.PullImageOptions{
+			Repository:   manifest.ConfigImage,
+			OutputStream: os.Stderr,
+		}, docker.AuthConfiguration{}); err != nil {
+			return err
+		}
+	}
+
+	configContainer := config.NewConfigContainer(dockerClient, manifest.ConfigImage, buildVolume, errorStream)
+	if err := configContainer.Start(); err != nil {
+		return err
+	}
+
+	response, err := configContainer.ConfigureRelease(args.Version, map[string]interface{}{}, env())
+	if err != nil {
+		return err
+	}
+
+	log.Println("TODO:", response)
 
 	return nil
 }

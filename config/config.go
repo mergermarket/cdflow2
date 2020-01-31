@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"os"
+	"log"
 
 	docker "github.com/fsouza/go-dockerclient"
 	containers "github.com/mergermarket/cdflow2/containers"
@@ -20,20 +20,23 @@ type ConfigContainer struct {
 	reader        *bufio.Reader
 	readStream    io.Reader
 	writeStream   io.Writer
+	errorStream   io.Writer
 }
 
-func NewConfigContainer(dockerClient *docker.Client, image string, releaseVolume *docker.Volume) *ConfigContainer {
+func NewConfigContainer(dockerClient *docker.Client, image string, releaseVolume *docker.Volume, errorStream io.Writer) *ConfigContainer {
 	return &ConfigContainer{
 		dockerClient:  dockerClient,
 		completion:    make(chan error, 1),
 		image:         image,
 		releaseVolume: releaseVolume,
+		errorStream:   errorStream,
 	}
 }
 
 func (self *ConfigContainer) Start() error {
 	container, err := self.createContainer()
 	if err != nil {
+		log.Fatalln("foo", err)
 		return err
 	}
 	self.container = container
@@ -47,7 +50,7 @@ func (self *ConfigContainer) Start() error {
 
 	started := make(chan error)
 	go func() {
-		self.completion <- containers.Await(self.dockerClient, container, inputReadStream, outputWriteStream, os.Stderr, started)
+		self.completion <- containers.Await(self.dockerClient, container, inputReadStream, outputWriteStream, self.errorStream, started)
 		inputReadStream.Close()
 		outputWriteStream.Close()
 	}()
@@ -55,8 +58,9 @@ func (self *ConfigContainer) Start() error {
 }
 
 func (self *ConfigContainer) createContainer() (*docker.Container, error) {
+	name := containers.RandomName("cdflow2-config")
 	return self.dockerClient.CreateContainer(docker.CreateContainerOptions{
-		Name: containers.RandomName("cdflow2-config"),
+		Name: name,
 		Config: &docker.Config{
 			Image:        self.image,
 			OpenStdin:    true,

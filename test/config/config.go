@@ -31,6 +31,8 @@ func main() {
 			uploadRelease(line, encoder, version)
 		case "prepare_terraform":
 			prepareTerraform(line, encoder)
+		case "stop":
+			os.Exit(0)
 		default:
 			log.Fatalln("unknown message type:", message.Action)
 		}
@@ -51,6 +53,7 @@ type configureReleaseResponse struct {
 }
 
 func configureRelease(line []byte, encoder *json.Encoder) string {
+	fmt.Fprintln(os.Stderr, "configure_release")
 	var request configureReleaseRequest
 	if err := json.Unmarshal(line, &request); err != nil {
 		log.Fatalln("error reading configure release request:", err)
@@ -77,6 +80,7 @@ type uploadReleaseResponse struct {
 }
 
 func uploadRelease(line []byte, encoder *json.Encoder, version string) {
+	fmt.Fprintln(os.Stderr, "upload_release")
 	var request uploadReleaseRequest
 	if err := json.Unmarshal(line, &request); err != nil {
 		log.Fatalln("error reading upload release request:", err)
@@ -102,7 +106,14 @@ type prepareTerraformResponse struct {
 }
 
 func prepareTerraform(line []byte, encoder *json.Encoder) {
-	// assert os.getcwd() == '/release'
+	fmt.Fprintln(os.Stderr, "prepare_terraform")
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatalln("could not get working directory:", err)
+	}
+	if dir != "/release" {
+		log.Fatalln("expected PWD /release, got:", dir)
+	}
 	if err := ioutil.WriteFile("/release/test", []byte("unpacked"), 0644); err != nil {
 		log.Fatalln("could not write to /release/test:", err)
 	}
