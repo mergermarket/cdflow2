@@ -67,7 +67,7 @@ type Container struct {
 // NewContainer creates and returns a terraformContainer for running terraform commands in.
 func NewContainer(dockerClient *docker.Client, image, codeDir string, releaseVolume *docker.Volume) (*Container, error) {
 
-	container, err := dockerClient.CreateContainer(docker.CreateContainerOptions{
+	dockerContainer, err := dockerClient.CreateContainer(docker.CreateContainerOptions{
 		Name: "terraform",
 		Config: &docker.Config{
 			Image:        image,
@@ -88,17 +88,14 @@ func NewContainer(dockerClient *docker.Client, image, codeDir string, releaseVol
 		return nil, err
 	}
 
-	if err := dockerClient.StartContainer(container.ID, nil); err != nil {
+	if err := dockerClient.StartContainer(dockerContainer.ID, nil); err != nil {
 		return nil, err
 	}
 
-	self := Container{
+	return &Container{
 		dockerClient: dockerClient,
-		container:    container,
-	}
-
-	self.container = container
-	return &self, nil
+		container:    dockerContainer,
+	}, nil
 }
 
 // BackendConfigParameter is like a tuple of key and value for use in a slice (rather than a map as that wouldn't preserve order).
