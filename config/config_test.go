@@ -2,9 +2,11 @@ package config_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"log"
 	"reflect"
+	"strings"
 	"testing"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -77,8 +79,27 @@ func TestConfigRelease(t *testing.T) {
 		log.Panicln("error stopping config container:", err)
 	}
 
-	if errorBuffer.String() != "configure_release\nupload_release\n" {
-		log.Panicln("unexpected stderr output from config container:", errorBuffer.String())
+	lines := strings.Split(errorBuffer.String(), "\n")
+	if len(lines) != 3 || lines[2] != "" {
+		log.Panicln("expected two lines with a trailing newline (empty string), got lines:", lines)
+	}
+
+	var configureReleaseDebugOutput map[string]interface{}
+	if err := json.Unmarshal([]byte(lines[0]), &configureReleaseDebugOutput); err != nil {
+		log.Panicln("error decoding configure release debug output:", err)
+	}
+
+	if configureReleaseDebugOutput["Action"] != "configure_release" {
+		log.Panicln("expected configure_release, got ", configureReleaseDebugOutput["Action"])
+	}
+
+	var uploadReleaseDebugOutput map[string]interface{}
+	if err := json.Unmarshal([]byte(lines[1]), &uploadReleaseDebugOutput); err != nil {
+		log.Panicln("error decoding upload release debug output:", err)
+	}
+
+	if uploadReleaseDebugOutput["Action"] != "upload_release" {
+		log.Panicln("expected upload_release, got ", uploadReleaseDebugOutput["Action"])
 	}
 }
 
@@ -133,7 +154,12 @@ func TestConfigDeploy(t *testing.T) {
 		log.Panicln("error stopping config container:", err)
 	}
 
-	if errorBuffer.String() != "prepare_terraform\n" {
-		log.Panicln("unexpected stderr output from config container:", errorBuffer.String())
+	var prepareTerraformDebugOutput map[string]interface{}
+	if err := json.Unmarshal(errorBuffer.Bytes(), &prepareTerraformDebugOutput); err != nil {
+		log.Panicln("error decoding prepare terraform debug output:", err)
+	}
+
+	if prepareTerraformDebugOutput["Action"] != "prepare_terraform" {
+		log.Panicln("expected prepare_terraform, got ", prepareTerraformDebugOutput["Action"])
 	}
 }

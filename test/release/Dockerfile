@@ -1,5 +1,8 @@
-FROM golang:latest
+FROM golang:alpine AS build
 WORKDIR /
 ADD . .
-RUN go build -o /app .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+
+FROM scratch
+COPY --from=build /app /app
 ENTRYPOINT ["/app"]

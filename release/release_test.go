@@ -2,6 +2,7 @@ package release_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"log"
 	"reflect"
 	"strings"
@@ -105,6 +106,45 @@ func TestParseArgsNoPullTerraform(t *testing.T) {
 	}
 }
 
+func checkConfigureReleaseOutput(debugOutput string) {
+	var decoded struct {
+		Action  string
+		Request map[string]interface{}
+	}
+
+	if err := json.Unmarshal([]byte(debugOutput), &decoded); err != nil {
+		log.Panicln("error decoding configure release debug output:", err)
+	}
+
+	if decoded.Action != "configure_release" {
+		log.Panicln("unexpected action for configure releaes:", decoded.Action)
+	}
+
+	if decoded.Request["Version"] != "test-version" {
+		log.Panicln("unexpected version passed to configure release:", decoded.Request["Version"])
+	}
+}
+
+func checkUploadReleaseOutput(debugOutput string) {
+	var decoded struct {
+		Action  string
+		Request map[string]interface{}
+	}
+	if err := json.Unmarshal([]byte(debugOutput), &decoded); err != nil {
+		log.Panicln("error decoding upload release debug output:", err)
+	}
+
+	if decoded.Action != "upload_release" {
+		log.Panicln("unexpected action for upload releaes:", decoded.Action)
+	}
+
+	expectedTerraformImage := test.GetConfig("TEST_TERRAFORM_REPO_DIGEST")
+	if decoded.Request["TerraformImage"] != expectedTerraformImage {
+		log.Panicln("expected terraform repo digest: ", expectedTerraformImage, ", got:", decoded.Request["TerraformImage"])
+	}
+
+}
+
 func TestRunCommand(t *testing.T) {
 	dockerClient := test.CreateDockerClient()
 
@@ -134,17 +174,13 @@ func TestRunCommand(t *testing.T) {
 
 	test.CheckTerraformInitInitialReflectedInput([]byte(lines[0]))
 
-	if lines[1] != "configure_release" {
-		log.Panicln("expected configure_release in config container, found:", lines[1])
-	}
+	checkConfigureReleaseOutput(lines[1])
 
 	if lines[2] != "message to stderr from release" {
 		log.Panicln("unexpected output of release:", lines[2])
 	}
 
-	if lines[3] != "upload_release" {
-		log.Panic("expected upload_release in config container, found:", lines[3])
-	}
+	checkUploadReleaseOutput(lines[3])
 
 	if lines[4] != "uploaded test-version" {
 		log.Panic("expected 'uploaded test-version' message from config container, got:", lines[4])

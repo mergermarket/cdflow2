@@ -5,6 +5,7 @@ import (
 	"io"
 	"math/rand"
 	"sort"
+	"strings"
 	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -78,4 +79,12 @@ func MapToDockerEnv(input map[string]string) []string {
 		result = append(result, fmt.Sprintf("%s=%s", key, input[key]))
 	}
 	return result
+}
+
+// ImageWithTag takes a docker image and adds the :latest tag if there is no tag present.
+func ImageWithTag(image string) string {
+	if strings.Contains(image, ":") {
+		return image
+	}
+	return image + ":latest"
 }

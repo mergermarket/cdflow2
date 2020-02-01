@@ -63,3 +63,12 @@ func TestMapToDockerEnv(test *testing.T) {
 		log.Fatalln("unexpected docker env:", result)
 	}
 }
+
+func TestImageWithTag(test *testing.T) {
+	if containers.ImageWithTag("test") != "test:latest" {
+		log.Fatalln("latest not added")
+	}
+	if containers.ImageWithTag("test:1") != "test:1" {
+		log.Fatalln("tagged image should be no-op")
+	}
+}

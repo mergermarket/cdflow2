@@ -18,6 +18,8 @@ func main() {
 	var version string
 	scanner := bufio.NewScanner(os.Stdin)
 	encoder := json.NewEncoder(os.Stdout)
+	// for sending diagnostic info for the tests
+	stderrEncoder := json.NewEncoder(os.Stderr)
 	for scanner.Scan() {
 		line := scanner.Bytes()
 		var message Message
@@ -26,11 +28,11 @@ func main() {
 		}
 		switch message.Action {
 		case "configure_release":
-			version = configureRelease(line, encoder)
+			version = configureRelease(line, encoder, stderrEncoder)
 		case "upload_release":
-			uploadRelease(line, encoder, version)
+			uploadRelease(line, version, encoder, stderrEncoder)
 		case "prepare_terraform":
-			prepareTerraform(line, encoder)
+			prepareTerraform(line, encoder, stderrEncoder)
 		case "stop":
 			os.Exit(0)
 		default:
@@ -52,12 +54,15 @@ type configureReleaseResponse struct {
 	Env map[string]string
 }
 
-func configureRelease(line []byte, encoder *json.Encoder) string {
-	fmt.Fprintln(os.Stderr, "configure_release")
+func configureRelease(line []byte, encoder, stderrEncoder *json.Encoder) string {
 	var request configureReleaseRequest
 	if err := json.Unmarshal(line, &request); err != nil {
 		log.Fatalln("error reading configure release request:", err)
 	}
+	stderrEncoder.Encode(map[string]interface{}{
+		"Action":  "configure_release",
+		"Request": &request,
+	})
 	if err := encoder.Encode(configureReleaseResponse{
 		Env: map[string]string{
 			"TEST_VERSION":                 request.Version,
@@ -79,12 +84,15 @@ type uploadReleaseResponse struct {
 	Message string
 }
 
-func uploadRelease(line []byte, encoder *json.Encoder, version string) {
-	fmt.Fprintln(os.Stderr, "upload_release")
+func uploadRelease(line []byte, version string, encoder, stderrEncoder *json.Encoder) {
 	var request uploadReleaseRequest
 	if err := json.Unmarshal(line, &request); err != nil {
 		log.Fatalln("error reading upload release request:", err)
 	}
+	stderrEncoder.Encode(map[string]interface{}{
+		"Action":  "upload_release",
+		"Request": &request,
+	})
 	if err := encoder.Encode(uploadReleaseResponse{
 		Message: "uploaded " + version,
 	}); err != nil {
@@ -105,8 +113,7 @@ type prepareTerraformResponse struct {
 	TerraformBackendConfig map[string]string
 }
 
-func prepareTerraform(line []byte, encoder *json.Encoder) {
-	fmt.Fprintln(os.Stderr, "prepare_terraform")
+func prepareTerraform(line []byte, encoder, stderrEncoder *json.Encoder) {
 	dir, err := os.Getwd()
 	if err != nil {
 		log.Fatalln("could not get working directory:", err)
@@ -121,6 +128,11 @@ func prepareTerraform(line []byte, encoder *json.Encoder) {
 	if err := json.Unmarshal(line, &request); err != nil {
 		log.Fatalln("error reading prepare terraform request:", err)
 	}
+	stderrEncoder.Encode(map[string]interface{}{
+		"Action":  "prepare_terraform",
+		"Request": &request,
+		"pwd":     dir,
+	})
 	if err := encoder.Encode(prepareTerraformResponse{
 		TerraformImage: "terraform:image-for-" + request.Version,
 		Env: map[string]string{

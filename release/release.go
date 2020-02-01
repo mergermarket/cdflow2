@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 
@@ -143,6 +144,17 @@ func env() map[string]string {
 	return result
 }
 
+func repoDigest(dockerClient *docker.Client, image string) (string, error) {
+	details, err := dockerClient.InspectImage(image)
+	if err != nil {
+		return "", err
+	}
+	if len(details.RepoDigests) == 0 {
+		return "", nil
+	}
+	return details.RepoDigests[0], nil
+}
+
 // RunCommand runs the release command.
 func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer, codeDir string, inputArgs []string, manifest *config.Manifest) error {
 	args, err := ParseArgs(inputArgs)
@@ -152,11 +164,21 @@ func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer
 
 	if !args.NoPullTerraform {
 		if err := dockerClient.PullImage(docker.PullImageOptions{
-			Repository:   manifest.TerraformImage,
+			Repository:   containers.ImageWithTag(manifest.TerraformImage),
 			OutputStream: os.Stderr,
 		}, docker.AuthConfiguration{}); err != nil {
 			return err
 		}
+	}
+	savedTerraformImage, err := repoDigest(dockerClient, manifest.TerraformImage)
+	if err != nil {
+		return err
+	}
+
+	if args.NoPullTerraform && savedTerraformImage == "" {
+		savedTerraformImage = manifest.TerraformImage
+	} else if savedTerraformImage == "" {
+		log.Panicln("no repo digest for ", manifest.TerraformImage)
 	}
 
 	buildVolume, err := dockerClient.CreateVolume(docker.CreateVolumeOptions{})
@@ -167,7 +189,7 @@ func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer
 
 	if err := terraform.InitInitial(
 		dockerClient,
-		manifest.TerraformImage,
+		savedTerraformImage,
 		codeDir,
 		buildVolume,
 		outputStream,
@@ -178,7 +200,7 @@ func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer
 
 	if !args.NoPullConfig {
 		if err := dockerClient.PullImage(docker.PullImageOptions{
-			Repository:   manifest.ConfigImage,
+			Repository:   containers.ImageWithTag(manifest.ConfigImage),
 			OutputStream: os.Stderr,
 		}, docker.AuthConfiguration{}); err != nil {
 			return err
@@ -189,6 +211,7 @@ func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer
 	if err := configContainer.Start(); err != nil {
 		return err
 	}
+	defer configContainer.Stop(5)
 
 	configureReleaseResponse, err := configContainer.ConfigureRelease(args.Version, map[string]interface{}{}, env())
 	if err != nil {
@@ -213,9 +236,13 @@ func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer
 	)
 
 	uploadReleaseResponse, err := configContainer.UploadRelease(
-		"TODO-terraform-image",
+		savedTerraformImage,
 		releaseMetadata,
 	)
+
+	if err := configContainer.RequestStop(); err != nil {
+		log.Panicln("error stopping config container:", err)
+	}
 
 	fmt.Fprintln(errorStream, uploadReleaseResponse.Message)
 
