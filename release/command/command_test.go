@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/mergermarket/cdflow2/command"
-	"github.com/mergermarket/cdflow2/config"
+	"github.com/mergermarket/cdflow2/manifest"
 	release "github.com/mergermarket/cdflow2/release/command"
 	"github.com/mergermarket/cdflow2/test"
 )
@@ -26,7 +26,7 @@ func TestRunCommand(t *testing.T) {
 			OutputStream: &outputBuffer,
 			ErrorStream:  &errorBuffer,
 			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
-			Manifest: &config.Manifest{
+			Manifest: &manifest.Manifest{
 				Version:        2,
 				ReleaseImage:   test.GetConfig("TEST_RELEASE_IMAGE"),
 				ConfigImage:    test.GetConfig("TEST_CONFIG_IMAGE"),

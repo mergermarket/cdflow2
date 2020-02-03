@@ -1,4 +1,4 @@
-package config
+package manifest
 
 import (
 	"io/ioutil"
@@ -17,7 +17,7 @@ type Manifest struct {
 	Team           string `yaml:"team"`
 }
 
-func parseManifest(content []byte) (*Manifest, error) {
+func parse(content []byte) (*Manifest, error) {
 	var result Manifest
 	if err := yaml.Unmarshal(content, &result); err != nil {
 		log.Fatalf("invalid terraflow.yaml: %v", err)
@@ -25,11 +25,11 @@ func parseManifest(content []byte) (*Manifest, error) {
 	return &result, nil
 }
 
-// LoadManifest loads the cdflow.yaml manifest file into a Manifest struct.
-func LoadManifest(dir string) (*Manifest, error) {
+// Load loads the cdflow.yaml manifest file into a Manifest struct.
+func Load(dir string) (*Manifest, error) {
 	data, err := ioutil.ReadFile(path.Join(dir, "cdflow.yaml"))
 	if err != nil {
 		return nil, err
 	}
-	return parseManifest(data)
+	return parse(data)
 }

@@ -1,15 +1,15 @@
-package config_test
+package manifest_test
 
 import (
 	"log"
 	"testing"
 
-	"github.com/mergermarket/cdflow2/config"
+	"github.com/mergermarket/cdflow2/manifest"
 	"github.com/mergermarket/cdflow2/test"
 )
 
-func TestLoadManifest(t *testing.T) {
-	manifest, err := config.LoadManifest(test.GetConfig("TEST_ROOT") + "/test/config/sample-code")
+func TestLoad(t *testing.T) {
+	manifest, err := manifest.Load(test.GetConfig("TEST_ROOT") + "/test/config/sample-code")
 	if err != nil {
 		log.Fatalln("error loading manifest:", manifest)
 	}

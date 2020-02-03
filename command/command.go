@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/mergermarket/cdflow2/config"
+	"github.com/mergermarket/cdflow2/manifest"
 )
 
 // GlobalState contains common to all commands.
@@ -19,7 +19,7 @@ type GlobalState struct {
 	NoPullRelease   bool
 	NoPullTerraform bool
 	CodeDir         string
-	Manifest        *config.Manifest
+	Manifest        *manifest.Manifest
 	DockerClient    *docker.Client
 	OutputStream    io.Writer
 	ErrorStream     io.Writer
@@ -36,7 +36,7 @@ func GetGlobalState() (string, []string, *GlobalState, error) {
 		return "", []string{}, nil, err
 	}
 
-	state.Manifest, err = config.LoadManifest(state.CodeDir)
+	state.Manifest, err = manifest.Load(state.CodeDir)
 	if err != nil {
 		return "", []string{}, nil, err
 	}

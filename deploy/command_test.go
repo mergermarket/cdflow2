@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/mergermarket/cdflow2/command"
-	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/deploy"
+	"github.com/mergermarket/cdflow2/manifest"
 	"github.com/mergermarket/cdflow2/test"
 )
 
@@ -24,7 +24,7 @@ func TestRunCommand(t *testing.T) {
 			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
 			Component:    "test-component",
 			Commit:       "test-commit",
-			Manifest: &config.Manifest{
+			Manifest: &manifest.Manifest{
 				Version:        2,
 				ConfigImage:    test.GetConfig("TEST_CONFIG_IMAGE"),
 				TerraformImage: test.GetConfig("TEST_TERRAFORM_IMAGE"),
