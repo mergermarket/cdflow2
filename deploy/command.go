@@ -12,7 +12,7 @@ import (
 
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, envName string, version string) error {
-
+	// TODO too long, consider factoring some parts out
 	if !state.NoPullConfig {
 		if err := state.DockerClient.PullImage(docker.PullImageOptions{
 			Repository:   containers.ImageWithTag(state.Manifest.ConfigImage),

@@ -36,6 +36,7 @@ func repoDigest(dockerClient *docker.Client, image string) (string, error) {
 
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, version string) error {
+	// TODO too long, split this function
 	if !state.NoPullTerraform {
 		if err := state.DockerClient.PullImage(docker.PullImageOptions{
 			Repository:   containers.ImageWithTag(state.Manifest.TerraformImage),

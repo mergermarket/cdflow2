@@ -11,6 +11,7 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 )
 
+// EnsureImage pulls an image if it does not exist locally.
 func EnsureImage(dockerClient *docker.Client, image string) error {
 	if _, err := dockerClient.InspectImage(image); err == nil {
 		return nil
@@ -20,7 +21,10 @@ func EnsureImage(dockerClient *docker.Client, image string) error {
 	}, docker.AuthConfiguration{})
 }
 
+// Await waits for a container runs a container and waits for it to finish.
 func Await(dockerClient *docker.Client, container *docker.Container, inputStream io.Reader, outputStream, errorStream io.Writer, started chan error) error {
+	// TODO argument list too complex, refactor to struct?
+	// TODO too complex, consider factoring some functionality out
 	attached := make(chan error)
 	detached := make(chan error)
 	go func() {

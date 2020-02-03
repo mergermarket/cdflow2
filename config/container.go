@@ -8,7 +8,7 @@ import (
 	"log"
 
 	docker "github.com/fsouza/go-dockerclient"
-	containers "github.com/mergermarket/cdflow2/containers"
+	"github.com/mergermarket/cdflow2/containers"
 )
 
 // Container represents a config container.
