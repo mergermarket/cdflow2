@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/release"
 	"github.com/mergermarket/cdflow2/test"
@@ -57,52 +58,6 @@ func TestRelese(t *testing.T) {
 		"test_from_config":        "test-version",
 	}) {
 		log.Panicf("unexpected release metadata: %v\n", releaseMetadata)
-	}
-}
-
-func TestParseArgsDefaults(t *testing.T) {
-	args, err := release.ParseArgs([]string{"test-version"})
-	if err != nil {
-		log.Fatalln("error parsing empty args:", err)
-	}
-	if args.NoPullConfig {
-		log.Fatalln("default for --no-pull-config true when it should be false")
-	}
-	if args.NoPullRelease {
-		log.Fatalln("default for --no-pull-release true when it should be false")
-	}
-	if args.NoPullTerraform {
-		log.Fatalln("default for --no-pull-terraform true when it should be false")
-	}
-}
-
-func TestParseArgsNoPullConfig(t *testing.T) {
-	args, err := release.ParseArgs([]string{"test-version", "--no-pull-config"})
-	if err != nil {
-		log.Fatalln("error parsing --no-pull-config args:", err)
-	}
-	if !args.NoPullConfig {
-		log.Fatalln("--no-pull-config should be true")
-	}
-}
-
-func TestParseArgsNoPullRelease(t *testing.T) {
-	args, err := release.ParseArgs([]string{"--no-pull-release", "test-version"})
-	if err != nil {
-		log.Fatalln("error parsing --no-pull-release args:", err)
-	}
-	if !args.NoPullRelease {
-		log.Fatalln("--no-pull-release should be true")
-	}
-}
-
-func TestParseArgsNoPullTerraform(t *testing.T) {
-	args, err := release.ParseArgs([]string{"test-version", "--no-pull-terraform"})
-	if err != nil {
-		log.Fatalln("error parsing --no-pull-terraform args:", err)
-	}
-	if !args.NoPullTerraform {
-		log.Fatalln("--no-pull-terraform should be true")
 	}
 }
 
@@ -156,25 +111,29 @@ func checkUploadReleaseOutput(debugOutput string) {
 }
 
 func TestRunCommand(t *testing.T) {
-	dockerClient := test.CreateDockerClient()
 
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
 	if err := release.RunCommand(
-		dockerClient,
-		&outputBuffer,
-		&errorBuffer,
-		test.GetConfig("TEST_ROOT")+"/test/release/sample-code",
-		"test-component",
-		"test-commit",
-		[]string{"test-version", "--no-pull-release", "--no-pull-config", "--no-pull-terraform"},
-		&config.Manifest{
-			Version:        2,
-			ReleaseImage:   test.GetConfig("TEST_RELEASE_IMAGE"),
-			ConfigImage:    test.GetConfig("TEST_CONFIG_IMAGE"),
-			TerraformImage: test.GetConfig("TEST_TERRAFORM_IMAGE"),
+		&command.GlobalEnvironment{
+			DockerClient: test.CreateDockerClient(),
+			Component:    "test-component",
+			Commit:       "test-commit",
+			OutputStream: &outputBuffer,
+			ErrorStream:  &errorBuffer,
+			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
+			Manifest: &config.Manifest{
+				Version:        2,
+				ReleaseImage:   test.GetConfig("TEST_RELEASE_IMAGE"),
+				ConfigImage:    test.GetConfig("TEST_CONFIG_IMAGE"),
+				TerraformImage: test.GetConfig("TEST_TERRAFORM_IMAGE"),
+			},
+			NoPullConfig:    true,
+			NoPullRelease:   true,
+			NoPullTerraform: true,
 		},
+		"test-version",
 	); err != nil {
 		log.Fatalln("error running command:", err, errorBuffer.String())
 	}
