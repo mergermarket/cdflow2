@@ -128,7 +128,10 @@ func checkConfigureReleaseOutput(debugOutput string) {
 func checkUploadReleaseOutput(debugOutput string) {
 	var decoded struct {
 		Action  string
-		Request map[string]interface{}
+		Request struct {
+			ReleaseMetadata map[string]string
+			TerraformImage  string
+		}
 	}
 	if err := json.Unmarshal([]byte(debugOutput), &decoded); err != nil {
 		log.Panicln("error decoding upload release debug output:", err)
@@ -139,10 +142,17 @@ func checkUploadReleaseOutput(debugOutput string) {
 	}
 
 	expectedTerraformImage := test.GetConfig("TEST_TERRAFORM_REPO_DIGEST")
-	if decoded.Request["TerraformImage"] != expectedTerraformImage {
-		log.Panicln("expected terraform repo digest: ", expectedTerraformImage, ", got:", decoded.Request["TerraformImage"])
+	if decoded.Request.TerraformImage != expectedTerraformImage {
+		log.Panicln("expected terraform repo digest: ", expectedTerraformImage, ", got:", decoded.Request.TerraformImage)
 	}
 
+	if decoded.Request.ReleaseMetadata["component_from_defaults"] != "test-component" {
+		log.Panicln("expected component test-component, got:", decoded.Request.ReleaseMetadata["component_from_defaults"])
+	}
+
+	if decoded.Request.ReleaseMetadata["commit_from_defaults"] != "test-commit" {
+		log.Panicln("expected commit test-commit, got:", decoded.Request.ReleaseMetadata["commit_from_defaults"])
+	}
 }
 
 func TestRunCommand(t *testing.T) {
@@ -156,6 +166,8 @@ func TestRunCommand(t *testing.T) {
 		&outputBuffer,
 		&errorBuffer,
 		test.GetConfig("TEST_ROOT")+"/test/release/sample-code",
+		"test-component",
+		"test-commit",
 		[]string{"test-version", "--no-pull-release", "--no-pull-config", "--no-pull-terraform"},
 		&config.Manifest{
 			Version:        2,

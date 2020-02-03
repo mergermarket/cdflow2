@@ -49,7 +49,7 @@ echo "
     running tests...
 "
 set +e
-go test -v $(go list ./... | grep -v cdflow2/test)
+go test -v $(go list ./... | grep -v 'cdflow2$' | grep -v cdflow2/test)
 
 # go test ouput doesn't make it that obvious
 status=$?

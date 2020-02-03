@@ -156,7 +156,7 @@ func repoDigest(dockerClient *docker.Client, image string) (string, error) {
 }
 
 // RunCommand runs the release command.
-func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer, codeDir string, inputArgs []string, manifest *config.Manifest) error {
+func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer, codeDir, component, commit string, inputArgs []string, manifest *config.Manifest) error {
 	args, err := ParseArgs(inputArgs)
 	if err != nil {
 		return err
@@ -226,8 +226,8 @@ func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer
 	// these are built in and cannot be overridden by the config container (since choosing the clashing name would likely be an accident)
 	env["VERSION"] = args.Version
 	env["TEAM"] = manifest.Team
-	env["COMPONENT"] = "TODO"
-	env["COMMIT"] = "TODO"
+	env["COMPONENT"] = component
+	env["COMMIT"] = commit
 
 	releaseMetadata, err := Run(
 		dockerClient,
