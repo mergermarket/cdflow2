@@ -211,7 +211,11 @@ func RunCommand(dockerClient *docker.Client, outputStream, errorStream io.Writer
 	if err := configContainer.Start(); err != nil {
 		return err
 	}
-	defer configContainer.Stop(5)
+	defer func() {
+		if err := configContainer.Remove(); err != nil {
+			log.Panicln("error removing config container:", err)
+		}
+	}()
 
 	configureReleaseResponse, err := configContainer.ConfigureRelease(args.Version, map[string]interface{}{}, env())
 	if err != nil {

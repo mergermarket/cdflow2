@@ -15,7 +15,6 @@ import (
 )
 
 func removeConfigContainer(configContainer *config.Container) {
-	configContainer.Stop(5)
 	if err := configContainer.Remove(); err != nil {
 		log.Panicln("could not remove config container:", err)
 	}
