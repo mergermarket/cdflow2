@@ -9,8 +9,8 @@ import (
 )
 
 func TestParseArgs(t *testing.T) {
-	var env command.GlobalEnvironment
-	command, remainingArgs := command.ParseArgs([]string{"test-command", "1", "2", "3"}, &env)
+	var state command.GlobalState
+	command, remainingArgs := command.ParseArgs([]string{"test-command", "1", "2", "3"}, &state)
 	if command != "test-command" {
 		log.Fatalln("expecting test-command command, got:", command)
 	}
@@ -19,8 +19,8 @@ func TestParseArgs(t *testing.T) {
 	}
 }
 func TestParseArgsEmpty(t *testing.T) {
-	var env command.GlobalEnvironment
-	command, remainingArgs := command.ParseArgs([]string{}, &env)
+	var state command.GlobalState
+	command, remainingArgs := command.ParseArgs([]string{}, &state)
 	if command != "" {
 		log.Fatalln("expecting empty test-command command, got:", command)
 	}
@@ -30,8 +30,8 @@ func TestParseArgsEmpty(t *testing.T) {
 }
 
 func TestParseArgsCommandOnly(t *testing.T) {
-	var env command.GlobalEnvironment
-	command, remainingArgs := command.ParseArgs([]string{"test-command"}, &env)
+	var state command.GlobalState
+	command, remainingArgs := command.ParseArgs([]string{"test-command"}, &state)
 	if command != "test-command" {
 		log.Fatalln("expecting empty test-command command, got:", command)
 	}
@@ -41,12 +41,12 @@ func TestParseArgsCommandOnly(t *testing.T) {
 }
 
 func TestParseArgsComponentShort(t *testing.T) {
-	var env command.GlobalEnvironment
-	command, remainingArgs := command.ParseArgs([]string{"-c", "test-component", "test-command", "1", "2"}, &env)
+	var state command.GlobalState
+	command, remainingArgs := command.ParseArgs([]string{"-c", "test-component", "test-command", "1", "2"}, &state)
 	if command != "test-command" {
 		log.Fatalln("expecting test-command command after short component, got:", command)
 	}
-	if env.Component != "test-component" {
+	if state.Component != "test-component" {
 		log.Fatalln("expecting test-component from short arg, got:", command)
 	}
 	if !reflect.DeepEqual(remainingArgs, []string{"1", "2"}) {
@@ -55,13 +55,13 @@ func TestParseArgsComponentShort(t *testing.T) {
 }
 
 func TestParseArgsComponentLong(t *testing.T) {
-	var env command.GlobalEnvironment
-	command, remainingArgs := command.ParseArgs([]string{"--component", "test-component", "test-command", "1", "2"}, &env)
+	var state command.GlobalState
+	command, remainingArgs := command.ParseArgs([]string{"--component", "test-component", "test-command", "1", "2"}, &state)
 	if command != "test-command" {
 		log.Fatalln("expecting test-command command after long component, got:", command)
 	}
-	if env.Component != "test-component" {
-		log.Fatalln("expecting test-component from short arg, got:", env.Component)
+	if state.Component != "test-component" {
+		log.Fatalln("expecting test-component from short arg, got:", state.Component)
 	}
 	if !reflect.DeepEqual(remainingArgs, []string{"1", "2"}) {
 		log.Fatalln("unexpected remaining args after short component arg, got:", remainingArgs)

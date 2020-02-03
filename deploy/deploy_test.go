@@ -17,7 +17,7 @@ func TestRunCommand(t *testing.T) {
 	var errorBuffer bytes.Buffer
 
 	if err := deploy.RunCommand(
-		&command.GlobalEnvironment{
+		&command.GlobalState{
 			DockerClient: test.CreateDockerClient(),
 			OutputStream: &outputBuffer,
 			ErrorStream:  &errorBuffer,

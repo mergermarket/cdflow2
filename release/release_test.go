@@ -116,7 +116,7 @@ func TestRunCommand(t *testing.T) {
 	var errorBuffer bytes.Buffer
 
 	if err := release.RunCommand(
-		&command.GlobalEnvironment{
+		&command.GlobalState{
 			DockerClient: test.CreateDockerClient(),
 			Component:    "test-component",
 			Commit:       "test-commit",

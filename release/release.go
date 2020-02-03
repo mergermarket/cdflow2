@@ -125,53 +125,53 @@ func repoDigest(dockerClient *docker.Client, image string) (string, error) {
 }
 
 // RunCommand runs the release command.
-func RunCommand(env *command.GlobalEnvironment, version string) error {
-	if !env.NoPullTerraform {
-		if err := env.DockerClient.PullImage(docker.PullImageOptions{
-			Repository:   containers.ImageWithTag(env.Manifest.TerraformImage),
+func RunCommand(state *command.GlobalState, version string) error {
+	if !state.NoPullTerraform {
+		if err := state.DockerClient.PullImage(docker.PullImageOptions{
+			Repository:   containers.ImageWithTag(state.Manifest.TerraformImage),
 			OutputStream: os.Stderr,
 		}, docker.AuthConfiguration{}); err != nil {
 			return err
 		}
 	}
-	savedTerraformImage, err := repoDigest(env.DockerClient, env.Manifest.TerraformImage)
+	savedTerraformImage, err := repoDigest(state.DockerClient, state.Manifest.TerraformImage)
 	if err != nil {
 		return err
 	}
 
-	if env.NoPullTerraform && savedTerraformImage == "" {
-		savedTerraformImage = env.Manifest.TerraformImage
+	if state.NoPullTerraform && savedTerraformImage == "" {
+		savedTerraformImage = state.Manifest.TerraformImage
 	} else if savedTerraformImage == "" {
-		log.Panicln("no repo digest for ", env.Manifest.TerraformImage)
+		log.Panicln("no repo digest for ", state.Manifest.TerraformImage)
 	}
 
-	buildVolume, err := env.DockerClient.CreateVolume(docker.CreateVolumeOptions{})
+	buildVolume, err := state.DockerClient.CreateVolume(docker.CreateVolumeOptions{})
 	if err != nil {
 		return err
 	}
-	defer env.DockerClient.RemoveVolume(buildVolume.Name)
+	defer state.DockerClient.RemoveVolume(buildVolume.Name)
 
 	if err := terraform.InitInitial(
-		env.DockerClient,
+		state.DockerClient,
 		savedTerraformImage,
-		env.CodeDir,
+		state.CodeDir,
 		buildVolume,
-		env.OutputStream,
-		env.ErrorStream,
+		state.OutputStream,
+		state.ErrorStream,
 	); err != nil {
 		return err
 	}
 
-	if !env.NoPullConfig {
-		if err := env.DockerClient.PullImage(docker.PullImageOptions{
-			Repository:   containers.ImageWithTag(env.Manifest.ConfigImage),
+	if !state.NoPullConfig {
+		if err := state.DockerClient.PullImage(docker.PullImageOptions{
+			Repository:   containers.ImageWithTag(state.Manifest.ConfigImage),
 			OutputStream: os.Stderr,
 		}, docker.AuthConfiguration{}); err != nil {
 			return err
 		}
 	}
 
-	configContainer := config.NewContainer(env.DockerClient, env.Manifest.ConfigImage, buildVolume, env.ErrorStream)
+	configContainer := config.NewContainer(state.DockerClient, state.Manifest.ConfigImage, buildVolume, state.ErrorStream)
 	if err := configContainer.Start(); err != nil {
 		return err
 	}
@@ -189,17 +189,17 @@ func RunCommand(env *command.GlobalEnvironment, version string) error {
 	releaseEnv := configureReleaseResponse.Env
 	// these are built in and cannot be overridden by the config container (since choosing the clashing name would likely be an accident)
 	releaseEnv["VERSION"] = version
-	releaseEnv["TEAM"] = env.Manifest.Team
-	releaseEnv["COMPONENT"] = env.Component
-	releaseEnv["COMMIT"] = env.Commit
+	releaseEnv["TEAM"] = state.Manifest.Team
+	releaseEnv["COMPONENT"] = state.Component
+	releaseEnv["COMMIT"] = state.Commit
 
 	releaseMetadata, err := Run(
-		env.DockerClient,
-		env.Manifest.ReleaseImage,
-		env.CodeDir,
+		state.DockerClient,
+		state.Manifest.ReleaseImage,
+		state.CodeDir,
 		buildVolume,
-		env.OutputStream,
-		env.ErrorStream,
+		state.OutputStream,
+		state.ErrorStream,
 		releaseEnv,
 	)
 
@@ -212,7 +212,7 @@ func RunCommand(env *command.GlobalEnvironment, version string) error {
 		log.Panicln("error stopping config container:", err)
 	}
 
-	fmt.Fprintln(env.ErrorStream, uploadReleaseResponse.Message)
+	fmt.Fprintln(state.ErrorStream, uploadReleaseResponse.Message)
 
 	return nil
 }

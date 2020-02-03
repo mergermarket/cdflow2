@@ -11,24 +11,24 @@ import (
 )
 
 // RunCommand runs the release command.
-func RunCommand(env *command.GlobalEnvironment, envName string, version string) error {
+func RunCommand(state *command.GlobalState, envName string, version string) error {
 
-	if !env.NoPullConfig {
-		if err := env.DockerClient.PullImage(docker.PullImageOptions{
-			Repository:   containers.ImageWithTag(env.Manifest.ConfigImage),
+	if !state.NoPullConfig {
+		if err := state.DockerClient.PullImage(docker.PullImageOptions{
+			Repository:   containers.ImageWithTag(state.Manifest.ConfigImage),
 			OutputStream: os.Stderr,
 		}, docker.AuthConfiguration{}); err != nil {
 			return err
 		}
 	}
 
-	buildVolume, err := env.DockerClient.CreateVolume(docker.CreateVolumeOptions{})
+	buildVolume, err := state.DockerClient.CreateVolume(docker.CreateVolumeOptions{})
 	if err != nil {
 		return err
 	}
-	defer env.DockerClient.RemoveVolume(buildVolume.Name)
+	defer state.DockerClient.RemoveVolume(buildVolume.Name)
 
-	configContainer := config.NewContainer(env.DockerClient, env.Manifest.ConfigImage, buildVolume, env.ErrorStream)
+	configContainer := config.NewContainer(state.DockerClient, state.Manifest.ConfigImage, buildVolume, state.ErrorStream)
 	if err := configContainer.Start(); err != nil {
 		return err
 	}

@@ -59,14 +59,18 @@ Args:
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	cmd, remainingArgs, env := command.GetGlobalEnv()
+	cmd, remainingArgs, state, err := command.GetGlobalState()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 
 	if cmd == "release" {
 		if len(remainingArgs) != 1 {
 			fmt.Println(releaseHelp)
 			os.Exit(1)
 		}
-		if err := release.RunCommand(env, remainingArgs[0]); err != nil {
+		if err := release.RunCommand(state, remainingArgs[0]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -75,7 +79,7 @@ func main() {
 			fmt.Println(deployHelp)
 			os.Exit(1)
 		}
-		if err := deploy.RunCommand(env, remainingArgs[0], remainingArgs[1]); err != nil {
+		if err := deploy.RunCommand(state, remainingArgs[0], remainingArgs[1]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
