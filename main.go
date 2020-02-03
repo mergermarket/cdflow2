@@ -8,7 +8,7 @@ import (
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/deploy"
-	"github.com/mergermarket/cdflow2/release"
+	release "github.com/mergermarket/cdflow2/release/command"
 )
 
 const globalArgs string = `Global args:
