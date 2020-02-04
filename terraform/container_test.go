@@ -190,21 +190,7 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 		log.Panicln("expected two lines with a trailing newline (empty string), got lines:", lines)
 	}
 
-	var listInput test.ReflectedInput
-	if err := json.Unmarshal([]byte(lines[0]), &listInput); err != nil {
-		log.Panicln("error parsing json:", err)
-	}
+	test.CheckTerraformWorkspaceList(lines[0])
 
-	if !reflect.DeepEqual(listInput.Args, []string{"workspace", "list"}) {
-		log.Panicln("unexpected args for workspace list:", listInput.Args)
-	}
-
-	var newInput test.ReflectedInput
-	if err := json.Unmarshal([]byte(lines[1]), &newInput); err != nil {
-		log.Panicln("error parsing json:", err)
-	}
-
-	if !reflect.DeepEqual(newInput.Args, []string{"workspace", "new", workspaceName}) {
-		log.Panicln("unexpected args for workspace new:", newInput.Args)
-	}
+	test.CheckTerraformWorkspaceNew(lines[1], workspaceName)
 }

@@ -97,6 +97,7 @@ type ReflectedInput struct {
 	File  string
 }
 
+// CheckTerraformInitInitialReflectedInput checks the debug output for the terraform init during release.
 func CheckTerraformInitInitialReflectedInput(output []byte) {
 	var input ReflectedInput
 	if err := json.Unmarshal(output, &input); err != nil {
@@ -115,5 +116,29 @@ func CheckTerraformInitInitialReflectedInput(output []byte) {
 
 	if input.File != "sample content" {
 		log.Fatalf("code not mapped as /code - file contents: %v", input.File)
+	}
+}
+
+// CheckTerraformWorkspaceList checks the debug output for the terraform list workspace command during workspace selection in deployment.
+func CheckTerraformWorkspaceList(line string) {
+	var input ReflectedInput
+	if err := json.Unmarshal([]byte(line), &input); err != nil {
+		log.Panicln("error parsing json:", err)
+	}
+
+	if !reflect.DeepEqual(input.Args, []string{"workspace", "list"}) {
+		log.Panicln("unexpected args for workspace list:", input.Args)
+	}
+}
+
+// CheckTerraformWorkspaceNew checks the debug output for the terraform workspace new command during workspace selections in deployment.
+func CheckTerraformWorkspaceNew(line, workspaceName string) {
+	var input ReflectedInput
+	if err := json.Unmarshal([]byte(line), &input); err != nil {
+		log.Panicln("error parsing json:", err)
+	}
+
+	if !reflect.DeepEqual(input.Args, []string{"workspace", "new", workspaceName}) {
+		log.Panicln("unexpected args for workspace new:", input.Args)
 	}
 }

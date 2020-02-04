@@ -10,11 +10,12 @@ import (
 
 // Manifest represents the data in the cdflow.yaml file.
 type Manifest struct {
-	Version        int8   `yaml:"version"`
-	ConfigImage    string `yaml:"config_image"`
-	ReleaseImage   string `yaml:"release_image"`
-	TerraformImage string `yaml:"terraform_image"`
-	Team           string `yaml:"team"`
+	Version        int8                   `yaml:"version"`
+	Config         map[string]interface{} `yaml:"config"`
+	ConfigImage    string                 `yaml:"config_image"`
+	ReleaseImage   string                 `yaml:"release_image"`
+	TerraformImage string                 `yaml:"terraform_image"`
+	Team           string                 `yaml:"team"`
 }
 
 func parse(content []byte) (*Manifest, error) {

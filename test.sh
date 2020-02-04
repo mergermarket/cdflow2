@@ -48,8 +48,13 @@ docker push "$TEST_RELEASE_IMAGE"
 echo "
     running tests...
 "
+
+tests="$(go list ./... | grep -v 'cdflow2$' | grep -v cdflow2/test)"
+if [[ ! -z "$1" ]]; then
+    tests="$(echo "$tests" | grep "$1")"
+fi
 set +e
-go test -v $(go list ./... | grep -v 'cdflow2$' | grep -v cdflow2/test)
+go test -v $tests
 
 # go test ouput doesn't make it that obvious
 status=$?

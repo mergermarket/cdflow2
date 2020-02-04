@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/mergermarket/cdflow2/command"
@@ -12,27 +11,8 @@ import (
 	"github.com/mergermarket/cdflow2/containers"
 	"github.com/mergermarket/cdflow2/release/container"
 	"github.com/mergermarket/cdflow2/terraform"
+	"github.com/mergermarket/cdflow2/util"
 )
-
-func getEnv() map[string]string {
-	result := make(map[string]string)
-	for _, e := range os.Environ() {
-		pair := strings.SplitN(e, "=", 2)
-		result[pair[0]] = pair[1]
-	}
-	return result
-}
-
-func repoDigest(dockerClient *docker.Client, image string) (string, error) {
-	details, err := dockerClient.InspectImage(image)
-	if err != nil {
-		return "", err
-	}
-	if len(details.RepoDigests) == 0 {
-		return "", nil
-	}
-	return details.RepoDigests[0], nil
-}
 
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, version string) error {
@@ -45,7 +25,7 @@ func RunCommand(state *command.GlobalState, version string) error {
 			return err
 		}
 	}
-	savedTerraformImage, err := repoDigest(state.DockerClient, state.Manifest.TerraformImage)
+	savedTerraformImage, err := containers.RepoDigest(state.DockerClient, state.Manifest.TerraformImage)
 	if err != nil {
 		return err
 	}
@@ -92,7 +72,7 @@ func RunCommand(state *command.GlobalState, version string) error {
 		}
 	}()
 
-	configureReleaseResponse, err := configContainer.ConfigureRelease(version, map[string]interface{}{}, getEnv())
+	configureReleaseResponse, err := configContainer.ConfigureRelease(version, state.Manifest.Config, util.GetEnv(os.Environ()))
 	if err != nil {
 		return err
 	}

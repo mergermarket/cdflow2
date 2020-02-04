@@ -110,8 +110,10 @@ func TestConfigDeploy(t *testing.T) {
 
 	response, err := configContainer.PrepareTerraform(
 		"test-version",
+		"test-env",
 		map[string]interface{}{
-			"TEST_CONFIG_VAR": "config value",
+			"TEST_CONFIG_VAR":  "config value",
+			"terraform-digest": "test terraform image digest",
 		},
 		map[string]string{
 			"TEST_ENV_VAR": "env value",
@@ -128,7 +130,7 @@ func TestConfigDeploy(t *testing.T) {
 		log.Panicln("unexpected env:", response.Env)
 	}
 
-	if response.TerraformImage != "terraform:image-for-test-version" {
+	if response.TerraformImage != "test terraform image digest" {
 		log.Panicln("unexpected terraform image:", response.TerraformImage)
 	}
 
@@ -153,12 +155,21 @@ func TestConfigDeploy(t *testing.T) {
 		log.Panicln("error stopping config container:", err)
 	}
 
-	var prepareTerraformDebugOutput map[string]interface{}
+	var prepareTerraformDebugOutput struct {
+		Action  string
+		Request struct {
+			EnvName string
+		}
+	}
 	if err := json.Unmarshal(errorBuffer.Bytes(), &prepareTerraformDebugOutput); err != nil {
 		log.Panicln("error decoding prepare terraform debug output:", err)
 	}
 
-	if prepareTerraformDebugOutput["Action"] != "prepare_terraform" {
-		log.Panicln("expected prepare_terraform, got ", prepareTerraformDebugOutput["Action"])
+	if prepareTerraformDebugOutput.Action != "prepare_terraform" {
+		log.Panicln("expected prepare_terraform, got ", prepareTerraformDebugOutput.Action)
+	}
+
+	if prepareTerraformDebugOutput.Request.EnvName != "test-env" {
+		log.Panicln("expected env name test-env passed to prepare terraform, got:", prepareTerraformDebugOutput.Request.EnvName)
 	}
 }

@@ -92,3 +92,15 @@ func ImageWithTag(image string) string {
 	}
 	return image + ":latest"
 }
+
+// RepoDigest returns the first image digest for a docker image.
+func RepoDigest(dockerClient *docker.Client, image string) (string, error) {
+	details, err := dockerClient.InspectImage(image)
+	if err != nil {
+		return "", err
+	}
+	if len(details.RepoDigests) == 0 {
+		return "", nil
+	}
+	return details.RepoDigests[0], nil
+}

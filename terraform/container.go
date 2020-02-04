@@ -68,7 +68,7 @@ type Container struct {
 func NewContainer(dockerClient *docker.Client, image, codeDir string, releaseVolume *docker.Volume) (*Container, error) {
 
 	dockerContainer, err := dockerClient.CreateContainer(docker.CreateContainerOptions{
-		Name: "terraform",
+		Name: containers.RandomName("cdflow2-terraform"),
 		Config: &docker.Config{
 			Image:        image,
 			AttachStdin:  false,

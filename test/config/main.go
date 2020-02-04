@@ -102,6 +102,7 @@ func uploadRelease(line []byte, version string, encoder, stderrEncoder *json.Enc
 
 type prepareTerraformRequest struct {
 	Version string
+	EnvName string
 	Config  map[string]interface{}
 	Env     map[string]string
 }
@@ -131,10 +132,10 @@ func prepareTerraform(line []byte, encoder, stderrEncoder *json.Encoder) {
 	stderrEncoder.Encode(map[string]interface{}{
 		"Action":  "prepare_terraform",
 		"Request": &request,
-		"pwd":     dir,
+		"PWD":     dir,
 	})
 	if err := encoder.Encode(prepareTerraformResponse{
-		TerraformImage: "terraform:image-for-" + request.Version,
+		TerraformImage: fmt.Sprintf("%v", request.Config["terraform-digest"]),
 		Env: map[string]string{
 			"TEST_ENV_VAR":    request.Env["TEST_ENV_VAR"],
 			"TEST_CONFIG_VAR": fmt.Sprintf("%v", request.Config["TEST_CONFIG_VAR"]),

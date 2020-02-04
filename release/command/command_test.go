@@ -31,6 +31,9 @@ func TestRunCommand(t *testing.T) {
 				ReleaseImage:   test.GetConfig("TEST_RELEASE_IMAGE"),
 				ConfigImage:    test.GetConfig("TEST_CONFIG_IMAGE"),
 				TerraformImage: test.GetConfig("TEST_TERRAFORM_IMAGE"),
+				Config: map[string]interface{}{
+					"test-manifest-config-key": "test-manifest-config-value",
+				},
 			},
 			NoPullConfig:    true,
 			NoPullRelease:   true,
@@ -64,7 +67,10 @@ func TestRunCommand(t *testing.T) {
 func checkConfigureReleaseOutput(debugOutput string) {
 	var decoded struct {
 		Action  string
-		Request map[string]interface{}
+		Request struct {
+			Version string
+			Config  map[string]interface{}
+		}
 	}
 
 	if err := json.Unmarshal([]byte(debugOutput), &decoded); err != nil {
@@ -75,8 +81,12 @@ func checkConfigureReleaseOutput(debugOutput string) {
 		log.Panicln("unexpected action for configure releaes:", decoded.Action)
 	}
 
-	if decoded.Request["Version"] != "test-version" {
-		log.Panicln("unexpected version passed to configure release:", decoded.Request["Version"])
+	if decoded.Request.Version != "test-version" {
+		log.Panicln("unexpected version passed to configure release:", decoded.Request.Version)
+	}
+
+	if decoded.Request.Config["test-manifest-config-key"] != "test-manifest-config-value" {
+		log.Panicln("unexpected config value:", decoded.Request.Config["test-manifest-config-key"])
 	}
 }
 

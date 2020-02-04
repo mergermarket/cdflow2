@@ -28,4 +28,7 @@ func TestLoad(t *testing.T) {
 	if manifest.Team != "test-team" {
 		log.Fatalln("unexpected team:", manifest.Team)
 	}
+	if manifest.Config["key"] != "value" {
+		log.Fatalln("unexpected config from manifest:", manifest.Config)
+	}
 }

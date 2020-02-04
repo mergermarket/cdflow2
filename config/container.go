@@ -133,7 +133,8 @@ type configureReleaseConfigRequest struct {
 	Env     map[string]string
 }
 
-type configureReleaseConfigResponse struct {
+// ConfigureReleaseConfigResponse contains the response to the configure release request.
+type ConfigureReleaseConfigResponse struct {
 	Env map[string]string
 }
 
@@ -142,7 +143,7 @@ func (container *Container) ConfigureRelease(
 	version string,
 	config map[string]interface{},
 	env map[string]string,
-) (*configureReleaseConfigResponse, error) {
+) (*ConfigureReleaseConfigResponse, error) {
 	request, err := json.Marshal(&configureReleaseConfigRequest{Action: "configure_release", Version: version, Config: config, Env: env})
 	if err != nil {
 		return nil, err
@@ -154,7 +155,7 @@ func (container *Container) ConfigureRelease(
 	if err != nil {
 		return nil, err
 	}
-	var response configureReleaseConfigResponse
+	var response ConfigureReleaseConfigResponse
 	if err := json.Unmarshal(received, &response); err != nil {
 		return nil, err
 	}
@@ -167,7 +168,8 @@ type uploadReleaseRequest struct {
 	ReleaseMetadata map[string]string
 }
 
-type uploadReleaseResponse struct {
+// UploadReleaseResponse contains the response to the upload release request.
+type UploadReleaseResponse struct {
 	Message string
 }
 
@@ -175,7 +177,7 @@ type uploadReleaseResponse struct {
 func (container *Container) UploadRelease(
 	terraformImage string,
 	releaseMetadata map[string]string,
-) (*uploadReleaseResponse, error) {
+) (*UploadReleaseResponse, error) {
 	request, err := json.Marshal(&uploadReleaseRequest{Action: "upload_release", TerraformImage: terraformImage, ReleaseMetadata: releaseMetadata})
 	if err != nil {
 		return nil, err
@@ -187,7 +189,7 @@ func (container *Container) UploadRelease(
 	if err != nil {
 		return nil, err
 	}
-	var response uploadReleaseResponse
+	var response UploadReleaseResponse
 	if err := json.Unmarshal(received, &response); err != nil {
 		return nil, err
 	}
@@ -199,9 +201,11 @@ type prepareTerraformRequest struct {
 	Version string
 	Config  map[string]interface{}
 	Env     map[string]string
+	EnvName string
 }
 
-type prepareTerraformResponse struct {
+// PrepareTerraformResponse contains the response to the prepare terraform request.
+type PrepareTerraformResponse struct {
 	TerraformImage         string
 	Env                    map[string]string
 	TerraformBackendType   string
@@ -210,14 +214,15 @@ type prepareTerraformResponse struct {
 
 // PrepareTerraform requests that the config container prepares for running terraform and returns the response.
 func (container *Container) PrepareTerraform(
-	version string,
+	version, envName string,
 	config map[string]interface{},
 	env map[string]string,
-) (*prepareTerraformResponse, error) {
+) (*PrepareTerraformResponse, error) {
 	request, err := json.Marshal(&prepareTerraformRequest{
 		Action:  "prepare_terraform",
 		Config:  config,
 		Env:     env,
+		EnvName: envName,
 		Version: version,
 	})
 	if err != nil {
@@ -230,7 +235,7 @@ func (container *Container) PrepareTerraform(
 	if err != nil {
 		return nil, err
 	}
-	var response prepareTerraformResponse
+	var response PrepareTerraformResponse
 	if err := json.Unmarshal(received, &response); err != nil {
 		return nil, err
 	}
