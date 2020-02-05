@@ -15,7 +15,7 @@ jobs:
       - name: Test project
         run: ./test.sh
       - name: Build project
-        run: ./build.sh
+        run: ./build.sh ${{ github.ref }}
       - name: Create release
         id: create_release
         uses: actions/create-release@v1.0.0
