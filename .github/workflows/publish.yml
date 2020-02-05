@@ -47,7 +47,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./cdflow2-darwin-amd64
-          asset_name: darwin-amd64/cdflow2
+          asset_name: cdflow2-darwin-amd64
           asset_content_type: application/x-mach-binary
       - name: Upload linux binary
         id: upload-release-asset-linux
@@ -57,7 +57,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./cdflow2-linux-amd64
-          asset_name: linux-amd64/cdflow2
+          asset_name: cdflow2-linux-amd64
           asset_content_type: application/x-executable
       - name: Upload windows binary
         id: upload-release-asset-windows
@@ -67,6 +67,6 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./cdflow2-windows-amd64
-          asset_name: windows-amd64/cdflow2
+          asset_name: cdflow2-windows-amd64
           asset_content_type: application/vnd.microsoft.portable-executable       
   
