@@ -1,8 +1,7 @@
 on:
   push:
-    # Sequence of patterns matched against refs/tags
     tags:
-    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    - 'v*'
 
 name: Build and publish release
 
@@ -13,7 +12,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@master
-      - name: Build project # This would actually build your project, using zip for an example artifact
+      - name: Test project
+        run: ./test.sh
+      - name: Build project
         run: ./build.sh
       - name: Create release
         id: create_release
@@ -26,12 +27,43 @@ jobs:
           draft: false
           prerelease: false
       - name: Upload tarball
-        id: upload-release-asset-tarball 
+        id: upload-release-asset-tarball
         uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./cdflow2-${{ github.ref }}.tar.gz
           asset_name: cdflow2-${{ github.ref }}.tar.gz
           asset_content_type: application/gzip
+      - name: Upload mac binary
+        id: upload-release-asset-mac
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./cdflow2-darwin-amd64
+          asset_name: darwin-amd64/cdflow2
+          asset_content_type: application/x-mach-binary
+      - name: Upload linux binary
+        id: upload-release-asset-linux
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./cdflow2-linux-amd64
+          asset_name: linux-amd64/cdflow2
+          asset_content_type: application/x-executable
+      - name: Upload windows binary
+        id: upload-release-asset-windows
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./cdflow2-windows-amd64
+          asset_name: windows-amd64/cdflow2
+          asset_content_type: application/vnd.microsoft.portable-executable       
+  
