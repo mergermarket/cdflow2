@@ -76,5 +76,26 @@ func RunCommand(state *command.GlobalState, envName, version string) error {
 		return err
 	}
 
+	if err := terraformContainer.RunCommand([]string{
+		"terraform",
+		"plan",
+		"-input=false",
+		"-var-file=release-metadata-VERSION.json",
+		"-var-file=config/test-env.json",
+		"-out=plan-TIMESTAMP",
+		"infra/",
+	}, state.OutputStream, state.ErrorStream); err != nil {
+		return err
+	}
+
+	if err := terraformContainer.RunCommand([]string{
+		"terraform",
+		"apply",
+		"-input=false",
+		"plan-TIMESTAMP",
+	}, state.OutputStream, state.ErrorStream); err != nil {
+		return err
+	}
+
 	return nil
 }

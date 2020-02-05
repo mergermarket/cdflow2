@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -53,14 +54,17 @@ func TestRunCommand(t *testing.T) {
 	}
 
 	lines := strings.Split(errorBuffer.String(), "\n")
-	if len(lines) != 4 || lines[3] != "" {
-		log.Panicln("expected three lines with a trailing newline (empty string), got lines:", len(lines))
+	if len(lines) != 6 || lines[5] != "" {
+		log.Panicln("expected five lines with a trailing newline (empty string), got lines:", len(lines))
 	}
 
 	checkPrepareTerraformOutput(lines[0])
 
 	test.CheckTerraformWorkspaceList(lines[1])
 	test.CheckTerraformWorkspaceNew(lines[2], "test-env")
+
+	checkTerraformPlanOutput(lines[3])
+	checkTerraformApplyOutput(lines[4])
 }
 
 func checkPrepareTerraformOutput(debugOutput string) {
@@ -95,4 +99,37 @@ func checkPrepareTerraformOutput(debugOutput string) {
 		log.Panicln("expected prepare_terraform to run in /release got:", decoded.PWD)
 	}
 
+}
+
+func checkTerraformPlanOutput(output string) {
+	var input test.ReflectedInput
+	if err := json.Unmarshal([]byte(output), &input); err != nil {
+		log.Panicln("error parsing json:", err)
+	}
+
+	if !reflect.DeepEqual(input.Args, []string{
+		"plan",
+		"-input=false",
+		"-var-file=release-metadata-VERSION.json",
+		"-var-file=config/test-env.json",
+		"-out=plan-TIMESTAMP",
+		"infra/",
+	}) {
+		log.Panicln("unexpected terraform plan args:", input.Args)
+	}
+}
+
+func checkTerraformApplyOutput(output string) {
+	var input test.ReflectedInput
+	if err := json.Unmarshal([]byte(output), &input); err != nil {
+		log.Panicln("error parsing json:", err)
+	}
+
+	if !reflect.DeepEqual(input.Args, []string{
+		"apply",
+		"-input=false",
+		"plan-TIMESTAMP",
+	}) {
+		log.Panicln("unexpected terraform apply args:", input.Args)
+	}
 }

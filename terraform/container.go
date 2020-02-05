@@ -117,7 +117,7 @@ func (container *Container) ConfigureBackend(outputStream, errorStream io.Writer
 		command = append(command, "-backend-config="+param.Key+"="+param.Value)
 	}
 
-	if err := container.runCommand(command, outputStream, errorStream); err != nil {
+	if err := container.RunCommand(command, outputStream, errorStream); err != nil {
 		return err
 	}
 
@@ -136,7 +136,7 @@ func (container *Container) SwitchWorkspace(name string, outputStream, errorStre
 		command = "select"
 	}
 
-	if err := container.runCommand([]string{"terraform", "workspace", command, name}, outputStream, errorStream); err != nil {
+	if err := container.RunCommand([]string{"terraform", "workspace", command, name}, outputStream, errorStream); err != nil {
 		return err
 	}
 
@@ -147,7 +147,7 @@ func (container *Container) SwitchWorkspace(name string, outputStream, errorStre
 func (container *Container) listWorkspaces(errorStream io.Writer) (map[string]bool, error) {
 	var outputBuffer bytes.Buffer
 
-	if err := container.runCommand([]string{"terraform", "workspace", "list"}, &outputBuffer, errorStream); err != nil {
+	if err := container.RunCommand([]string{"terraform", "workspace", "list"}, &outputBuffer, errorStream); err != nil {
 		return nil, err
 	}
 
@@ -163,8 +163,8 @@ func (container *Container) listWorkspaces(errorStream io.Writer) (map[string]bo
 	return result, nil
 }
 
-// runCommand execs a command inside the terraform container.
-func (container *Container) runCommand(command []string, outputStream, errorStream io.Writer) error {
+// RunCommand execs a command inside the terraform container.
+func (container *Container) RunCommand(command []string, outputStream, errorStream io.Writer) error {
 	exec, err := container.dockerClient.CreateExec(docker.CreateExecOptions{
 		Container:    container.container.ID,
 		AttachStdout: true,
@@ -181,6 +181,16 @@ func (container *Container) runCommand(command []string, outputStream, errorStre
 	}); err != nil {
 		return err
 	}
+
+	details, err := container.dockerClient.InspectExec(exec.ID)
+	if err != nil {
+		return err
+	}
+
+	if details.ExitCode != 0 {
+		return errors.New("processed exited with error status code " + string(details.ExitCode))
+	}
+
 	return nil
 }
 
