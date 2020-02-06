@@ -56,16 +56,27 @@ Args:
 
 ` + globalArgs
 
+func usage() {
+	fmt.Println(help)
+	os.Exit(1)
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	cmd, remainingArgs, state, err := command.GetGlobalState()
+	globalArgs, remainingArgs, err := command.ParseArgs(os.Args[1:])
+
+	if err != nil || globalArgs.Command == "" {
+		usage()
+	}
+
+	state, err := command.GetGlobalState(globalArgs)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	if cmd == "release" {
+	if globalArgs.Command == "release" {
 		if len(remainingArgs) != 1 {
 			fmt.Println(releaseHelp)
 			os.Exit(1)
@@ -74,7 +85,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-	} else if cmd == "deploy" {
+	} else if globalArgs.Command == "deploy" {
 		if len(remainingArgs) != 2 {
 			fmt.Println(deployHelp)
 			os.Exit(1)
@@ -84,7 +95,6 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		fmt.Println(help)
-		os.Exit(1)
+		usage()
 	}
 }

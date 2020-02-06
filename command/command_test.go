@@ -9,45 +9,53 @@ import (
 )
 
 func TestParseArgs(t *testing.T) {
-	var state command.GlobalState
-	command, remainingArgs := command.ParseArgs([]string{"test-command", "1", "2", "3"}, &state)
-	if command != "test-command" {
-		log.Fatalln("expecting test-command command, got:", command)
+	globalArgs, remainingArgs, err := command.ParseArgs([]string{"test-command", "1", "2", "3"})
+	if err != nil {
+		log.Fatalln("unexpected error from parseArgs:", err)
+	}
+	if globalArgs.Command != "test-command" {
+		log.Fatalln("expecting test-command command, got:", globalArgs.Command)
 	}
 	if !reflect.DeepEqual(remainingArgs, []string{"1", "2", "3"}) {
 		log.Fatalln("unexpected remaining args:", remainingArgs)
 	}
 }
 func TestParseArgsEmpty(t *testing.T) {
-	var state command.GlobalState
-	command, remainingArgs := command.ParseArgs([]string{}, &state)
-	if command != "" {
-		log.Fatalln("expecting empty test-command command, got:", command)
+	globalArgs, remainingArgs, err := command.ParseArgs([]string{})
+	if err != nil {
+		log.Fatalln("unexpected error from parseArgs:", err)
+	}
+	if globalArgs.Command != "" {
+		log.Fatalln("expecting empty test-command command, got:", globalArgs.Command)
 	}
 	if !reflect.DeepEqual(remainingArgs, []string{}) {
-		log.Fatalln("unexpected empty remaining args, got:", remainingArgs)
+		log.Fatalln("expected empty remaining args, got:", remainingArgs)
 	}
 }
 
 func TestParseArgsCommandOnly(t *testing.T) {
-	var state command.GlobalState
-	command, remainingArgs := command.ParseArgs([]string{"test-command"}, &state)
-	if command != "test-command" {
-		log.Fatalln("expecting empty test-command command, got:", command)
+	globalArgs, remainingArgs, err := command.ParseArgs([]string{"test-command"})
+	if err != nil {
+		log.Fatalln("unexpected error from parseArgs:", err)
+	}
+	if globalArgs.Command != "test-command" {
+		log.Fatalln("expecting empty test-command command, got:", globalArgs.Command)
 	}
 	if !reflect.DeepEqual(remainingArgs, []string{}) {
-		log.Fatalln("unexpected empty remaining args, got:", remainingArgs)
+		log.Fatalln("expected empty remaining args, got:", remainingArgs)
 	}
 }
 
 func TestParseArgsComponentShort(t *testing.T) {
-	var state command.GlobalState
-	command, remainingArgs := command.ParseArgs([]string{"-c", "test-component", "test-command", "1", "2"}, &state)
-	if command != "test-command" {
-		log.Fatalln("expecting test-command command after short component, got:", command)
+	globalArgs, remainingArgs, err := command.ParseArgs([]string{"-c", "test-component", "test-command", "1", "2"})
+	if err != nil {
+		log.Fatalln("unexpected error from parseArgs:", err)
 	}
-	if state.Component != "test-component" {
-		log.Fatalln("expecting test-component from short arg, got:", command)
+	if globalArgs.Command != "test-command" {
+		log.Fatalln("expecting test-command command after short component, got:", globalArgs.Command)
+	}
+	if globalArgs.Component != "test-component" {
+		log.Fatalln("expecting test-component from short arg, got:", globalArgs.Command)
 	}
 	if !reflect.DeepEqual(remainingArgs, []string{"1", "2"}) {
 		log.Fatalln("unexpected remaining args after short component arg, got:", remainingArgs)
@@ -55,13 +63,15 @@ func TestParseArgsComponentShort(t *testing.T) {
 }
 
 func TestParseArgsComponentLong(t *testing.T) {
-	var state command.GlobalState
-	command, remainingArgs := command.ParseArgs([]string{"--component", "test-component", "test-command", "1", "2"}, &state)
-	if command != "test-command" {
-		log.Fatalln("expecting test-command command after long component, got:", command)
+	globalArgs, remainingArgs, err := command.ParseArgs([]string{"--component", "test-component", "test-command", "1", "2"})
+	if err != nil {
+		log.Fatalln("unexpected error from parseArgs:", err)
 	}
-	if state.Component != "test-component" {
-		log.Fatalln("expecting test-component from short arg, got:", state.Component)
+	if globalArgs.Command != "test-command" {
+		log.Fatalln("expecting test-command command after long component, got:", globalArgs.Command)
+	}
+	if globalArgs.Component != "test-component" {
+		log.Fatalln("expecting test-component from short arg, got:", globalArgs.Component)
 	}
 	if !reflect.DeepEqual(remainingArgs, []string{"1", "2"}) {
 		log.Fatalln("unexpected remaining args after short component arg, got:", remainingArgs)

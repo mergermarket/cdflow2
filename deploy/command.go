@@ -15,7 +15,7 @@ import (
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, envName, version string) error {
 	// TODO too long, consider factoring some parts out
-	if !state.NoPullConfig {
+	if !state.GlobalArgs.NoPullConfig {
 		if err := state.DockerClient.PullImage(docker.PullImageOptions{
 			Repository:   containers.ImageWithTag(state.Manifest.ConfigImage),
 			OutputStream: os.Stderr,
@@ -48,7 +48,7 @@ func RunCommand(state *command.GlobalState, envName, version string) error {
 		return err
 	}
 
-	if !state.NoPullTerraform {
+	if !state.GlobalArgs.NoPullTerraform {
 		if err := state.DockerClient.PullImage(docker.PullImageOptions{
 			Repository:   prepareTerraformResponse.TerraformImage,
 			OutputStream: os.Stderr,

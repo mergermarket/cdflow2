@@ -35,9 +35,11 @@ func TestRunCommand(t *testing.T) {
 					"test-manifest-config-key": "test-manifest-config-value",
 				},
 			},
-			NoPullConfig:    true,
-			NoPullRelease:   true,
-			NoPullTerraform: true,
+			GlobalArgs: &command.GlobalArgs{
+				NoPullConfig:    true,
+				NoPullRelease:   true,
+				NoPullTerraform: true,
+			},
 		},
 		"test-version",
 	); err != nil {

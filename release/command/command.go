@@ -17,7 +17,7 @@ import (
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, version string) error {
 	// TODO too long, split this function
-	if !state.NoPullTerraform {
+	if !state.GlobalArgs.NoPullTerraform {
 		if err := state.DockerClient.PullImage(docker.PullImageOptions{
 			Repository:   containers.ImageWithTag(state.Manifest.TerraformImage),
 			OutputStream: os.Stderr,
@@ -30,7 +30,7 @@ func RunCommand(state *command.GlobalState, version string) error {
 		return err
 	}
 
-	if state.NoPullTerraform && savedTerraformImage == "" {
+	if state.GlobalArgs.NoPullTerraform && savedTerraformImage == "" {
 		savedTerraformImage = state.Manifest.TerraformImage
 	} else if savedTerraformImage == "" {
 		log.Panicln("no repo digest for ", state.Manifest.TerraformImage)
@@ -53,7 +53,7 @@ func RunCommand(state *command.GlobalState, version string) error {
 		return err
 	}
 
-	if !state.NoPullConfig {
+	if !state.GlobalArgs.NoPullConfig {
 		if err := state.DockerClient.PullImage(docker.PullImageOptions{
 			Repository:   containers.ImageWithTag(state.Manifest.ConfigImage),
 			OutputStream: os.Stderr,

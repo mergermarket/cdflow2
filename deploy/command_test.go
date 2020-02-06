@@ -44,8 +44,10 @@ func TestRunCommand(t *testing.T) {
 					"terraform-digest":         terraformDigest,
 				},
 			},
-			NoPullConfig:    true,
-			NoPullTerraform: true,
+			GlobalArgs: &command.GlobalArgs{
+				NoPullConfig:    true,
+				NoPullTerraform: true,
+			},
 		},
 		"test-env",
 		"test-version",

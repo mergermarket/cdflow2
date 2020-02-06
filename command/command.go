@@ -11,83 +11,99 @@ import (
 	"github.com/mergermarket/cdflow2/manifest"
 )
 
-// GlobalState contains common to all commands.
-type GlobalState struct {
+// GlobalArgs represents the global (non command specific) arguments.
+type GlobalArgs struct {
+	Command         string
 	Component       string
-	Commit          string
 	NoPullConfig    bool
 	NoPullRelease   bool
 	NoPullTerraform bool
-	CodeDir         string
-	Manifest        *manifest.Manifest
-	DockerClient    *docker.Client
-	OutputStream    io.Writer
-	ErrorStream     io.Writer
+}
+
+// GlobalState contains common to all commands.
+type GlobalState struct {
+	GlobalArgs   *GlobalArgs
+	Component    string
+	Commit       string
+	CodeDir      string
+	Manifest     *manifest.Manifest
+	DockerClient *docker.Client
+	OutputStream io.Writer
+	ErrorStream  io.Writer
 }
 
 // GetGlobalState collects info common to every command.
-func GetGlobalState() (string, []string, *GlobalState, error) {
+func GetGlobalState(globalArgs *GlobalArgs) (*GlobalState, error) {
 	var state GlobalState
+
+	state.GlobalArgs = globalArgs
 
 	var err error
 
 	state.CodeDir, err = os.Getwd()
 	if err != nil {
-		return "", []string{}, nil, err
+		return nil, err
 	}
 
 	state.Manifest, err = manifest.Load(state.CodeDir)
 	if err != nil {
-		return "", []string{}, nil, err
+		return nil, err
 	}
 	if state.Manifest.Version != 2 {
-		return "", []string{}, nil, errors.New("cdflow.yaml version must be 2 for cdflow2")
+		return nil, errors.New("cdflow.yaml version must be 2 for cdflow2")
 	}
 	state.DockerClient, err = docker.NewClientFromEnv()
 	if err != nil {
-		return "", []string{}, nil, err
+		return nil, err
 	}
 
-	command, remainingArgs := ParseArgs(os.Args[1:], &state)
-
-	if state.Component == "" {
+	if globalArgs.Component == "" {
 		state.Component, err = GetComponentFromGit()
 		if err != nil {
-			return "", []string{}, nil, err
+			return nil, err
 		}
+	} else {
+		state.Component = globalArgs.Component
 	}
 
 	state.Commit, err = GetCommitFromGit()
 	if err != nil {
-		return "", []string{}, nil, err
+		return nil, err
 	}
 
 	state.OutputStream = os.Stdout
 	state.ErrorStream = os.Stderr
 
-	return command, remainingArgs, &state, nil
+	return &state, nil
 }
 
 // ParseArgs takes arguments and splits them into global and remaining args.
-func ParseArgs(args []string, state *GlobalState) (string, []string) {
-	for i := 0; i < len(args); i++ {
+func ParseArgs(args []string) (*GlobalArgs, []string, error) {
+	var globalArgs GlobalArgs
+	remainingArgs := []string{}
+	i := 0
+	for ; i < len(args); i++ {
 		if args[i] == "-c" || args[i] == "--component" {
 			if i+1 == len(args) {
-				break
+				return nil, remainingArgs, errors.New("no value for component parameter")
 			}
-			state.Component = args[i+1]
+			globalArgs.Component = args[i+1]
 			i++
 		} else if args[i] == "--no-pull-config" {
-			state.NoPullConfig = true
+			globalArgs.NoPullConfig = true
 		} else if args[i] == "--no-pull-release" {
-			state.NoPullRelease = true
+			globalArgs.NoPullRelease = true
 		} else if args[i] == "--no-pull-terraform" {
-			state.NoPullTerraform = true
+			globalArgs.NoPullTerraform = true
+		} else if strings.HasPrefix(args[i], "-") {
+			return nil, remainingArgs, errors.New("unknown global option: " + args[i])
 		} else {
-			return args[i], args[i+1:]
+			globalArgs.Command = args[i]
+			remainingArgs = args[i+1:]
+			break
 		}
 	}
-	return "", []string{}
+	return &globalArgs, remainingArgs, nil
 }
 
 // GetComponentFromGit gets the last part of the git repo name to use as a default component name.
