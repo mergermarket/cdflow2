@@ -48,7 +48,7 @@ func TestRunCommand(t *testing.T) {
 
 	lines := strings.Split(errorBuffer.String(), "\n")
 	if len(lines) != 6 || lines[5] != "" {
-		log.Panicln("expected six lines with a trailing newline (empty string), got lines:", len(lines))
+		log.Panicln("expected six lines with a trailing newline (empty string), got lines:", lines)
 	}
 
 	test.CheckTerraformInitInitialReflectedInput([]byte(lines[0]))
