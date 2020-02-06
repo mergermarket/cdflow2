@@ -77,7 +77,7 @@ func configureRelease(line []byte, encoder, stderrEncoder *json.Encoder) string 
 
 type uploadReleaseRequest struct {
 	TerraformImage  string
-	ReleaseMetadata map[string]string
+	ReleaseMetadata map[string]map[string]string
 }
 
 type uploadReleaseResponse struct {

@@ -58,8 +58,14 @@ Args:
 
 ` + globalArgs
 
-func usage() {
-	fmt.Println(help)
+func usage(subcommand string) {
+	if subcommand == "release" {
+		fmt.Println(releaseHelp)
+	} else if subcommand == "deploy" {
+		fmt.Println(deployHelp)
+	} else {
+		fmt.Println(help)
+	}
 	os.Exit(1)
 }
 
@@ -68,11 +74,17 @@ func main() {
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		usage()
+		usage("")
 	}
-	if globalArgs.Command == "" || globalArgs.Command == "--help" {
-		usage()
-	} else if globalArgs.Command == "--version" {
+	if globalArgs.Command == "" {
+		usage("")
+	} else if globalArgs.Command == "help" {
+		subcommand := ""
+		if len(remainingArgs) > 0 {
+			subcommand = remainingArgs[0]
+		}
+		usage(subcommand)
+	} else if globalArgs.Command == "version" {
 		fmt.Println(version)
 		os.Exit(0)
 	}
@@ -94,14 +106,12 @@ func main() {
 		}
 	} else if globalArgs.Command == "deploy" {
 		if len(remainingArgs) != 2 {
-			fmt.Println(deployHelp)
-			os.Exit(1)
+			usage("deploy")
 		}
 		if err := deploy.RunCommand(state, remainingArgs[0], remainingArgs[1]); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			usage("release")
 		}
 	} else {
-		usage()
+		usage("")
 	}
 }

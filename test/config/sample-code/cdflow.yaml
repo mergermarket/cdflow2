@@ -1,7 +1,7 @@
 version: 2
-config_image: test-config-image
-release_image: test-release-image
-terraform_image: test-terraform-image
 team: test-team
 config:
-    key: value
+    image: test-config-image
+    config-key: config-value
+release: release-image
+terraform: test-terraform-image

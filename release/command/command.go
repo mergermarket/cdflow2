@@ -84,17 +84,25 @@ func RunCommand(state *command.GlobalState, version string) error {
 	releaseEnv["COMPONENT"] = state.Component
 	releaseEnv["COMMIT"] = state.Commit
 
-	releaseMetadata, err := container.Run(
-		state.DockerClient,
-		state.Manifest.ReleaseImage,
-		state.CodeDir,
-		buildVolume,
-		state.OutputStream,
-		state.ErrorStream,
-		releaseEnv,
-	)
-	if err != nil {
-		return err
+	releaseMetadata := make(map[string]map[string]string)
+	for buildID, buildImage := range state.Manifest.Builds {
+		metadata, err := container.Run(
+			state.DockerClient,
+			buildImage,
+			state.CodeDir,
+			buildVolume,
+			state.OutputStream,
+			state.ErrorStream,
+			releaseEnv,
+		)
+		if err != nil {
+			return err
+		}
+		metadata["version"] = version
+		metadata["commit"] = state.Commit
+		metadata["component"] = state.Component
+		metadata["team"] = state.Manifest.Team
+		releaseMetadata[buildID] = metadata
 	}
 
 	uploadReleaseResponse, err := configContainer.UploadRelease(

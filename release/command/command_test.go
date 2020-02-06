@@ -26,9 +26,12 @@ func TestRunCommand(t *testing.T) {
 			OutputStream: &outputBuffer,
 			ErrorStream:  &errorBuffer,
 			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
-			Manifest: &manifest.Manifest{
-				Version:        2,
-				ReleaseImage:   test.GetConfig("TEST_RELEASE_IMAGE"),
+			Manifest: &manifest.Canonical{
+				Version: 2,
+				Team:    "test-team",
+				Builds: map[string]string{
+					"release": test.GetConfig("TEST_RELEASE_IMAGE"),
+				},
 				ConfigImage:    test.GetConfig("TEST_CONFIG_IMAGE"),
 				TerraformImage: test.GetConfig("TEST_TERRAFORM_IMAGE"),
 				Config: map[string]interface{}{
@@ -96,7 +99,7 @@ func checkUploadReleaseOutput(debugOutput string) {
 	var decoded struct {
 		Action  string
 		Request struct {
-			ReleaseMetadata map[string]string
+			ReleaseMetadata map[string]map[string]string
 			TerraformImage  string
 		}
 	}
@@ -113,11 +116,24 @@ func checkUploadReleaseOutput(debugOutput string) {
 		log.Panicln("expected terraform repo digest: ", expectedTerraformImage, ", got:", decoded.Request.TerraformImage)
 	}
 
-	if decoded.Request.ReleaseMetadata["component_from_defaults"] != "test-component" {
+	if decoded.Request.ReleaseMetadata["release"]["component_from_defaults"] != "test-component" {
 		log.Panicln("expected component test-component, got:", decoded.Request.ReleaseMetadata["component_from_defaults"])
 	}
 
-	if decoded.Request.ReleaseMetadata["commit_from_defaults"] != "test-commit" {
+	if decoded.Request.ReleaseMetadata["release"]["commit_from_defaults"] != "test-commit" {
 		log.Panicln("expected commit test-commit, got:", decoded.Request.ReleaseMetadata["commit_from_defaults"])
+	}
+
+	if decoded.Request.ReleaseMetadata["release"]["version"] != "test-version" {
+		log.Panicln("unexpected version from release metadata:", decoded.Request.ReleaseMetadata["release"]["version"])
+	}
+	if decoded.Request.ReleaseMetadata["release"]["commit"] != "test-commit" {
+		log.Panicln("unexpected commit from release metadata:", decoded.Request.ReleaseMetadata["release"]["commit"])
+	}
+	if decoded.Request.ReleaseMetadata["release"]["component"] != "test-component" {
+		log.Panicln("unexpected component from release metadata:", decoded.Request.ReleaseMetadata["release"]["component"])
+	}
+	if decoded.Request.ReleaseMetadata["release"]["team"] != "test-team" {
+		log.Panicln("unexpected team from release metadata:", decoded.Request.ReleaseMetadata["release"]["team"])
 	}
 }

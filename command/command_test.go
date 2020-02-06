@@ -83,8 +83,8 @@ func TestParseArgsVersion(t *testing.T) {
 	if err != nil {
 		log.Fatalln("unexpected error from parseArgs:", err)
 	}
-	if globalArgs.Command != "--version" {
-		log.Fatalln("expected command to be --version, got:", globalArgs.Command)
+	if globalArgs.Command != "version" {
+		log.Fatalln("expected command to be version, got:", globalArgs.Command)
 	}
 }
 

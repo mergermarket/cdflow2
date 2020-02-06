@@ -166,7 +166,7 @@ func (container *Container) ConfigureRelease(
 type uploadReleaseRequest struct {
 	Action          string
 	TerraformImage  string
-	ReleaseMetadata map[string]string
+	ReleaseMetadata map[string]map[string]string
 }
 
 // UploadReleaseResponse contains the response to the upload release request.
@@ -177,7 +177,7 @@ type UploadReleaseResponse struct {
 // UploadRelease requests that the config container uploads the release and returns the response.
 func (container *Container) UploadRelease(
 	terraformImage string,
-	releaseMetadata map[string]string,
+	releaseMetadata map[string]map[string]string,
 ) (*UploadReleaseResponse, error) {
 	request, err := json.Marshal(&uploadReleaseRequest{Action: "upload_release", TerraformImage: terraformImage, ReleaseMetadata: releaseMetadata})
 	if err != nil {

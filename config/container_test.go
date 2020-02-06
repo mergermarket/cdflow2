@@ -62,8 +62,10 @@ func TestConfigRelease(t *testing.T) {
 
 	uploadReleaseResponse, err := configContainer.UploadRelease(
 		"terraform:image",
-		map[string]string{
-			"metadata-key": "metadata-value",
+		map[string]map[string]string{
+			"release": map[string]string{
+				"metadata-key": "metadata-value",
+			},
 		},
 	)
 	if err != nil {

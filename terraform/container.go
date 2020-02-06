@@ -23,6 +23,7 @@ func createTerraformInitContainer(dockerClient *docker.Client, image, codeDir st
 			AttachStderr: true,
 			WorkingDir:   "/build",
 			Cmd:          []string{"init", "/code/infra"},
+			Env:          []string{"TF_IN_AUTOMATION=true"},
 		},
 		HostConfig: &docker.HostConfig{
 			LogConfig: docker.LogConfig{Type: "none"},
@@ -78,6 +79,7 @@ func NewContainer(dockerClient *docker.Client, image, codeDir string, releaseVol
 			WorkingDir:   "/code",
 			Entrypoint:   []string{"/bin/sleep"},
 			Cmd:          []string{strconv.Itoa(365 * 24 * 60 * 60)}, // a long time!
+			Env:          []string{"TF_IN_AUTOMATION=true"},
 		},
 		HostConfig: &docker.HostConfig{
 			Init:      true,

@@ -26,7 +26,7 @@ type GlobalState struct {
 	Component    string
 	Commit       string
 	CodeDir      string
-	Manifest     *manifest.Manifest
+	Manifest     *manifest.Canonical
 	DockerClient *docker.Client
 	OutputStream io.Writer
 	ErrorStream  io.Writer
@@ -95,7 +95,15 @@ func ParseArgs(args []string) (*GlobalArgs, []string, error) {
 			globalArgs.NoPullRelease = true
 		} else if args[i] == "--no-pull-terraform" {
 			globalArgs.NoPullTerraform = true
-		} else if strings.HasPrefix(args[i], "-") && args[i] != "--version" && args[i] != "--help" {
+		} else if args[i] == "help" || args[i] == "--help" || args[i] == "-h" {
+			globalArgs.Command = "help"
+			remainingArgs = args[i+1:]
+			break
+		} else if args[i] == "version" || args[i] == "--version" || args[i] == "-v" {
+			globalArgs.Command = "version"
+			remainingArgs = args[i+1:]
+			break
+		} else if strings.HasPrefix(args[i], "-") {
 			return nil, remainingArgs, errors.New("Unknown global option: " + args[i])
 		} else {
 			globalArgs.Command = args[i]

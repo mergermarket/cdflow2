@@ -35,7 +35,7 @@ func TestRunCommand(t *testing.T) {
 			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
 			Component:    "test-component",
 			Commit:       "test-commit",
-			Manifest: &manifest.Manifest{
+			Manifest: &manifest.Canonical{
 				Version:        2,
 				ConfigImage:    test.GetConfig("TEST_CONFIG_IMAGE"),
 				TerraformImage: test.GetConfig("TEST_TERRAFORM_IMAGE"),
