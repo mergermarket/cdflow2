@@ -68,5 +68,17 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./cdflow2-windows-amd64
           asset_name: cdflow2-windows-amd64
-          asset_content_type: application/vnd.microsoft.portable-executable       
+          asset_content_type: application/vnd.microsoft.portable-executable
+      - name: Setup SSH Keys and known_hosts
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add - <<< "${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}"
+      - name: Update homebrew tap
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: scripts/update-homebrew-tap.sh ${{ steps.get_version.outputs.VERSION }}
   
