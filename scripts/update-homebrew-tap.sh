@@ -24,5 +24,8 @@ class Cdflow2 < Formula
 end
 END
 
+git config --global user.email "platform@acuris.com"
+git config --global user.name "cdflow2 publish action"
+
 git commit -am "Update cdflow2 to $version"
 git push
