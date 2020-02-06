@@ -60,14 +60,13 @@ func TestConfigRelease(t *testing.T) {
 		log.Panicln("unexpected env in response:", response.Env)
 	}
 
-	uploadReleaseResponse, err := configContainer.UploadRelease(
-		"terraform:image",
-		map[string]map[string]string{
-			"release": map[string]string{
-				"metadata-key": "metadata-value",
-			},
+	configContainer.WriteReleaseMetadata(map[string]map[string]string{
+		"release": map[string]string{
+			"metadata-key": "metadata-value",
 		},
-	)
+	})
+
+	uploadReleaseResponse, err := configContainer.UploadRelease("terraform:image")
 	if err != nil {
 		log.Panicln("error in uploadRelease:", err)
 	}

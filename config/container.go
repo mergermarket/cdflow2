@@ -1,7 +1,9 @@
 package config
 
 import (
+	"archive/tar"
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -163,10 +165,44 @@ func (container *Container) ConfigureRelease(
 	return &response, nil
 }
 
+// WriteReleaseMetadata copies the release metadata file into the release volume via the config container.
+func (container *Container) WriteReleaseMetadata(releaseMetadata map[string]map[string]string) error {
+	encoded, err := json.Marshal(releaseMetadata)
+	if err != nil {
+		return err
+	}
+
+	buffer := new(bytes.Buffer)
+	tarWriter := tar.NewWriter(buffer)
+
+	if err := tarWriter.WriteHeader(&tar.Header{
+		Name: "release/release-metadata.json",
+		Mode: 0644,
+		Size: int64(len(encoded)),
+	}); err != nil {
+		return err
+	}
+
+	if _, err := tarWriter.Write(encoded); err != nil {
+		return err
+	}
+
+	if err := tarWriter.Close(); err != nil {
+		return err
+	}
+
+	if err := container.dockerClient.UploadToContainer(container.container.ID, docker.UploadToContainerOptions{
+		InputStream: buffer,
+		Path:        "/",
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
 type uploadReleaseRequest struct {
-	Action          string
-	TerraformImage  string
-	ReleaseMetadata map[string]map[string]string
+	Action         string
+	TerraformImage string
 }
 
 // UploadReleaseResponse contains the response to the upload release request.
@@ -175,11 +211,8 @@ type UploadReleaseResponse struct {
 }
 
 // UploadRelease requests that the config container uploads the release and returns the response.
-func (container *Container) UploadRelease(
-	terraformImage string,
-	releaseMetadata map[string]map[string]string,
-) (*UploadReleaseResponse, error) {
-	request, err := json.Marshal(&uploadReleaseRequest{Action: "upload_release", TerraformImage: terraformImage, ReleaseMetadata: releaseMetadata})
+func (container *Container) UploadRelease(terraformImage string) (*UploadReleaseResponse, error) {
+	request, err := json.Marshal(&uploadReleaseRequest{Action: "upload_release", TerraformImage: terraformImage})
 	if err != nil {
 		return nil, err
 	}

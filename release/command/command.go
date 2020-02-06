@@ -68,7 +68,12 @@ func RunCommand(state *command.GlobalState, version string) error {
 	}
 	defer func() {
 		if err := configContainer.Remove(); err != nil {
-			log.Panicln("error removing config container:", err)
+			if err := configContainer.Stop(5); err != nil {
+				log.Panicln("failed to remove and then to stop the container:", err)
+			}
+			if err := configContainer.Remove(); err != nil {
+				log.Panicln("error removing config container:", err)
+			}
 		}
 	}()
 
@@ -104,10 +109,21 @@ func RunCommand(state *command.GlobalState, version string) error {
 		metadata["team"] = state.Manifest.Team
 		releaseMetadata[buildID] = metadata
 	}
+	if _, ok := releaseMetadata["release"]; !ok {
+		releaseMetadata["release"] = map[string]string{
+			"version":   version,
+			"commit":    state.Commit,
+			"component": state.Component,
+			"team":      state.Manifest.Team,
+		}
+	}
+
+	if err := configContainer.WriteReleaseMetadata(releaseMetadata); err != nil {
+		return err
+	}
 
 	uploadReleaseResponse, err := configContainer.UploadRelease(
 		savedTerraformImage,
-		releaseMetadata,
 	)
 	if err := configContainer.RequestStop(); err != nil {
 		log.Panicln("error stopping config container:", err)

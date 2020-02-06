@@ -89,9 +89,19 @@ func uploadRelease(line []byte, version string, encoder, stderrEncoder *json.Enc
 	if err := json.Unmarshal(line, &request); err != nil {
 		log.Fatalln("error reading upload release request:", err)
 	}
+	var releaseMetadata map[string]map[string]string
+	data, err := ioutil.ReadFile("/release/release-metadata.json")
+	if err != nil {
+		log.Panicln("could not read /release/release-metadata.json:", err)
+	}
+	if err := json.Unmarshal(data, &releaseMetadata); err != nil {
+		log.Panicln("could not decode /release/release-metadata.json:", err)
+	}
+
 	stderrEncoder.Encode(map[string]interface{}{
-		"Action":  "upload_release",
-		"Request": &request,
+		"Action":          "upload_release",
+		"Request":         &request,
+		"ReleaseMetadata": releaseMetadata,
 	})
 	if err := encoder.Encode(uploadReleaseResponse{
 		Message: "uploaded " + version,
