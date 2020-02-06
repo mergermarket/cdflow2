@@ -1,3 +1,5 @@
+![Unit tests](https://github.com/mergermarket/cdflow2/workflows/Unit%20tests/badge.svg)
+
 ## cdflow.yaml
 
 `cdflow.yaml` (or `cdflow.yml`) is a metadata file that is required to be in the top level of a cdflow project. The format of version 2 (i.e. if you run `cdflow2`) is described here.
