@@ -112,7 +112,7 @@ func checkTerraformPlanOutput(output string) string {
 	if !reflect.DeepEqual(input.Args, []string{
 		"plan",
 		"-input=false",
-		"-var-file=release-metadata-VERSION.json",
+		"-var-file=/release/release-metadata.json",
 		"-var-file=config/test-env.json",
 		"-out=" + planFilename,
 		"infra/",

@@ -82,7 +82,7 @@ func RunCommand(state *command.GlobalState, envName, version string) error {
 		"terraform",
 		"plan",
 		"-input=false",
-		"-var-file=release-metadata-VERSION.json",
+		"-var-file=/release/release-metadata.json",
 		"-var-file=config/test-env.json",
 		"-out=" + planFilename,
 		"infra/",
