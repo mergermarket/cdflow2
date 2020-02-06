@@ -93,12 +93,14 @@ func RunCommand(state *command.GlobalState, version string) error {
 		state.ErrorStream,
 		releaseEnv,
 	)
+	if err != nil {
+		return err
+	}
 
 	uploadReleaseResponse, err := configContainer.UploadRelease(
 		savedTerraformImage,
 		releaseMetadata,
 	)
-
 	if err := configContainer.RequestStop(); err != nil {
 		log.Panicln("error stopping config container:", err)
 	}
