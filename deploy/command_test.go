@@ -63,8 +63,8 @@ func TestRunCommand(t *testing.T) {
 	test.CheckTerraformWorkspaceList(lines[1])
 	test.CheckTerraformWorkspaceNew(lines[2], "test-env")
 
-	checkTerraformPlanOutput(lines[3])
-	checkTerraformApplyOutput(lines[4])
+	planFilename := checkTerraformPlanOutput(lines[3])
+	checkTerraformApplyOutput(lines[4], planFilename)
 }
 
 func checkPrepareTerraformOutput(debugOutput string) {
@@ -101,25 +101,28 @@ func checkPrepareTerraformOutput(debugOutput string) {
 
 }
 
-func checkTerraformPlanOutput(output string) {
+func checkTerraformPlanOutput(output string) string {
 	var input test.ReflectedInput
 	if err := json.Unmarshal([]byte(output), &input); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
+
+	planFilename := strings.TrimPrefix(input.Args[4], "-out=")
 
 	if !reflect.DeepEqual(input.Args, []string{
 		"plan",
 		"-input=false",
 		"-var-file=release-metadata-VERSION.json",
 		"-var-file=config/test-env.json",
-		"-out=plan-TIMESTAMP",
+		"-out=" + planFilename,
 		"infra/",
 	}) {
 		log.Panicln("unexpected terraform plan args:", input.Args)
 	}
+	return planFilename
 }
 
-func checkTerraformApplyOutput(output string) {
+func checkTerraformApplyOutput(output, planFilename string) {
 	var input test.ReflectedInput
 	if err := json.Unmarshal([]byte(output), &input); err != nil {
 		log.Panicln("error parsing json:", err)
@@ -128,7 +131,7 @@ func checkTerraformApplyOutput(output string) {
 	if !reflect.DeepEqual(input.Args, []string{
 		"apply",
 		"-input=false",
-		"plan-TIMESTAMP",
+		planFilename,
 	}) {
 		log.Panicln("unexpected terraform apply args:", input.Args)
 	}
