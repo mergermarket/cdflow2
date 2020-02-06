@@ -17,6 +17,10 @@ func GetEnv(env []string) map[string]string {
 	return result
 }
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 // RandomName creates a random name with a prefix so container names don't clash.
 func RandomName(prefix string) string {
 	return fmt.Sprintf("%s-%x-%x", prefix, time.Now().UnixNano(), rand.Int())

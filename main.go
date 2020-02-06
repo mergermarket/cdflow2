@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
-	"time"
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/deploy"
@@ -66,8 +64,6 @@ func usage() {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	globalArgs, remainingArgs, err := command.ParseArgs(os.Args[1:])
 
 	if err != nil {
