@@ -9,12 +9,13 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/mergermarket/cdflow2/containers"
+	"github.com/mergermarket/cdflow2/util"
 )
 
 // createTerraformInitContainer creates and returns a container for running terraform init to download providers and modules.
 func createTerraformInitContainer(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume) (*docker.Container, error) {
 	return dockerClient.CreateContainer(docker.CreateContainerOptions{
-		Name: containers.RandomName("cdflow2-terraform"),
+		Name: util.RandomName("cdflow2-terraform"),
 		Config: &docker.Config{
 			Image:        image,
 			AttachStdin:  false,
@@ -68,7 +69,7 @@ type Container struct {
 func NewContainer(dockerClient *docker.Client, image, codeDir string, releaseVolume *docker.Volume) (*Container, error) {
 
 	dockerContainer, err := dockerClient.CreateContainer(docker.CreateContainerOptions{
-		Name: containers.RandomName("cdflow2-terraform"),
+		Name: util.RandomName("cdflow2-terraform"),
 		Config: &docker.Config{
 			Image:        image,
 			AttachStdin:  false,

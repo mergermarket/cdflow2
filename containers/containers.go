@@ -3,10 +3,8 @@ package containers
 import (
 	"fmt"
 	"io"
-	"math/rand"
 	"sort"
 	"strings"
-	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
 )
@@ -63,11 +61,6 @@ func Await(dockerClient *docker.Client, container *docker.Container, inputStream
 	}
 
 	return <-detached
-}
-
-// RandomName creates a random name with a prefix so container names don't clash.
-func RandomName(prefix string) string {
-	return fmt.Sprintf("%s-%x-%x", prefix, time.Now().UnixNano(), rand.Int())
 }
 
 // MapToDockerEnv converts from a map[string]string to the []string that docker expects (with key and value separated by an equals sign).

@@ -1,7 +1,10 @@
 package util
 
 import (
+	"fmt"
+	"math/rand"
 	"strings"
+	"time"
 )
 
 // GetEnv takes the environment as a slice of strings (as returned by os.Environ) and returns it as a map.
@@ -12,4 +15,9 @@ func GetEnv(env []string) map[string]string {
 		result[pair[0]] = pair[1]
 	}
 	return result
+}
+
+// RandomName creates a random name with a prefix so container names don't clash.
+func RandomName(prefix string) string {
+	return fmt.Sprintf("%s-%x-%x", prefix, time.Now().UnixNano(), rand.Int())
 }

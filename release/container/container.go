@@ -8,6 +8,7 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/mergermarket/cdflow2/containers"
+	"github.com/mergermarket/cdflow2/util"
 )
 
 type readReleaseMetadataResult struct {
@@ -81,7 +82,7 @@ func handleReleaseOutput(readStream io.Reader, outputStream io.Writer, resultCha
 
 func createReleaseContainer(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, env map[string]string) (*docker.Container, error) {
 	return dockerClient.CreateContainer(docker.CreateContainerOptions{
-		Name: containers.RandomName("cdflow2-release"),
+		Name: util.RandomName("cdflow2-release"),
 		Config: &docker.Config{
 			Image:        image,
 			AttachStdin:  false,

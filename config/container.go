@@ -9,6 +9,7 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/mergermarket/cdflow2/containers"
+	"github.com/mergermarket/cdflow2/util"
 )
 
 // Container represents a config container.
@@ -61,7 +62,7 @@ func (container *Container) Start() error {
 }
 
 func (container *Container) createContainer() (*docker.Container, error) {
-	name := containers.RandomName("cdflow2-config")
+	name := util.RandomName("cdflow2-config")
 	return container.dockerClient.CreateContainer(docker.CreateContainerOptions{
 		Name: name,
 		Config: &docker.Config{
