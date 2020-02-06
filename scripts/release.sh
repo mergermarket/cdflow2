@@ -32,7 +32,11 @@ require_clean_work_tree () {
 
 require_clean_work_tree release
 
-latest_tag="$(git describe --abbrev=0 --tags)"
+if [ "$2" == "" ]; then
+    latest_tag="$(git describe --abbrev=0 --tags)"
+else
+    latest_tag="$2"
+fi
 
 echo latest version: $latest_tag
 
@@ -63,6 +67,15 @@ version=v$major.$minor.$patch
 echo Releasing version $version...
 
 ./test.sh
+
+set +e
 git tag $version
+if [ "$?" -ne "0" ]; then
+    echo Tag failed, this can happen when there are two tags from the same >&2
+    echo release. To work around add an additional parameter of the latest tag. >&2
+    exit 1
+fi
+set -e
+
 git push
 git push --tags
