@@ -78,6 +78,16 @@ func TestParseArgsComponentLong(t *testing.T) {
 	}
 }
 
+func TestParseArgsVersion(t *testing.T) {
+	globalArgs, _, err := command.ParseArgs([]string{"--version"})
+	if err != nil {
+		log.Fatalln("unexpected error from parseArgs:", err)
+	}
+	if globalArgs.Command != "--version" {
+		log.Fatalln("expected command to be --version, got:", globalArgs.Command)
+	}
+}
+
 func TestGetComponentFromGit(t *testing.T) {
 	component, err := command.GetComponentFromGit()
 	if err != nil {

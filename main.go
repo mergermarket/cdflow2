@@ -11,12 +11,16 @@ import (
 	release "github.com/mergermarket/cdflow2/release/command"
 )
 
+var version = "undefined"
+
 const globalArgs string = `Global args:
 
   --component COMPONENT_NAME   - override component name (inferred from git by default).
   --no-pull-config             - don't pull the config container (must exist).
   --no-pull-release            - don't pull the release container (must exist).
   --no-pull-terraform          - don't pull the terraform container (must exist).
+  --version                    - print the version number and exit. 
+  --help                       - print the help message and exit.
 `
 
 const help string = `
@@ -66,8 +70,15 @@ func main() {
 
 	globalArgs, remainingArgs, err := command.ParseArgs(os.Args[1:])
 
-	if err != nil || globalArgs.Command == "" {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		usage()
+	}
+	if globalArgs.Command == "" || globalArgs.Command == "--help" {
+		usage()
+	} else if globalArgs.Command == "--version" {
+		fmt.Println(version)
+		os.Exit(0)
 	}
 
 	state, err := command.GetGlobalState(globalArgs)

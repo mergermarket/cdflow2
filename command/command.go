@@ -95,8 +95,8 @@ func ParseArgs(args []string) (*GlobalArgs, []string, error) {
 			globalArgs.NoPullRelease = true
 		} else if args[i] == "--no-pull-terraform" {
 			globalArgs.NoPullTerraform = true
-		} else if strings.HasPrefix(args[i], "-") {
-			return nil, remainingArgs, errors.New("unknown global option: " + args[i])
+		} else if strings.HasPrefix(args[i], "-") && args[i] != "--version" && args[i] != "--help" {
+			return nil, remainingArgs, errors.New("Unknown global option: " + args[i])
 		} else {
 			globalArgs.Command = args[i]
 			remainingArgs = args[i+1:]
