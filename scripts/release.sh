@@ -72,7 +72,7 @@ set +e
 git tag $version
 if [ "$?" -ne "0" ]; then
     echo Tag failed, this can happen when there are two tags from the same >&2
-    echo release. To work around add an additional parameter of the latest tag. >&2
+    echo commit. To work around add an additional parameter of the latest tag. >&2
     exit 1
 fi
 set -e
