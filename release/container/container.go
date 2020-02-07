@@ -93,7 +93,11 @@ func createReleaseContainer(dockerClient *docker.Client, image, codeDir string, 
 		},
 		HostConfig: &docker.HostConfig{
 			LogConfig: docker.LogConfig{Type: "none"},
-			Binds:     []string{codeDir + ":/code:ro", buildVolume.Name + ":/build"},
+			Binds: []string{
+				codeDir + ":/code:ro",
+				buildVolume.Name + ":/build",
+				"/var/run/docker.sock:/var/run/docker.sock",
+			},
 		},
 	})
 }

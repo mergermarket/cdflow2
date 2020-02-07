@@ -50,7 +50,7 @@ func TestRunCommand(t *testing.T) {
 	}
 
 	lines := strings.Split(errorBuffer.String(), "\n")
-	if len(lines) != 6 || lines[5] != "" {
+	if len(lines) != 7 || lines[6] != "" {
 		log.Panicln("expected six lines with a trailing newline (empty string), got lines:", lines)
 	}
 
@@ -62,10 +62,14 @@ func TestRunCommand(t *testing.T) {
 		log.Panicln("unexpected output of release:", lines[2])
 	}
 
-	checkUploadReleaseOutput(lines[3])
+	if lines[3] != "docker status: OK" {
+		log.Panicln("unexpected output of release:", lines[2])
+	}
 
-	if lines[4] != "uploaded test-version" {
-		log.Panic("expected 'uploaded test-version' message from config container, got:", lines[4])
+	checkUploadReleaseOutput(lines[4])
+
+	if lines[5] != "uploaded test-version" {
+		log.Panic("expected 'uploaded test-version' message from config container, got:", lines[5])
 	}
 }
 

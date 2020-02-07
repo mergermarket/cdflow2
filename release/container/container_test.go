@@ -38,10 +38,7 @@ func TestRelese(t *testing.T) {
 		log.Panicln("unexpected error: ", err)
 	}
 
-	if errorBuffer.String() != "message to stderr from release\n" {
-		log.Panicf("unexpected stderr output: '%v'", errorBuffer.String())
-	}
-	if errorBuffer.String() != "message to stderr from release\n" {
+	if errorBuffer.String() != "message to stderr from release\ndocker status: OK\n" {
 		log.Panicf("unexpected stderr output: '%v'", errorBuffer.String())
 	}
 
