@@ -46,7 +46,7 @@ func TestRunCommand(t *testing.T) {
 		},
 		"test-version",
 	); err != nil {
-		log.Fatalln("error running command:", err, errorBuffer.String())
+		log.Fatalln("error running command:", err)
 	}
 
 	lines := strings.Split(errorBuffer.String(), "\n")

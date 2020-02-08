@@ -79,7 +79,7 @@ func RunCommand(state *command.GlobalState, version string) error {
 
 	configureReleaseResponse, err := configContainer.ConfigureRelease(version, state.Manifest.Config, util.GetEnv(os.Environ()))
 	if err != nil {
-		return err
+		return fmt.Errorf("error configuring release: %w", err)
 	}
 
 	releaseEnv := configureReleaseResponse.Env
@@ -101,7 +101,7 @@ func RunCommand(state *command.GlobalState, version string) error {
 			releaseEnv,
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("error running release '%v': %w", buildID, err)
 		}
 		metadata["version"] = version
 		metadata["commit"] = state.Commit
@@ -125,6 +125,9 @@ func RunCommand(state *command.GlobalState, version string) error {
 	uploadReleaseResponse, err := configContainer.UploadRelease(
 		savedTerraformImage,
 	)
+	if err != nil {
+		return fmt.Errorf("error uploading release: %w", err)
+	}
 	if err := configContainer.RequestStop(); err != nil {
 		log.Panicln("error stopping config container:", err)
 	}
