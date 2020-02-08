@@ -138,7 +138,8 @@ type configureReleaseConfigRequest struct {
 
 // ConfigureReleaseConfigResponse contains the response to the configure release request.
 type ConfigureReleaseConfigResponse struct {
-	Env map[string]string
+	Env     map[string]string
+	Success bool
 }
 
 // ConfigureRelease requests the container configures the release and returns the response.
@@ -161,6 +162,9 @@ func (container *Container) ConfigureRelease(
 	var response ConfigureReleaseConfigResponse
 	if err := json.Unmarshal(received, &response); err != nil {
 		return nil, err
+	}
+	if !response.Success {
+		return nil, errors.New("config container failed to prepare configuration for release")
 	}
 	return &response, nil
 }
@@ -208,6 +212,7 @@ type uploadReleaseRequest struct {
 // UploadReleaseResponse contains the response to the upload release request.
 type UploadReleaseResponse struct {
 	Message string
+	Success bool
 }
 
 // UploadRelease requests that the config container uploads the release and returns the response.
@@ -227,6 +232,9 @@ func (container *Container) UploadRelease(terraformImage string) (*UploadRelease
 	if err := json.Unmarshal(received, &response); err != nil {
 		return nil, err
 	}
+	if !response.Success {
+		return nil, errors.New("config container failed to upload release")
+	}
 	return &response, nil
 }
 
@@ -244,6 +252,7 @@ type PrepareTerraformResponse struct {
 	Env                    map[string]string
 	TerraformBackendType   string
 	TerraformBackendConfig map[string]string
+	Success                bool
 }
 
 // PrepareTerraform requests that the config container prepares for running terraform and returns the response.
@@ -272,6 +281,9 @@ func (container *Container) PrepareTerraform(
 	var response PrepareTerraformResponse
 	if err := json.Unmarshal(received, &response); err != nil {
 		return nil, err
+	}
+	if !response.Success {
+		return nil, errors.New("config container failed to prepare for running terraform")
 	}
 	return &response, nil
 }

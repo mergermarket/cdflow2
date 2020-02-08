@@ -109,7 +109,8 @@ func main() {
 			usage("deploy")
 		}
 		if err := deploy.RunCommand(state, remainingArgs[0], remainingArgs[1]); err != nil {
-			usage("release")
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 		}
 	} else {
 		usage("")

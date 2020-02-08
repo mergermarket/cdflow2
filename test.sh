@@ -54,7 +54,7 @@ if [[ ! -z "$1" ]]; then
     tests="$(echo "$tests" | grep "$1")"
 fi
 set +e
-go test -v $tests
+go test $tests
 
 # go test ouput doesn't make it that obvious
 status=$?
