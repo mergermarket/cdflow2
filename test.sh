@@ -49,25 +49,19 @@ echo "
     running tests...
 "
 
-if which go1.13 >/dev/null; then
-    go=go1.13
-else
-    go=go
-fi
-
 goversion="$(go version)"
-if [[ "$($go version)" != *"go1.13."* ]]; then
-    echo "wrong go version - want 1.13, got $($go version)" >&2
+if [[ "$(go version)" != *"go1.13."* ]]; then
+    echo "wrong go version - want 1.13, got $(go version)" >&2
     exit 1
 fi
 
-tests="$($go list ./... | grep -v 'cdflow2$' | grep -v cdflow2/test)"
+tests="$(go list ./... | grep -v 'cdflow2$' | grep -v cdflow2/test)"
 if [[ ! -z "$1" ]]; then
     tests="$(echo "$tests" | grep "$1")"
 fi
 set +e
 
-$go test $tests
+go test $tests
 
 # go test ouput doesn't make it that obvious
 status=$?
