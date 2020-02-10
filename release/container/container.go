@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -75,7 +76,10 @@ func handleReleaseOutput(readStream io.Reader, outputStream io.Writer, resultCha
 	}
 	var result map[string]string
 	if err := json.Unmarshal(last, &result); err != nil {
-		resultChannel <- readReleaseMetadataResult{nil, err}
+		resultChannel <- readReleaseMetadataResult{
+			nil,
+			fmt.Errorf("error json parsing last line of release container output: %w\n\nlast line: %v", err, last),
+		}
 	}
 	resultChannel <- readReleaseMetadataResult{result, nil}
 }
