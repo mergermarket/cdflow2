@@ -61,7 +61,7 @@ if [[ ! -z "$1" ]]; then
 fi
 set +e
 
-go test $tests
+go test -v $tests
 
 # go test ouput doesn't make it that obvious
 status=$?

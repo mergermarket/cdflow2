@@ -71,11 +71,13 @@ func usage(subcommand string) {
 }
 
 var globalOptionErrorFormat = `
-
 Error in global options:
 
 	%v
 
+For options run:
+
+    cdflow --help
 `
 
 func main() {
@@ -83,7 +85,7 @@ func main() {
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, globalOptionErrorFormat, err)
-		usage("")
+		os.Exit(1)
 	}
 	if globalArgs.Command == "" {
 		usage("")
