@@ -69,11 +69,18 @@ func usage(subcommand string) {
 	os.Exit(1)
 }
 
+var globalOptionErrorFormat = `
+Error in global options:
+
+	%v
+
+`
+
 func main() {
 	globalArgs, remainingArgs, err := command.ParseArgs(os.Args[1:])
 
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, globalOptionErrorFormat, err)
 		usage("")
 	}
 	if globalArgs.Command == "" {
