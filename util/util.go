@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/rs/xid"
 )
 
 // GetEnv takes the environment as a slice of strings (as returned by os.Environ) and returns it as a map.
@@ -23,5 +25,5 @@ func init() {
 
 // RandomName creates a random name with a prefix so container names don't clash.
 func RandomName(prefix string) string {
-	return fmt.Sprintf("%s-%x-%x", prefix, time.Now().UnixNano(), rand.Int())
+	return fmt.Sprintf("%s-%s", prefix, xid.New().String())
 }

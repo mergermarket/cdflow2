@@ -6,5 +6,6 @@ require (
 	github.com/fsouza/go-dockerclient v1.6.0
 	github.com/mergermarket/cdflow2-config-common v0.0.0-20200207170818-0fb5bf8addff
 	github.com/mergermarket/cdflow2-config-simple-aws v0.0.0-20200207163505-21a38e818883 // indirect
+	github.com/rs/xid v1.2.1
 	gopkg.in/yaml.v2 v2.2.5
 )
