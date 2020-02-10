@@ -123,7 +123,10 @@ func ParseArgs(args []string) (*GlobalArgs, []string, error) {
 func GetComponentFromGit() (string, error) {
 	output, err := exec.Command("git", "config", "remote.origin.url").Output()
 	if err != nil {
-		return "", errors.New("could not get component name from git (git config remote.origin.url): " + err.Error())
+		return "", errors.New(
+			"could not get component name from git (git config remote.origin.url): " + err.Error() + "\n" +
+				"If git is not available you can pass the component name with the --component global option.\n",
+		)
 	}
 	parts := strings.Split(strings.TrimSpace(string(output)), "/")
 	name := parts[len(parts)-1]
@@ -137,7 +140,10 @@ func GetComponentFromGit() (string, error) {
 func GetCommitFromGit() (string, error) {
 	output, err := exec.Command("git", "rev-parse", "HEAD").Output()
 	if err != nil {
-		return "", errors.New("could not get commit from git (git rev-parse HEAD): " + err.Error())
+		return "", errors.New(
+			"could not get commit from git (git rev-parse HEAD): " + err.Error() + "\n" +
+				"If git is not available you can pass the commit with the --commit global option\n",
+		)
 	}
 	return strings.TrimSpace(string(output)), nil
 }
