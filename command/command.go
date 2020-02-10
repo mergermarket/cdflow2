@@ -15,6 +15,7 @@ import (
 type GlobalArgs struct {
 	Command         string
 	Component       string
+	Commit          string
 	NoPullConfig    bool
 	NoPullRelease   bool
 	NoPullTerraform bool
@@ -66,9 +67,13 @@ func GetGlobalState(globalArgs *GlobalArgs) (*GlobalState, error) {
 		state.Component = globalArgs.Component
 	}
 
-	state.Commit, err = GetCommitFromGit()
-	if err != nil {
-		return nil, err
+	if globalArgs.Commit == "" {
+		state.Commit, err = GetCommitFromGit()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		state.Commit = globalArgs.Commit
 	}
 
 	state.OutputStream = os.Stdout
