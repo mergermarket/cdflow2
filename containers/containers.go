@@ -25,6 +25,10 @@ func Await(dockerClient *docker.Client, container *docker.Container, inputStream
 	// TODO too complex, consider factoring some functionality out
 	attached := make(chan error)
 	detached := make(chan error)
+	stdin := false
+	if inputStream != nil {
+		stdin = true
+	}
 	go func() {
 		waiter, err := dockerClient.AttachToContainerNonBlocking(docker.AttachToContainerOptions{
 			Container:    container.ID,
@@ -34,7 +38,7 @@ func Await(dockerClient *docker.Client, container *docker.Container, inputStream
 			Stream:       true,
 			Stdout:       true,
 			Stderr:       true,
-			Stdin:        true,
+			Stdin:        stdin,
 		})
 		attached <- err
 		if err != nil {
@@ -60,7 +64,23 @@ func Await(dockerClient *docker.Client, container *docker.Container, inputStream
 		started <- nil
 	}
 
-	return <-detached
+	if err := <-detached; err != nil {
+		return err
+	}
+	props, err := dockerClient.InspectContainer(container.ID)
+	if err != nil {
+		return err
+	}
+
+	if props.State.Running {
+		return fmt.Errorf("unexpected: release container still running")
+	}
+
+	if props.State.ExitCode != 0 {
+		return fmt.Errorf("container failed with status %v", props.State.ExitCode)
+	}
+
+	return nil
 }
 
 // MapToDockerEnv converts from a map[string]string to the []string that docker expects (with key and value separated by an equals sign).

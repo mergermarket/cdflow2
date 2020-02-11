@@ -43,20 +43,10 @@ func InitInitial(dockerClient *docker.Client, image, codeDir string, buildVolume
 		return err
 	}
 
-	props, err := dockerClient.InspectContainer(container.ID)
-	if err != nil {
-		return err
-	}
-
-	if props.State.Running {
-		panic("unexpected: terraform container still running")
-	}
 	if err := dockerClient.RemoveContainer(docker.RemoveContainerOptions{ID: container.ID}); err != nil {
 		return err
 	}
-	if props.State.ExitCode != 0 {
-		return errors.New("terraform container failed")
-	}
+
 	return nil
 }
 

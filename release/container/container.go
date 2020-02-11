@@ -26,31 +26,22 @@ func Run(dockerClient *docker.Client, image, codeDir string, buildVolume *docker
 
 	outputReadStream, outputWriteStream := io.Pipe()
 
-	resultChannel := make(chan readReleaseMetadataResult)
+	resultChannel := make(chan readReleaseMetadataResult, 1)
 	go handleReleaseOutput(outputReadStream, outputStream, resultChannel)
 
 	if err := containers.Await(dockerClient, container, nil, outputWriteStream, errorStream, nil); err != nil {
 		return nil, err
 	}
 
-	outputWriteStream.Close()
-
-	props, err := dockerClient.InspectContainer(container.ID)
-	if err != nil {
-		return nil, err
+	if err := outputWriteStream.Close(); err != nil {
+		return nil, fmt.Errorf("error closing pipe for container output: %v", err)
 	}
 
-	if props.State.Running {
-		panic("unexpected: release container still running")
-	}
 	if err := dockerClient.RemoveContainer(docker.RemoveContainerOptions{ID: container.ID}); err != nil {
 		return nil, err
 	}
-	if props.State.ExitCode != 0 {
-		return nil, errors.New("release container failed")
-	}
-
 	result := <-resultChannel
+
 	return result.metadata, result.err
 }
 
