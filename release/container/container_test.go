@@ -17,7 +17,7 @@ func TestRelese(t *testing.T) {
 	var errorBuffer bytes.Buffer
 
 	buildVolume := test.CreateVolume(dockerClient)
-	defer test.RemoveVolume(dockerClient, buildVolume)
+	//defer test.RemoveVolume(dockerClient, buildVolume)
 
 	releaseMetadata, err := container.Run(
 		dockerClient,
