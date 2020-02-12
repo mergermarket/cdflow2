@@ -21,36 +21,23 @@ func EnsureImage(dockerClient *docker.Client, image string) error {
 
 // Await waits for a container runs a container and waits for it to finish.
 func Await(dockerClient *docker.Client, container *docker.Container, inputStream io.Reader, outputStream, errorStream io.Writer, started chan error) error {
-	// TODO argument list too complex, refactor to struct?
-	// TODO too complex, consider factoring some functionality out
-	attached := make(chan error)
-	detached := make(chan error)
 	stdin := false
 	if inputStream != nil {
 		stdin = true
 	}
-	go func() {
-		waiter, err := dockerClient.AttachToContainerNonBlocking(docker.AttachToContainerOptions{
-			Container:    container.ID,
-			InputStream:  inputStream,
-			OutputStream: outputStream,
-			ErrorStream:  errorStream,
-			Stream:       true,
-			Stdout:       true,
-			Stderr:       true,
-			Stdin:        stdin,
-		})
-		attached <- err
-		if err != nil {
-			return
-		}
-		detached <- waiter.Wait()
-	}()
 
-	if err := <-attached; err != nil {
-		if started != nil {
-			started <- err
-		}
+	waiter, err := dockerClient.AttachToContainerNonBlocking(docker.AttachToContainerOptions{
+		Container:    container.ID,
+		InputStream:  inputStream,
+		OutputStream: outputStream,
+		ErrorStream:  errorStream,
+		Stream:       true,
+		Stdout:       true,
+		Stderr:       true,
+		Stdin:        stdin,
+	})
+
+	if err != nil {
 		return err
 	}
 
@@ -64,23 +51,7 @@ func Await(dockerClient *docker.Client, container *docker.Container, inputStream
 		started <- nil
 	}
 
-	if err := <-detached; err != nil {
-		return err
-	}
-	props, err := dockerClient.InspectContainer(container.ID)
-	if err != nil {
-		return err
-	}
-
-	if props.State.Running {
-		return fmt.Errorf("unexpected: release container still running")
-	}
-
-	if props.State.ExitCode != 0 {
-		return fmt.Errorf("container failed with status %v", props.State.ExitCode)
-	}
-
-	return nil
+	return waiter.Wait()
 }
 
 // MapToDockerEnv converts from a map[string]string to the []string that docker expects (with key and value separated by an equals sign).
