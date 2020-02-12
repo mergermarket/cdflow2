@@ -35,13 +35,17 @@ func TestRunCommand(t *testing.T) {
 			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
 			Component:    "test-component",
 			Commit:       "test-commit",
-			Manifest: &manifest.Canonical{
-				Version:        2,
-				ConfigImage:    test.GetConfig("TEST_CONFIG_IMAGE"),
-				TerraformImage: test.GetConfig("TEST_TERRAFORM_IMAGE"),
-				Config: map[string]interface{}{
-					"test-manifest-config-key": "test-manifest-config-value",
-					"terraform-digest":         terraformDigest,
+			Manifest: &manifest.Manifest{
+				Version: 2,
+				Terraform: manifest.Terraform{
+					Image: test.GetConfig("TEST_TERRAFORM_IMAGE"),
+				},
+				Config: manifest.Config{
+					Image: test.GetConfig("TEST_CONFIG_IMAGE"),
+					Params: map[string]interface{}{
+						"test-manifest-config-key": "test-manifest-config-value",
+						"terraform-digest":         terraformDigest,
+					},
 				},
 			},
 			GlobalArgs: &command.GlobalArgs{

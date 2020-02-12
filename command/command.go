@@ -27,7 +27,7 @@ type GlobalState struct {
 	Component    string
 	Commit       string
 	CodeDir      string
-	Manifest     *manifest.Canonical
+	Manifest     *manifest.Manifest
 	DockerClient *docker.Client
 	OutputStream io.Writer
 	ErrorStream  io.Writer

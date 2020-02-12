@@ -19,21 +19,21 @@ func RunCommand(state *command.GlobalState, version string) error {
 	// TODO too long, split this function
 	if !state.GlobalArgs.NoPullTerraform {
 		if err := state.DockerClient.PullImage(docker.PullImageOptions{
-			Repository:   containers.ImageWithTag(state.Manifest.TerraformImage),
+			Repository:   containers.ImageWithTag(state.Manifest.Terraform.Image),
 			OutputStream: os.Stderr,
 		}, docker.AuthConfiguration{}); err != nil {
 			return err
 		}
 	}
-	savedTerraformImage, err := containers.RepoDigest(state.DockerClient, state.Manifest.TerraformImage)
+	savedTerraformImage, err := containers.RepoDigest(state.DockerClient, state.Manifest.Terraform.Image)
 	if err != nil {
 		return err
 	}
 
 	if state.GlobalArgs.NoPullTerraform && savedTerraformImage == "" {
-		savedTerraformImage = state.Manifest.TerraformImage
+		savedTerraformImage = state.Manifest.Terraform.Image
 	} else if savedTerraformImage == "" {
-		log.Panicln("no repo digest for ", state.Manifest.TerraformImage)
+		log.Panicln("no repo digest for ", state.Manifest.Terraform.Image)
 	}
 
 	buildVolume, err := state.DockerClient.CreateVolume(docker.CreateVolumeOptions{})
@@ -55,14 +55,14 @@ func RunCommand(state *command.GlobalState, version string) error {
 
 	if !state.GlobalArgs.NoPullConfig {
 		if err := state.DockerClient.PullImage(docker.PullImageOptions{
-			Repository:   containers.ImageWithTag(state.Manifest.ConfigImage),
+			Repository:   containers.ImageWithTag(state.Manifest.Config.Image),
 			OutputStream: os.Stderr,
 		}, docker.AuthConfiguration{}); err != nil {
 			return err
 		}
 	}
 
-	configContainer := config.NewContainer(state.DockerClient, state.Manifest.ConfigImage, buildVolume, state.ErrorStream)
+	configContainer := config.NewContainer(state.DockerClient, state.Manifest.Config.Image, buildVolume, state.ErrorStream)
 	if err := configContainer.Start(); err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func RunCommand(state *command.GlobalState, version string) error {
 		}
 	}()
 
-	configureReleaseResponse, err := configContainer.ConfigureRelease(version, state.Manifest.Config, util.GetEnv(os.Environ()))
+	configureReleaseResponse, err := configContainer.ConfigureRelease(version, state.Manifest.Config.Params, util.GetEnv(os.Environ()))
 	if err != nil {
 		return fmt.Errorf("error configuring release: %w", err)
 	}
@@ -90,10 +90,10 @@ func RunCommand(state *command.GlobalState, version string) error {
 	releaseEnv["COMMIT"] = state.Commit
 
 	releaseMetadata := make(map[string]map[string]string)
-	for buildID, buildImage := range state.Manifest.Builds {
+	for buildID, build := range state.Manifest.Builds {
 		metadata, err := container.Run(
 			state.DockerClient,
-			buildImage,
+			build.Image,
 			state.CodeDir,
 			buildVolume,
 			state.OutputStream,
@@ -103,20 +103,15 @@ func RunCommand(state *command.GlobalState, version string) error {
 		if err != nil {
 			return fmt.Errorf("error running release '%v': %w", buildID, err)
 		}
-		metadata["version"] = version
-		metadata["commit"] = state.Commit
-		metadata["component"] = state.Component
-		metadata["team"] = state.Manifest.Team
 		releaseMetadata[buildID] = metadata
 	}
-	if _, ok := releaseMetadata["release"]; !ok {
-		releaseMetadata["release"] = map[string]string{
-			"version":   version,
-			"commit":    state.Commit,
-			"component": state.Component,
-			"team":      state.Manifest.Team,
-		}
+	if releaseMetadata["release"] == nil {
+		releaseMetadata["release"] = make(map[string]string)
 	}
+	releaseMetadata["release"]["version"] = version
+	releaseMetadata["release"]["commit"] = state.Commit
+	releaseMetadata["release"]["component"] = state.Component
+	releaseMetadata["release"]["team"] = state.Manifest.Team
 
 	if err := configContainer.WriteReleaseMetadata(releaseMetadata); err != nil {
 		return err

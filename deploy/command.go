@@ -17,7 +17,7 @@ func RunCommand(state *command.GlobalState, envName, version string) error {
 	// TODO too long, consider factoring some parts out
 	if !state.GlobalArgs.NoPullConfig {
 		if err := state.DockerClient.PullImage(docker.PullImageOptions{
-			Repository:   containers.ImageWithTag(state.Manifest.ConfigImage),
+			Repository:   containers.ImageWithTag(state.Manifest.Config.Image),
 			OutputStream: os.Stderr,
 		}, docker.AuthConfiguration{}); err != nil {
 			return err
@@ -30,7 +30,7 @@ func RunCommand(state *command.GlobalState, envName, version string) error {
 	}
 	defer state.DockerClient.RemoveVolume(buildVolume.Name)
 
-	configContainer := config.NewContainer(state.DockerClient, state.Manifest.ConfigImage, buildVolume, state.ErrorStream)
+	configContainer := config.NewContainer(state.DockerClient, state.Manifest.Config.Image, buildVolume, state.ErrorStream)
 	if err := configContainer.Start(); err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func RunCommand(state *command.GlobalState, envName, version string) error {
 		}
 	}()
 
-	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, envName, state.Manifest.Config, util.GetEnv(os.Environ()))
+	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, envName, state.Manifest.Config.Params, util.GetEnv(os.Environ()))
 	if err != nil {
 		return err
 	}

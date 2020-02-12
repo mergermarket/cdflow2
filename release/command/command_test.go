@@ -26,16 +26,22 @@ func TestRunCommand(t *testing.T) {
 			OutputStream: &outputBuffer,
 			ErrorStream:  &errorBuffer,
 			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
-			Manifest: &manifest.Canonical{
+			Manifest: &manifest.Manifest{
 				Version: 2,
 				Team:    "test-team",
-				Builds: map[string]string{
-					"release": test.GetConfig("TEST_RELEASE_IMAGE"),
+				Builds: map[string]manifest.Build{
+					"release": manifest.Build{
+						Image: test.GetConfig("TEST_RELEASE_IMAGE"),
+					},
 				},
-				ConfigImage:    test.GetConfig("TEST_CONFIG_IMAGE"),
-				TerraformImage: test.GetConfig("TEST_TERRAFORM_IMAGE"),
-				Config: map[string]interface{}{
-					"test-manifest-config-key": "test-manifest-config-value",
+				Terraform: manifest.Terraform{
+					Image: test.GetConfig("TEST_TERRAFORM_IMAGE"),
+				},
+				Config: manifest.Config{
+					Image: test.GetConfig("TEST_CONFIG_IMAGE"),
+					Params: map[string]interface{}{
+						"test-manifest-config-key": "test-manifest-config-value",
+					},
 				},
 			},
 			GlobalArgs: &command.GlobalArgs{
