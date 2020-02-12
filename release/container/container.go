@@ -1,9 +1,8 @@
 package container
 
 import (
-	"bufio"
+	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 
@@ -27,7 +26,10 @@ func Run(dockerClient *docker.Client, image, codeDir string, buildVolume *docker
 	outputReadStream, outputWriteStream := io.Pipe()
 
 	resultChannel := make(chan readReleaseMetadataResult, 1)
-	go handleReleaseOutput(outputReadStream, outputStream, resultChannel)
+	go func() {
+		result, err := handleReleaseOutput(outputReadStream, outputStream)
+		resultChannel <- readReleaseMetadataResult{result, err}
+	}()
 
 	if err := containers.Await(dockerClient, container, nil, outputWriteStream, errorStream, nil); err != nil {
 		return nil, err
@@ -45,34 +47,34 @@ func Run(dockerClient *docker.Client, image, codeDir string, buildVolume *docker
 	return result.metadata, result.err
 }
 
-// handleReleaseOutput runs as a goroutine to buffer the container output, picking out the last line which contains the release metadata and sending it to the passed in result channel.
-func handleReleaseOutput(readStream io.Reader, outputStream io.Writer, resultChannel chan readReleaseMetadataResult) {
-	readScanner := bufio.NewScanner(readStream)
-	var last []byte
-	for readScanner.Scan() {
-		last = readScanner.Bytes()
-		n, err := outputStream.Write(last)
-		if err != nil {
-			resultChannel <- readReleaseMetadataResult{nil, err}
-			return
-		}
-		if n != len(last) {
-			resultChannel <- readReleaseMetadataResult{nil, errors.New("incomplete write")}
-			return
-		}
+type tailBuffer struct {
+	data []byte
+}
+
+func (buffer *tailBuffer) Write(data []byte) (int, error) {
+	bufferSize := 10 * 1024
+	buffer.data = append(buffer.data, data...)
+	if len(buffer.data) > bufferSize {
+		buffer.data = buffer.data[len(buffer.data)-bufferSize:]
 	}
-	if err := readScanner.Err(); err != nil {
-		resultChannel <- readReleaseMetadataResult{nil, err}
-		return
+	return len(data), nil
+}
+
+// handleReleaseOutput reads from the read stream and writes to the write stream, picking out and returning the release metadata.
+func handleReleaseOutput(readStream io.Reader, outputStream io.Writer) (map[string]string, error) {
+	tee := io.TeeReader(readStream, outputStream)
+	var buffer tailBuffer
+	io.Copy(&buffer, tee)
+	data := buffer.data
+	if data[len(data)-1] == '\n' {
+		data = data[:len(data)-1]
 	}
+	data = data[bytes.LastIndex(data, []byte{'\n'})+1:]
 	var result map[string]string
-	if err := json.Unmarshal(last, &result); err != nil {
-		resultChannel <- readReleaseMetadataResult{
-			nil,
-			fmt.Errorf("error json parsing last line of release container output: %w\n\nlast line: %v", err, last),
-		}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
 	}
-	resultChannel <- readReleaseMetadataResult{result, nil}
+	return result, nil
 }
 
 func createReleaseContainer(dockerClient *docker.Client, image, codeDir string, buildVolume *docker.Volume, env map[string]string) (*docker.Container, error) {
