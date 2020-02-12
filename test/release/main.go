@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -29,7 +30,9 @@ func main() {
 	if err != nil {
 		log.Fatalln("error encoding json:", err)
 	}
-	fmt.Println(string(encoded))
+	if err := ioutil.WriteFile("/release-metadata.json", encoded, 0644); err != nil {
+		log.Fatalln("error writing release metadata:", err)
+	}
 }
 
 func dockerStatus() string {
