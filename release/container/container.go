@@ -83,9 +83,9 @@ func getLastLine(data []byte) ([]byte, error) {
 // handleReleaseOutput reads from the read stream and writes to the write stream, picking out and returning the release metadata.
 func handleReleaseOutput(readStream io.Reader, outputStream io.Writer) (map[string]string, error) {
 	tee := io.TeeReader(readStream, outputStream)
-	var buffer tailBuffer
+	var buffer bytes.Buffer
 	io.Copy(&buffer, tee)
-	lastLine, err := getLastLine(buffer.data)
+	lastLine, err := getLastLine(buffer.Bytes())
 	if err != nil {
 		return nil, err
 	}
