@@ -60,18 +60,31 @@ func (buffer *tailBuffer) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
+func getLastLine(data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("could not get last line of release data - there was no output")
+	}
+	if data[len(data)-1] == '\n' {
+		data = data[:len(data)-1]
+	}
+	newlinePosition := bytes.LastIndex(data, []byte{'\n'})
+	if newlinePosition == -1 {
+		return nil, fmt.Errorf("could not get last line of release data - no newline found")
+	}
+	return data[newlinePosition+1:], nil
+}
+
 // handleReleaseOutput reads from the read stream and writes to the write stream, picking out and returning the release metadata.
 func handleReleaseOutput(readStream io.Reader, outputStream io.Writer) (map[string]string, error) {
 	tee := io.TeeReader(readStream, outputStream)
 	var buffer tailBuffer
 	io.Copy(&buffer, tee)
-	data := buffer.data
-	if data[len(data)-1] == '\n' {
-		data = data[:len(data)-1]
+	lastLine, err := getLastLine(buffer.data)
+	if err != nil {
+		return nil, err
 	}
-	data = data[bytes.LastIndex(data, []byte{'\n'})+1:]
 	var result map[string]string
-	if err := json.Unmarshal(data, &result); err != nil {
+	if err := json.Unmarshal(lastLine, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
