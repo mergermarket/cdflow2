@@ -27,7 +27,12 @@ func TestAwait(t *testing.T) {
 			AttachStdin:  false,
 			AttachStdout: true,
 			AttachStderr: true,
-			Cmd:          []string{"echo", "hello"},
+			Cmd: []string{"/bin/sh", "-c", `
+				echo foo bar baz
+				echo one two three >&2
+				echo baz bar foo
+				echo three two one >&2
+			`},
 		},
 		HostConfig: &docker.HostConfig{
 			LogConfig: docker.LogConfig{Type: "none"},
@@ -41,8 +46,11 @@ func TestAwait(t *testing.T) {
 		log.Panicln("error running container:", err)
 	}
 
-	if outputBuffer.String() != "hello\n" {
-		log.Panicln("unexpected output:", outputBuffer.String())
+	if outputBuffer.String() != "foo bar baz\nbaz bar foo\n" {
+		log.Panicf("unexpected output: %#v", outputBuffer.String())
+	}
+	if errorBuffer.String() != "one two three\nthree two one\n" {
+		log.Panicf("unexpected output: %#v", outputBuffer.String())
 	}
 }
 

@@ -61,7 +61,8 @@ if [[ ! -z "$1" ]]; then
 fi
 set +e
 
-go test -v $tests
+go test -v github.com/mergermarket/cdflow2/containers
+#go test -v $tests
 
 # go test ouput doesn't make it that obvious
 status=$?
