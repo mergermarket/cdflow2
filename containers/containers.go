@@ -35,6 +35,7 @@ func Await(dockerClient *docker.Client, container *docker.Container, inputStream
 			InputStream:  inputStream,
 			OutputStream: outputStream,
 			ErrorStream:  errorStream,
+			RawTerminal:  true,
 			Stream:       true,
 			Stdout:       true,
 			Stderr:       true,
