@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os/exec"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/mergermarket/cdflow2/containers"
@@ -39,10 +40,14 @@ func Run(dockerClient *docker.Client, image, codeDir string, buildVolume *docker
 		return nil, fmt.Errorf("error closing pipe for container output: %v", err)
 	}
 
-	if err := dockerClient.RemoveContainer(docker.RemoveContainerOptions{ID: container.ID}); err != nil {
-		return nil, err
-	}
+	//if err := dockerClient.RemoveContainer(docker.RemoveContainerOptions{ID: container.ID}); err != nil {
+	//	return nil, err
+	//}
 	result := <-resultChannel
+
+	if result.err != nil {
+		exec.Command("docker", "logs", container.ID).Run()
+	}
 
 	return result.metadata, result.err
 }
@@ -102,7 +107,7 @@ func createReleaseContainer(dockerClient *docker.Client, image, codeDir string, 
 			Env:          containers.MapToDockerEnv(env),
 		},
 		HostConfig: &docker.HostConfig{
-			LogConfig: docker.LogConfig{Type: "none"},
+			//LogConfig: docker.LogConfig{Type: "none"},
 			Binds: []string{
 				codeDir + ":/code:ro",
 				buildVolume.Name + ":/build",
