@@ -40,7 +40,7 @@ func RunCommand(state *command.GlobalState, version string) error {
 	if err != nil {
 		return err
 	}
-	defer state.DockerClient.RemoveVolume(buildVolume.Name)
+	//defer state.DockerClient.RemoveVolume(buildVolume.Name)
 
 	if err := terraform.InitInitial(
 		state.DockerClient,
