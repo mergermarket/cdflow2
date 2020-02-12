@@ -47,7 +47,7 @@ func Run(dockerClient *docker.Client, image, codeDir string, buildVolume *docker
 
 	if result.err != nil {
 		output, err := exec.Command("docker", "logs", container.ID).CombinedOutput()
-		fmt.Printf("container output: '%v', err: %v", output, err)
+		fmt.Printf("container output: '%v', err: %v", string(output), err)
 	}
 
 	return result.metadata, result.err
