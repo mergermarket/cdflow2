@@ -2,6 +2,7 @@ package command_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log"
 	"strings"
@@ -20,12 +21,13 @@ func TestRunCommand(t *testing.T) {
 
 	if err := release.RunCommand(
 		&command.GlobalState{
-			DockerClient: test.CreateDockerClient(),
-			Component:    "test-component",
-			Commit:       "test-commit",
-			OutputStream: &outputBuffer,
-			ErrorStream:  &errorBuffer,
-			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
+			DockerClient:  test.GetDockerClient(),
+			DockerContext: context.Background(),
+			Component:     "test-component",
+			Commit:        "test-commit",
+			OutputStream:  &outputBuffer,
+			ErrorStream:   &errorBuffer,
+			CodeDir:       test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
 			Manifest: &manifest.Manifest{
 				Version: 2,
 				Team:    "test-team",
@@ -51,6 +53,7 @@ func TestRunCommand(t *testing.T) {
 			},
 		},
 		"test-version",
+		map[string]string{},
 	); err != nil {
 		log.Fatalln("error running command:", err)
 	}

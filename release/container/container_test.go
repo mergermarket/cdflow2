@@ -11,16 +11,16 @@ import (
 )
 
 func TestRelese(t *testing.T) {
-	dockerClient := test.CreateDockerClient()
+	state := test.CreateState()
 
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
-	buildVolume := test.CreateVolume(dockerClient)
+	buildVolume := test.CreateVolume(state)
 	//defer test.RemoveVolume(dockerClient, buildVolume)
 
 	releaseMetadata, err := container.Run(
-		dockerClient,
+		state,
 		test.GetConfig("TEST_RELEASE_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/release/sample-code",
 		buildVolume,

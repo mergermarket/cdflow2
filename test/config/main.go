@@ -83,7 +83,7 @@ func (*handler) PrepareTerraform(request *common.PrepareTerraformRequest, respon
 	}); err != nil {
 		return err
 	}
-	response.TerraformImage = fmt.Sprintf("%v", request.Config["terraform-digest"])
+	response.TerraformImage = request.Env["TERRAFORM_DIGEST"]
 	response.Env = map[string]string{
 		"TEST_ENV_VAR":    request.Env["TEST_ENV_VAR"],
 		"TEST_CONFIG_VAR": fmt.Sprintf("%v", request.Config["TEST_CONFIG_VAR"]),

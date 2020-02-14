@@ -6,21 +6,24 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
-	"log"
+	"time"
 
-	docker "github.com/fsouza/go-dockerclient"
+	"github.com/docker/docker/api/types"
+	containertypes "github.com/docker/docker/api/types/container"
+	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/containers"
 	"github.com/mergermarket/cdflow2/util"
 )
 
 // Container represents a config container.
 type Container struct {
-	dockerClient  *docker.Client
-	container     *docker.Container
+	state         *command.GlobalState
+	ID            string
 	completion    chan error
 	image         string
-	releaseVolume *docker.Volume
+	releaseVolume string
 	reader        *bufio.Reader
 	readStream    io.Reader
 	writeStream   io.Writer
@@ -28,9 +31,9 @@ type Container struct {
 }
 
 // NewContainer creates and returns a new config container.
-func NewContainer(dockerClient *docker.Client, image string, releaseVolume *docker.Volume, errorStream io.Writer) *Container {
+func NewContainer(state *command.GlobalState, image, releaseVolume string, errorStream io.Writer) *Container {
 	return &Container{
-		dockerClient:  dockerClient,
+		state:         state,
 		completion:    make(chan error, 1),
 		image:         image,
 		releaseVolume: releaseVolume,
@@ -40,12 +43,11 @@ func NewContainer(dockerClient *docker.Client, image string, releaseVolume *dock
 
 // Start starts the config container.
 func (container *Container) Start() error {
-	dockerContainer, err := container.createContainer()
+	id, err := container.createContainer()
 	if err != nil {
-		log.Fatalln("foo", err)
 		return err
 	}
-	container.container = dockerContainer
+	container.ID = id
 
 	inputReadStream, inputWriteStream := io.Pipe()
 	outputReadStream, outputWriteStream := io.Pipe()
@@ -54,20 +56,20 @@ func (container *Container) Start() error {
 	container.reader = bufio.NewReader(outputReadStream)
 	container.writeStream = inputWriteStream
 
-	started := make(chan error)
+	started := make(chan error, 1)
 	go func() {
-		container.completion <- containers.Await(container.dockerClient, dockerContainer, inputReadStream, outputWriteStream, container.errorStream, started)
+		container.completion <- containers.Await(container.state, container.ID, inputReadStream, outputWriteStream, container.errorStream, started)
 		inputReadStream.Close()
 		outputWriteStream.Close()
 	}()
 	return <-started
 }
 
-func (container *Container) createContainer() (*docker.Container, error) {
-	name := util.RandomName("cdflow2-config")
-	return container.dockerClient.CreateContainer(docker.CreateContainerOptions{
-		Name: name,
-		Config: &docker.Config{
+func (container *Container) createContainer() (string, error) {
+	id := util.RandomName("cdflow2-config")
+	if _, err := container.state.DockerClient.ContainerCreate(
+		container.state.DockerContext,
+		&containertypes.Config{
 			Image:        container.image,
 			OpenStdin:    true,
 			StdinOnce:    true,
@@ -75,11 +77,13 @@ func (container *Container) createContainer() (*docker.Container, error) {
 			AttachStderr: true,
 			WorkingDir:   "/release",
 		},
-		HostConfig: &docker.HostConfig{
-			LogConfig: docker.LogConfig{Type: "none"},
-			Binds:     []string{container.releaseVolume.Name + ":/release"},
-		},
-	})
+		nil,
+		nil,
+		id,
+	); err != nil {
+		return "", fmt.Errorf("error creating config container: %w", err)
+	}
+	return id, nil
 }
 
 func (container *Container) readline() ([]byte, error) {
@@ -102,15 +106,17 @@ func (container *Container) write(message []byte) error {
 }
 
 // Stop stops the container.
-func (container *Container) Stop(n uint) error {
-	return container.dockerClient.StopContainer(container.container.ID, n)
+func (container *Container) Stop(timeout *time.Duration) error {
+	return container.state.DockerClient.ContainerStop(container.state.DockerContext, container.ID, timeout)
 }
 
 // Remove removes the config container.
 func (container *Container) Remove() error {
-	return container.dockerClient.RemoveContainer(docker.RemoveContainerOptions{
-		ID: container.container.ID,
-	})
+	return container.state.DockerClient.ContainerRemove(
+		container.state.DockerContext,
+		container.ID,
+		types.ContainerRemoveOptions{},
+	)
 }
 
 type stopRequest struct {
@@ -195,10 +201,13 @@ func (container *Container) WriteReleaseMetadata(releaseMetadata map[string]map[
 		return err
 	}
 
-	if err := container.dockerClient.UploadToContainer(container.container.ID, docker.UploadToContainerOptions{
-		InputStream: buffer,
-		Path:        "/",
-	}); err != nil {
+	if err := container.state.DockerClient.CopyToContainer(
+		container.state.DockerContext,
+		container.ID,
+		"/",
+		buffer,
+		types.CopyToContainerOptions{},
+	); err != nil {
 		return err
 	}
 	return nil

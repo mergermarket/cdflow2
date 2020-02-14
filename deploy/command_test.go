@@ -2,6 +2,7 @@ package deploy_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log"
 	"reflect"
@@ -20,42 +21,40 @@ func TestRunCommand(t *testing.T) {
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
-	dockerClient := test.CreateDockerClient()
+	state := &command.GlobalState{
+		DockerClient:  test.GetDockerClient(),
+		DockerContext: context.Background(),
+		OutputStream:  &outputBuffer,
+		ErrorStream:   &errorBuffer,
+		CodeDir:       test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
+		Component:     "test-component",
+		Commit:        "test-commit",
+		Manifest: &manifest.Manifest{
+			Version: 2,
+			Terraform: manifest.Terraform{
+				Image: test.GetConfig("TEST_TERRAFORM_IMAGE"),
+			},
+			Config: manifest.Config{
+				Image: test.GetConfig("TEST_CONFIG_IMAGE"),
+				Params: map[string]interface{}{
+					"test-manifest-config-key": "test-manifest-config-value",
+				},
+			},
+		},
+		GlobalArgs: &command.GlobalArgs{
+			NoPullConfig:    true,
+			NoPullTerraform: true,
+		},
+	}
 
-	terraformDigest, err := containers.RepoDigest(dockerClient, test.GetConfig("TEST_TERRAFORM_IMAGE"))
+	terraformDigest, err := containers.RepoDigest(state, test.GetConfig("TEST_TERRAFORM_IMAGE"))
 	if err != nil {
 		log.Panicln("could not get repo digest for terraform container:", err)
 	}
 
-	if err := deploy.RunCommand(
-		&command.GlobalState{
-			DockerClient: dockerClient,
-			OutputStream: &outputBuffer,
-			ErrorStream:  &errorBuffer,
-			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
-			Component:    "test-component",
-			Commit:       "test-commit",
-			Manifest: &manifest.Manifest{
-				Version: 2,
-				Terraform: manifest.Terraform{
-					Image: test.GetConfig("TEST_TERRAFORM_IMAGE"),
-				},
-				Config: manifest.Config{
-					Image: test.GetConfig("TEST_CONFIG_IMAGE"),
-					Params: map[string]interface{}{
-						"test-manifest-config-key": "test-manifest-config-value",
-						"terraform-digest":         terraformDigest,
-					},
-				},
-			},
-			GlobalArgs: &command.GlobalArgs{
-				NoPullConfig:    true,
-				NoPullTerraform: true,
-			},
-		},
-		"test-env",
-		"test-version",
-	); err != nil {
+	if err := deploy.RunCommand(state, "test-env", "test-version", map[string]string{
+		"TERRAFORM_DIGEST": terraformDigest,
+	}); err != nil {
 		log.Fatalln("error running deploy command:", err, errorBuffer.String())
 	}
 

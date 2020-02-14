@@ -2,9 +2,8 @@ package deploy
 
 import (
 	"log"
-	"os"
 
-	docker "github.com/fsouza/go-dockerclient"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/containers"
@@ -13,24 +12,20 @@ import (
 )
 
 // RunCommand runs the release command.
-func RunCommand(state *command.GlobalState, envName, version string) error {
+func RunCommand(state *command.GlobalState, envName, version string, env map[string]string) error {
 	// TODO too long, consider factoring some parts out
-	if !state.GlobalArgs.NoPullConfig {
-		if err := state.DockerClient.PullImage(docker.PullImageOptions{
-			Repository:   containers.ImageWithTag(state.Manifest.Config.Image),
-			OutputStream: os.Stderr,
-		}, docker.AuthConfiguration{}); err != nil {
-			return err
-		}
+
+	if err := containers.MaybePullImage(!state.GlobalArgs.NoPullConfig, state, state.Manifest.Config.Image, "config"); err != nil {
+		return err
 	}
 
-	buildVolume, err := state.DockerClient.CreateVolume(docker.CreateVolumeOptions{})
+	buildVolume, err := state.DockerClient.VolumeCreate(state.DockerContext, volume.VolumeCreateBody{})
 	if err != nil {
 		return err
 	}
-	defer state.DockerClient.RemoveVolume(buildVolume.Name)
+	defer state.DockerClient.VolumeRemove(state.DockerContext, buildVolume.Name, false)
 
-	configContainer := config.NewContainer(state.DockerClient, state.Manifest.Config.Image, buildVolume, state.ErrorStream)
+	configContainer := config.NewContainer(state, state.Manifest.Config.Image, buildVolume.Name, state.ErrorStream)
 	if err := configContainer.Start(); err != nil {
 		return err
 	}
@@ -43,25 +38,20 @@ func RunCommand(state *command.GlobalState, envName, version string) error {
 		}
 	}()
 
-	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, envName, state.Manifest.Config.Params, util.GetEnv(os.Environ()))
+	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, envName, state.Manifest.Config.Params, env)
 	if err != nil {
 		return err
 	}
 
-	if !state.GlobalArgs.NoPullTerraform {
-		if err := state.DockerClient.PullImage(docker.PullImageOptions{
-			Repository:   prepareTerraformResponse.TerraformImage,
-			OutputStream: os.Stderr,
-		}, docker.AuthConfiguration{}); err != nil {
-			return err
-		}
+	if err := containers.MaybePullImage(!state.GlobalArgs.NoPullTerraform, state, state.Manifest.Terraform.Image, "terraform"); err != nil {
+		return err
 	}
 
 	terraformContainer, err := terraform.NewContainer(
-		state.DockerClient,
+		state,
 		prepareTerraformResponse.TerraformImage,
 		state.CodeDir,
-		buildVolume,
+		buildVolume.Name,
 	)
 	if err != nil {
 		return err

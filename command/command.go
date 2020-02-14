@@ -1,13 +1,14 @@
 package command
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
 
-	docker "github.com/fsouza/go-dockerclient"
+	"github.com/docker/docker/client"
 	"github.com/mergermarket/cdflow2/manifest"
 )
 
@@ -23,14 +24,15 @@ type GlobalArgs struct {
 
 // GlobalState contains common to all commands.
 type GlobalState struct {
-	GlobalArgs   *GlobalArgs
-	Component    string
-	Commit       string
-	CodeDir      string
-	Manifest     *manifest.Manifest
-	DockerClient *docker.Client
-	OutputStream io.Writer
-	ErrorStream  io.Writer
+	GlobalArgs    *GlobalArgs
+	Component     string
+	Commit        string
+	CodeDir       string
+	Manifest      *manifest.Manifest
+	DockerContext context.Context
+	DockerClient  *client.Client
+	OutputStream  io.Writer
+	ErrorStream   io.Writer
 }
 
 // GetGlobalState collects info common to every command.
@@ -53,7 +55,10 @@ func GetGlobalState(globalArgs *GlobalArgs) (*GlobalState, error) {
 	if state.Manifest.Version != 2 {
 		return nil, errors.New("cdflow.yaml version must be 2 for cdflow2")
 	}
-	state.DockerClient, err = docker.NewClientFromEnv()
+
+	state.DockerContext = context.Background()
+
+	state.DockerClient, err = client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, err
 	}

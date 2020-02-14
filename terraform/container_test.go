@@ -8,24 +8,21 @@ import (
 	"strings"
 	"testing"
 
-	docker "github.com/fsouza/go-dockerclient"
 	"github.com/mergermarket/cdflow2/terraform"
 	"github.com/mergermarket/cdflow2/test"
 )
 
 func TestTerraformInitInitial(t *testing.T) {
-	dockerClient, err := docker.NewClientFromEnv()
-	if err != nil {
-		log.Fatal(err)
-	}
+	state := test.CreateState()
+
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
-	buildVolume := test.CreateVolume(dockerClient)
-	defer test.RemoveVolume(dockerClient, buildVolume)
+	buildVolume := test.CreateVolume(state)
+	defer test.RemoveVolume(state, buildVolume)
 
 	if err := terraform.InitInitial(
-		dockerClient,
+		state,
 		test.GetConfig("TEST_TERRAFORM_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 		buildVolume,
@@ -41,7 +38,7 @@ func TestTerraformInitInitial(t *testing.T) {
 
 	test.CheckTerraformInitInitialReflectedInput(errorBuffer.Bytes())
 
-	buildOutput, err := test.ReadVolume(dockerClient, buildVolume)
+	buildOutput, err := test.ReadVolume(state, buildVolume)
 	if err != nil {
 		log.Panicln("could not read build volume:", err)
 	}
@@ -52,20 +49,20 @@ func TestTerraformInitInitial(t *testing.T) {
 }
 
 func TestTerraformConfigureBackend(t *testing.T) {
-	dockerClient, err := docker.NewClientFromEnv()
-	if err != nil {
-		log.Fatal(err)
-	}
+	state := test.CreateState()
 
-	releaseVolume := test.CreateVolume(dockerClient)
-	defer test.RemoveVolume(dockerClient, releaseVolume)
+	releaseVolume := test.CreateVolume(state)
+	defer test.RemoveVolume(state, releaseVolume)
 
 	terraformContainer, err := terraform.NewContainer(
-		dockerClient,
+		state,
 		test.GetConfig("TEST_TERRAFORM_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 		releaseVolume,
 	)
+	if err != nil {
+		log.Fatalln("error creating terraform container:", err)
+	}
 	defer terraformContainer.Done()
 
 	var outputBuffer bytes.Buffer
@@ -102,20 +99,20 @@ func TestTerraformConfigureBackend(t *testing.T) {
 }
 
 func TestSwitchWorkspaceExisting(t *testing.T) {
-	dockerClient, err := docker.NewClientFromEnv()
-	if err != nil {
-		log.Fatal(err)
-	}
+	state := test.CreateState()
 
-	releaseVolume := test.CreateVolume(dockerClient)
-	defer test.RemoveVolume(dockerClient, releaseVolume)
+	releaseVolume := test.CreateVolume(state)
+	defer test.RemoveVolume(state, releaseVolume)
 
 	terraformContainer, err := terraform.NewContainer(
-		dockerClient,
+		state,
 		test.GetConfig("TEST_TERRAFORM_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 		releaseVolume,
 	)
+	if err != nil {
+		log.Fatalln("error creating terraform container:", err)
+	}
 	defer terraformContainer.Done()
 
 	var outputBuffer bytes.Buffer
@@ -156,20 +153,20 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 }
 
 func TestSwitchWorkspaceNew(t *testing.T) {
-	dockerClient, err := docker.NewClientFromEnv()
-	if err != nil {
-		log.Fatal(err)
-	}
+	state := test.CreateState()
 
-	releaseVolume := test.CreateVolume(dockerClient)
-	defer test.RemoveVolume(dockerClient, releaseVolume)
+	releaseVolume := test.CreateVolume(state)
+	defer test.RemoveVolume(state, releaseVolume)
 
 	terraformContainer, err := terraform.NewContainer(
-		dockerClient,
+		state,
 		test.GetConfig("TEST_TERRAFORM_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 		releaseVolume,
 	)
+	if err != nil {
+		log.Fatalln("error creating terraform container:", err)
+	}
 	defer terraformContainer.Done()
 
 	var outputBuffer bytes.Buffer

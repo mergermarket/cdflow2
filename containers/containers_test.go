@@ -6,23 +6,24 @@ import (
 	"reflect"
 	"testing"
 
-	docker "github.com/fsouza/go-dockerclient"
+	"github.com/docker/docker/api/types/container"
 	"github.com/mergermarket/cdflow2/containers"
 	"github.com/mergermarket/cdflow2/test"
 )
 
 func TestAwait(t *testing.T) {
-	dockerClient := test.CreateDockerClient()
+	state := test.CreateState()
 
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
 	image := "alpine:latest"
-	if err := containers.EnsureImage(dockerClient, image); err != nil {
+	if err := containers.EnsureImage(state, image, nil); err != nil {
 		log.Panicln("could not pull image:", err)
 	}
-	container, err := dockerClient.CreateContainer(docker.CreateContainerOptions{
-		Config: &docker.Config{
+	container, err := state.DockerClient.ContainerCreate(
+		state.DockerContext,
+		&container.Config{
 			Image:        image,
 			AttachStdin:  false,
 			AttachStdout: true,
@@ -34,15 +35,17 @@ func TestAwait(t *testing.T) {
 				echo three two one >&2
 			`},
 		},
-		HostConfig: &docker.HostConfig{
-			LogConfig: docker.LogConfig{Type: "none"},
+		&container.HostConfig{
+			LogConfig: container.LogConfig{Type: "none"},
 		},
-	})
+		nil,
+		"",
+	)
 	if err != nil {
 		log.Panicln("error creating container:", err)
 	}
 
-	if err := containers.Await(dockerClient, container, nil, &outputBuffer, &errorBuffer, nil); err != nil {
+	if err := containers.Await(state, container.ID, nil, &outputBuffer, &errorBuffer, nil); err != nil {
 		log.Panicln("error running container:", err)
 	}
 

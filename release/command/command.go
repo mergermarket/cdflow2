@@ -3,29 +3,25 @@ package command
 import (
 	"fmt"
 	"log"
-	"os"
+	"time"
 
-	docker "github.com/fsouza/go-dockerclient"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/containers"
 	"github.com/mergermarket/cdflow2/release/container"
 	"github.com/mergermarket/cdflow2/terraform"
-	"github.com/mergermarket/cdflow2/util"
 )
 
 // RunCommand runs the release command.
-func RunCommand(state *command.GlobalState, version string) error {
+func RunCommand(state *command.GlobalState, version string, env map[string]string) error {
 	// TODO too long, split this function
-	if !state.GlobalArgs.NoPullTerraform {
-		if err := state.DockerClient.PullImage(docker.PullImageOptions{
-			Repository:   containers.ImageWithTag(state.Manifest.Terraform.Image),
-			OutputStream: os.Stderr,
-		}, docker.AuthConfiguration{}); err != nil {
-			return err
-		}
+
+	if err := containers.MaybePullImage(!state.GlobalArgs.NoPullTerraform, state, state.Manifest.Terraform.Image, "terraform"); err != nil {
+		return err
 	}
-	savedTerraformImage, err := containers.RepoDigest(state.DockerClient, state.Manifest.Terraform.Image)
+
+	savedTerraformImage, err := containers.RepoDigest(state, state.Manifest.Terraform.Image)
 	if err != nil {
 		return err
 	}
@@ -36,39 +32,38 @@ func RunCommand(state *command.GlobalState, version string) error {
 		log.Panicln("no repo digest for ", state.Manifest.Terraform.Image)
 	}
 
-	buildVolume, err := state.DockerClient.CreateVolume(docker.CreateVolumeOptions{})
+	buildVolume, err := state.DockerClient.VolumeCreate(
+		state.DockerContext,
+		volume.VolumeCreateBody{},
+	)
 	if err != nil {
 		return err
 	}
 	//defer state.DockerClient.RemoveVolume(buildVolume.Name)
 
 	if err := terraform.InitInitial(
-		state.DockerClient,
+		state,
 		savedTerraformImage,
 		state.CodeDir,
-		buildVolume,
+		buildVolume.Name,
 		state.OutputStream,
 		state.ErrorStream,
 	); err != nil {
 		return err
 	}
 
-	if !state.GlobalArgs.NoPullConfig {
-		if err := state.DockerClient.PullImage(docker.PullImageOptions{
-			Repository:   containers.ImageWithTag(state.Manifest.Config.Image),
-			OutputStream: os.Stderr,
-		}, docker.AuthConfiguration{}); err != nil {
-			return err
-		}
+	if err := containers.MaybePullImage(!state.GlobalArgs.NoPullConfig, state, state.Manifest.Config.Image, "config"); err != nil {
+		return err
 	}
 
-	configContainer := config.NewContainer(state.DockerClient, state.Manifest.Config.Image, buildVolume, state.ErrorStream)
+	configContainer := config.NewContainer(state, state.Manifest.Config.Image, buildVolume.Name, state.ErrorStream)
 	if err := configContainer.Start(); err != nil {
 		return err
 	}
 	defer func() {
 		if err := configContainer.Remove(); err != nil {
-			if err := configContainer.Stop(5); err != nil {
+			timeout := 5 * time.Second
+			if err := configContainer.Stop(&timeout); err != nil {
 				log.Panicln("failed to remove and then to stop the container:", err)
 			}
 			if err := configContainer.Remove(); err != nil {
@@ -77,7 +72,7 @@ func RunCommand(state *command.GlobalState, version string) error {
 		}
 	}()
 
-	configureReleaseResponse, err := configContainer.ConfigureRelease(version, state.Manifest.Config.Params, util.GetEnv(os.Environ()))
+	configureReleaseResponse, err := configContainer.ConfigureRelease(version, state.Manifest.Config.Params, env)
 	if err != nil {
 		return fmt.Errorf("error configuring release: %w", err)
 	}
@@ -92,10 +87,10 @@ func RunCommand(state *command.GlobalState, version string) error {
 	releaseMetadata := make(map[string]map[string]string)
 	for buildID, build := range state.Manifest.Builds {
 		metadata, err := container.Run(
-			state.DockerClient,
+			state,
 			build.Image,
 			state.CodeDir,
-			buildVolume,
+			buildVolume.Name,
 			state.OutputStream,
 			state.ErrorStream,
 			releaseEnv,

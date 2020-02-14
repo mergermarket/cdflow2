@@ -7,6 +7,7 @@ import (
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/deploy"
 	release "github.com/mergermarket/cdflow2/release/command"
+	"github.com/mergermarket/cdflow2/util"
 )
 
 var version = "undefined"
@@ -106,12 +107,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	env := util.GetEnv(os.Environ())
+
 	if globalArgs.Command == "release" {
 		if len(remainingArgs) != 1 {
 			fmt.Println(releaseHelp)
 			os.Exit(1)
 		}
-		if err := release.RunCommand(state, remainingArgs[0]); err != nil {
+		if err := release.RunCommand(state, remainingArgs[0], env); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -119,7 +122,7 @@ func main() {
 		if len(remainingArgs) != 2 {
 			usage("deploy")
 		}
-		if err := deploy.RunCommand(state, remainingArgs[0], remainingArgs[1]); err != nil {
+		if err := deploy.RunCommand(state, remainingArgs[0], remainingArgs[1], env); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
