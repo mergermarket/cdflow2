@@ -87,7 +87,7 @@ func TestConfigRelease(t *testing.T) {
 	if err := configContainer.RequestStop(); err != nil {
 		log.Panicln("error stopping config container:", err)
 	}
-	return
+
 	lines := strings.Split(errorBuffer.String(), "\n")
 	if len(lines) != 3 || lines[2] != "" {
 		log.Panicln("expected two lines with a trailing newline (empty string), got lines:", lines)
@@ -113,7 +113,6 @@ func TestConfigRelease(t *testing.T) {
 }
 
 func TestConfigDeploy(t *testing.T) {
-	return
 	var errorBuffer bytes.Buffer
 	dockerClient, configContainer, releaseVolume := setupConfigContainer(&errorBuffer)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
@@ -123,11 +122,11 @@ func TestConfigDeploy(t *testing.T) {
 		"test-version",
 		"test-env",
 		map[string]interface{}{
-			"TEST_CONFIG_VAR":  "config value",
-			"terraform-digest": "test terraform image digest",
+			"TEST_CONFIG_VAR": "config value",
 		},
 		map[string]string{
-			"TEST_ENV_VAR": "env value",
+			"TEST_ENV_VAR":     "env value",
+			"TERRAFORM_DIGEST": "test terraform image digest",
 		},
 	)
 	if err != nil {

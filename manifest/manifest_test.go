@@ -20,16 +20,16 @@ func TestLoad(t *testing.T) {
 	if !reflect.DeepEqual(loadedManifest.Builds, map[string]manifest.Build{
 		"release": manifest.Build{Image: "test-release-image"},
 	}) {
-		log.Fatalln("unexpected release data in manifest:", loadedManifest.Builds)
+		log.Fatalln("unexpected release data from manifest:", loadedManifest.Builds)
 	}
 	if loadedManifest.Config.Image != "test-config-image" {
-		log.Fatalln("unexpected config image:", loadedManifest.Config.Image)
+		log.Fatalln("unexpected config image from manifest:", loadedManifest.Config.Image)
 	}
 	if loadedManifest.Terraform.Image != "test-terraform-image" {
-		log.Fatalln("unexpected terraform image:", loadedManifest.Terraform.Image)
+		log.Fatalln("unexpected terraform image from manifest:", loadedManifest.Terraform.Image)
 	}
 	if loadedManifest.Team != "test-team" {
-		log.Fatalln("unexpected team:", loadedManifest.Team)
+		log.Fatalln("unexpected team from manifest:", loadedManifest.Team)
 	}
 	if loadedManifest.Config.Params["config-key"] != "config-value" {
 		log.Fatalln("unexpected config params from manifest:", loadedManifest.Config.Params)

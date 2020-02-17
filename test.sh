@@ -77,15 +77,5 @@ tests="$(go list ./... | grep -v 'cdflow2$' | grep -v cdflow2/test | sort)"
 if [[ ! -z "$1" ]]; then
     tests="$(echo "$tests" | grep "$1")"
 fi
-set +e
 
 go test $tests
-
-# go test ouput doesn't make it that obvious
-status=$?
-if [ "$status" -ne "0" ]; then
-    echo "
-!! TEST FAILURE !!
-" >&2
-   exit $status
-fi

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/containers"
@@ -42,42 +43,45 @@ func NewContainer(state *command.GlobalState, image, releaseVolume string, error
 }
 
 // Start starts the config container.
-func (container *Container) Start() error {
-	id, err := container.createContainer()
+func (configContainer *Container) Start() error {
+	id, err := configContainer.createContainer()
 	if err != nil {
 		return err
 	}
-	container.ID = id
+	configContainer.ID = id
 
 	inputReadStream, inputWriteStream := io.Pipe()
 	outputReadStream, outputWriteStream := io.Pipe()
 
-	container.readStream = outputReadStream
-	container.reader = bufio.NewReader(outputReadStream)
-	container.writeStream = inputWriteStream
+	configContainer.readStream = outputReadStream
+	configContainer.reader = bufio.NewReader(outputReadStream)
+	configContainer.writeStream = inputWriteStream
 
 	started := make(chan error, 1)
 	go func() {
-		container.completion <- containers.Await(container.state, container.ID, inputReadStream, outputWriteStream, container.errorStream, started)
+		configContainer.completion <- containers.Await(configContainer.state, configContainer.ID, inputReadStream, outputWriteStream, configContainer.errorStream, started)
 		inputReadStream.Close()
 		outputWriteStream.Close()
 	}()
 	return <-started
 }
 
-func (container *Container) createContainer() (string, error) {
+func (configContainer *Container) createContainer() (string, error) {
 	id := util.RandomName("cdflow2-config")
-	if _, err := container.state.DockerClient.ContainerCreate(
-		container.state.DockerContext,
+	if _, err := configContainer.state.DockerClient.ContainerCreate(
+		configContainer.state.DockerContext,
 		&containertypes.Config{
-			Image:        container.image,
+			Image:        configContainer.image,
 			OpenStdin:    true,
 			StdinOnce:    true,
 			AttachStdout: true,
 			AttachStderr: true,
 			WorkingDir:   "/release",
 		},
-		nil,
+		&container.HostConfig{
+			LogConfig: container.LogConfig{Type: "none"},
+			Binds:     []string{configContainer.releaseVolume + ":/release"},
+		},
 		nil,
 		id,
 	); err != nil {
@@ -86,16 +90,16 @@ func (container *Container) createContainer() (string, error) {
 	return id, nil
 }
 
-func (container *Container) readline() ([]byte, error) {
-	line, err := container.reader.ReadBytes('\n')
+func (configContainer *Container) readline() ([]byte, error) {
+	line, err := configContainer.reader.ReadBytes('\n')
 	if err == io.EOF {
 		return line, errors.New("config container disconnected")
 	}
 	return line, err
 }
 
-func (container *Container) write(message []byte) error {
-	n, err := container.writeStream.Write(message)
+func (configContainer *Container) write(message []byte) error {
+	n, err := configContainer.writeStream.Write(message)
 	if err != nil {
 		return err
 	}
@@ -106,15 +110,15 @@ func (container *Container) write(message []byte) error {
 }
 
 // Stop stops the container.
-func (container *Container) Stop(timeout *time.Duration) error {
-	return container.state.DockerClient.ContainerStop(container.state.DockerContext, container.ID, timeout)
+func (configContainer *Container) Stop(timeout *time.Duration) error {
+	return configContainer.state.DockerClient.ContainerStop(configContainer.state.DockerContext, configContainer.ID, timeout)
 }
 
 // Remove removes the config container.
-func (container *Container) Remove() error {
-	return container.state.DockerClient.ContainerRemove(
-		container.state.DockerContext,
-		container.ID,
+func (configContainer *Container) Remove() error {
+	return configContainer.state.DockerClient.ContainerRemove(
+		configContainer.state.DockerContext,
+		configContainer.ID,
 		types.ContainerRemoveOptions{},
 	)
 }
@@ -124,15 +128,15 @@ type stopRequest struct {
 }
 
 // RequestStop sends a message to the config container asking it to stop gracefully.
-func (container *Container) RequestStop() error {
+func (configContainer *Container) RequestStop() error {
 	request, err := json.Marshal(&stopRequest{Action: "stop"})
 	if err != nil {
 		return err
 	}
-	if err := container.write(append(request, '\n')); err != nil {
+	if err := configContainer.write(append(request, '\n')); err != nil {
 		return err
 	}
-	return <-container.completion
+	return <-configContainer.completion
 }
 
 type configureReleaseConfigRequest struct {
@@ -149,7 +153,7 @@ type ConfigureReleaseConfigResponse struct {
 }
 
 // ConfigureRelease requests the container configures the release and returns the response.
-func (container *Container) ConfigureRelease(
+func (configContainer *Container) ConfigureRelease(
 	version string,
 	config map[string]interface{},
 	env map[string]string,
@@ -158,10 +162,10 @@ func (container *Container) ConfigureRelease(
 	if err != nil {
 		return nil, err
 	}
-	if err := container.write(append(request, '\n')); err != nil {
+	if err := configContainer.write(append(request, '\n')); err != nil {
 		return nil, err
 	}
-	received, err := container.readline()
+	received, err := configContainer.readline()
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +180,7 @@ func (container *Container) ConfigureRelease(
 }
 
 // WriteReleaseMetadata copies the release metadata file into the release volume via the config container.
-func (container *Container) WriteReleaseMetadata(releaseMetadata map[string]map[string]string) error {
+func (configContainer *Container) WriteReleaseMetadata(releaseMetadata map[string]map[string]string) error {
 	encoded, err := json.Marshal(releaseMetadata)
 	if err != nil {
 		return err
@@ -201,9 +205,9 @@ func (container *Container) WriteReleaseMetadata(releaseMetadata map[string]map[
 		return err
 	}
 
-	if err := container.state.DockerClient.CopyToContainer(
-		container.state.DockerContext,
-		container.ID,
+	if err := configContainer.state.DockerClient.CopyToContainer(
+		configContainer.state.DockerContext,
+		configContainer.ID,
 		"/",
 		buffer,
 		types.CopyToContainerOptions{},
@@ -225,15 +229,15 @@ type UploadReleaseResponse struct {
 }
 
 // UploadRelease requests that the config container uploads the release and returns the response.
-func (container *Container) UploadRelease(terraformImage string) (*UploadReleaseResponse, error) {
+func (configContainer *Container) UploadRelease(terraformImage string) (*UploadReleaseResponse, error) {
 	request, err := json.Marshal(&uploadReleaseRequest{Action: "upload_release", TerraformImage: terraformImage})
 	if err != nil {
 		return nil, err
 	}
-	if err := container.write(append(request, '\n')); err != nil {
+	if err := configContainer.write(append(request, '\n')); err != nil {
 		return nil, err
 	}
-	received, err := container.readline()
+	received, err := configContainer.readline()
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +269,7 @@ type PrepareTerraformResponse struct {
 }
 
 // PrepareTerraform requests that the config container prepares for running terraform and returns the response.
-func (container *Container) PrepareTerraform(
+func (configContainer *Container) PrepareTerraform(
 	version, envName string,
 	config map[string]interface{},
 	env map[string]string,
@@ -280,10 +284,10 @@ func (container *Container) PrepareTerraform(
 	if err != nil {
 		return nil, err
 	}
-	if err := container.write(append(request, '\n')); err != nil {
+	if err := configContainer.write(append(request, '\n')); err != nil {
 		return nil, err
 	}
-	received, err := container.readline()
+	received, err := configContainer.readline()
 	if err != nil {
 		return nil, err
 	}

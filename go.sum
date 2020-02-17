@@ -28,6 +28,7 @@ github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
+github.com/mergermarket/cdflow2-config-common v0.0.0-20200207170818-0fb5bf8addff h1:FSs8ha5/phyjzPipvNMdj2fmD0dHvT76uw6zSWuMFxU=
 github.com/mergermarket/cdflow2-config-common v0.0.0-20200207170818-0fb5bf8addff/go.mod h1:kNBuyxspdu5cWP5e7VAmrP+5elB2wP5pHlcvLLpiyzI=
 github.com/mergermarket/cdflow2-config-simple-aws v0.0.0-20200207163505-21a38e818883/go.mod h1:hK7tjNlPLdr9P0zbJxwyWW8QW7mYSF1lIzXEi24NazE=
 github.com/opencontainers/go-digest v1.0.0-rc1 h1:WzifXhOVOEOuFYOJAW6aQqW0TooG2iki3E3Ii+WN7gQ=
