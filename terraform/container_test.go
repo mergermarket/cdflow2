@@ -63,7 +63,7 @@ func TestTerraformConfigureBackend(t *testing.T) {
 	var errorBuffer bytes.Buffer
 
 	// When
-	{
+	func {
 		terraformContainer, err := terraform.NewContainer(
 			dockerClient,
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
@@ -91,7 +91,7 @@ func TestTerraformConfigureBackend(t *testing.T) {
 		); err != nil {
 			log.Panicln("unexpected error: ", err)
 		}
-	}
+	}()
 
 	// Then
 	if outputBuffer.String() != "message to stdout\n" {
@@ -126,7 +126,7 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 	workspaceName := "existing-workspace"
 
 	// When
-	{
+	func () {
 		terraformContainer, err := terraform.NewContainer(
 			dockerClient,
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
@@ -152,7 +152,7 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 		); err != nil {
 			log.Panicln("error switching workspace:", err)
 		}
-	}
+	}()
 
 	// Then
 	lines := strings.Split(errorBuffer.String(), "\n")
@@ -192,7 +192,7 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 	workspaceName := "new-workspace"
 
 	// When
-	{
+	func () {
 		terraformContainer, err := terraform.NewContainer(
 			dockerClient,
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
@@ -217,7 +217,7 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 		); err != nil {
 			log.Panicln("error switching workspace:", err)
 		}
-	}
+	}()
 
 	// Then
 	lines := strings.Split(errorBuffer.String(), "\n")
