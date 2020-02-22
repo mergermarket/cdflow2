@@ -63,7 +63,7 @@ func TestTerraformConfigureBackend(t *testing.T) {
 	var errorBuffer bytes.Buffer
 
 	// When
-	func {
+	func() {
 		terraformContainer, err := terraform.NewContainer(
 			dockerClient,
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
@@ -126,7 +126,7 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 	workspaceName := "existing-workspace"
 
 	// When
-	func () {
+	func() {
 		terraformContainer, err := terraform.NewContainer(
 			dockerClient,
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
@@ -192,7 +192,7 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 	workspaceName := "new-workspace"
 
 	// When
-	func () {
+	func() {
 		terraformContainer, err := terraform.NewContainer(
 			dockerClient,
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
