@@ -30,11 +30,6 @@ func TestConfigRelease(t *testing.T) {
 		if err != nil {
 			log.Panicln("error creating config container:", err)
 		}
-		defer func() {
-			if err := configContainer.Done(); err != nil {
-				log.Panicln("error stopping config container:", err)
-			}
-		}()
 
 		configureReleaseResponse, err = configContainer.ConfigureRelease(
 			"test-version",
@@ -63,6 +58,10 @@ func TestConfigRelease(t *testing.T) {
 		if err := configContainer.RequestStop(); err != nil {
 			log.Panicln("error stopping config container:", err)
 		}
+		if err := configContainer.Done(); err != nil {
+			log.Panicln("error stopping config container:", err)
+		}
+		log.Printf("error buffer: %v\n", errorBuffer.String())
 	}
 
 	// Then
