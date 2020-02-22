@@ -1,4 +1,5 @@
 ![Unit tests](https://github.com/mergermarket/cdflow2/workflows/Unit%20tests/badge.svg)
+[![Travis Build Status](https://www.travis-ci.org/mergermarket/cdflow2.svg?branch=master)](https://www.travis-ci.org/mergermarket/cdflow2)
 
 ## cdflow.yaml
 
