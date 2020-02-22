@@ -3,89 +3,79 @@ package config_test
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"log"
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/test"
 )
 
-func removeConfigContainer(configContainer *config.Container) {
-	if err := configContainer.Remove(); err != nil {
-		timeout := 5 * time.Second
-		if err := configContainer.Stop(&timeout); err != nil {
-			log.Panicln("could not stop container after failing to remove it:", err)
-		}
-		if err := configContainer.Remove(); err != nil {
-			log.Panicln("could not remove config container (after failing and then stopping the container):", err)
-		}
-	}
-}
-
-func setupConfigContainer(errorStream io.Writer) (*command.GlobalState, *config.Container, string) {
-	state := test.CreateState()
-
-	releaseVolume := test.CreateVolume(state)
-
-	configContainer := config.NewContainer(state, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, errorStream)
-
-	if err := configContainer.Start(); err != nil {
-		log.Panicln("error running config container:", err)
-	}
-	return state, configContainer, releaseVolume
-}
-
 func TestConfigRelease(t *testing.T) {
+	// Given
+	dockerClient := test.GetDockerClient()
+
+	releaseVolume := test.CreateVolume(dockerClient)
+	defer test.RemoveVolume(dockerClient, releaseVolume)
 
 	var errorBuffer bytes.Buffer
-	state, configContainer, releaseVolume := setupConfigContainer(&errorBuffer)
 
-	defer test.RemoveVolume(state, releaseVolume)
-	defer removeConfigContainer(configContainer)
+	var configureReleaseResponse *config.ConfigureReleaseConfigResponse
+	var uploadReleaseResponse *config.UploadReleaseResponse
 
-	response, err := configContainer.ConfigureRelease(
-		"test-version",
-		map[string]interface{}{
-			"TEST_CONFIG_VAR": "config value",
-		},
-		map[string]string{
-			"TEST_ENV_VAR": "env value",
-		},
-	)
-	if err != nil {
-		log.Panicln("error in configureRelease:", err)
+	// When
+	{
+		configContainer, err := config.NewContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, &errorBuffer)
+		if err != nil {
+			log.Panicln("error creating config container:", err)
+		}
+		defer func() {
+			if err := configContainer.Done(); err != nil {
+				log.Panicln("error stopping config container:", err)
+			}
+		}()
+
+		configureReleaseResponse, err = configContainer.ConfigureRelease(
+			"test-version",
+			map[string]interface{}{
+				"TEST_CONFIG_VAR": "config value",
+			},
+			map[string]string{
+				"TEST_ENV_VAR": "env value",
+			},
+		)
+		if err != nil {
+			log.Panicln("error in configureRelease:", err)
+		}
+
+		configContainer.WriteReleaseMetadata(map[string]map[string]string{
+			"release": map[string]string{
+				"metadata-key": "metadata-value",
+			},
+		})
+
+		uploadReleaseResponse, err = configContainer.UploadRelease("terraform:image")
+		if err != nil {
+			log.Panicln("error in uploadRelease:", err)
+		}
+
+		if err := configContainer.RequestStop(); err != nil {
+			log.Panicln("error stopping config container:", err)
+		}
 	}
 
-	if !reflect.DeepEqual(response.Env, map[string]string{
+	// Then
+	if !reflect.DeepEqual(configureReleaseResponse.Env, map[string]string{
 		"TEST_VERSION":                 "test-version",
 		"TEST_RELEASE_VAR_FROM_CONFIG": "config value",
 		"TEST_RELEASE_VAR_FROM_ENV":    "env value",
 	}) {
-		log.Panicln("unexpected env in response:", response.Env)
-	}
-
-	configContainer.WriteReleaseMetadata(map[string]map[string]string{
-		"release": map[string]string{
-			"metadata-key": "metadata-value",
-		},
-	})
-
-	uploadReleaseResponse, err := configContainer.UploadRelease("terraform:image")
-	if err != nil {
-		log.Panicln("error in uploadRelease:", err)
+		log.Panicln("unexpected env in response:", configureReleaseResponse.Env)
 	}
 
 	if uploadReleaseResponse.Message != "uploaded test-version" {
 		log.Panicln("unexpected message:", uploadReleaseResponse.Message)
-	}
-
-	if err := configContainer.RequestStop(); err != nil {
-		log.Panicln("error stopping config container:", err)
 	}
 
 	lines := strings.Split(errorBuffer.String(), "\n")
@@ -113,43 +103,66 @@ func TestConfigRelease(t *testing.T) {
 }
 
 func TestConfigDeploy(t *testing.T) {
-	var errorBuffer bytes.Buffer
-	dockerClient, configContainer, releaseVolume := setupConfigContainer(&errorBuffer)
-	defer test.RemoveVolume(dockerClient, releaseVolume)
-	defer removeConfigContainer(configContainer)
+	// Given
+	dockerClient := test.GetDockerClient()
 
-	response, err := configContainer.PrepareTerraform(
-		"test-version",
-		"test-env",
-		map[string]interface{}{
-			"TEST_CONFIG_VAR": "config value",
-		},
-		map[string]string{
-			"TEST_ENV_VAR":     "env value",
-			"TERRAFORM_DIGEST": "test terraform image digest",
-		},
-	)
-	if err != nil {
-		log.Panicln(err)
+	releaseVolume := test.CreateVolume(dockerClient)
+	defer test.RemoveVolume(dockerClient, releaseVolume)
+
+	var errorBuffer bytes.Buffer
+	var prepareTerraformResponse *config.PrepareTerraformResponse
+
+	// When
+	{
+		configContainer, err := config.NewContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, &errorBuffer)
+		if err != nil {
+			log.Panicln("error creating config container:", err)
+		}
+		defer func() {
+			if err := configContainer.Done(); err != nil {
+				log.Panicln("error stopping config container:", err)
+			}
+		}()
+
+		prepareTerraformResponse, err = configContainer.PrepareTerraform(
+			"test-version",
+			"test-env",
+			map[string]interface{}{
+				"TEST_CONFIG_VAR": "config value",
+			},
+			map[string]string{
+				"TEST_ENV_VAR":     "env value",
+				"TERRAFORM_DIGEST": "test terraform image digest",
+			},
+		)
+		if err != nil {
+			log.Panicln(err)
+		}
+
+		if err := configContainer.RequestStop(); err != nil {
+			log.Panicln("error stopping config container:", err)
+		}
 	}
 
-	if !reflect.DeepEqual(response.Env, map[string]string{
+	// Then
+
+	if !reflect.DeepEqual(prepareTerraformResponse.Env, map[string]string{
 		"TEST_ENV_VAR":    "env value",
 		"TEST_CONFIG_VAR": "config value",
 	}) {
-		log.Panicln("unexpected env:", response.Env)
+		log.Panicln("unexpected env:", prepareTerraformResponse.Env)
 	}
 
-	if response.TerraformImage != "test terraform image digest" {
-		log.Panicln("unexpected terraform image:", response.TerraformImage)
+	if prepareTerraformResponse.TerraformImage != "test terraform image digest" {
+		log.Panicln("unexpected terraform image:", prepareTerraformResponse.TerraformImage)
 	}
 
-	if response.TerraformBackendType != "a-terraform-backend-type" {
-		log.Panicln("unexpected terraform backend type:", response.TerraformBackendType)
+	if prepareTerraformResponse.TerraformBackendType != "a-terraform-backend-type" {
+		log.Panicln("unexpected terraform backend type:", prepareTerraformResponse.TerraformBackendType)
 	}
 
-	if !reflect.DeepEqual(response.TerraformBackendConfig, map[string]string{"backend-config-key": "backend-config-value"}) {
-		log.Panicln("unexpected terraform backend config:", response.TerraformBackendConfig)
+	if !reflect.DeepEqual(prepareTerraformResponse.TerraformBackendConfig, map[string]string{"backend-config-key": "backend-config-value"}) {
+		log.Panicln("unexpected terraform backend config:", prepareTerraformResponse.TerraformBackendConfig)
 	}
 
 	releaseData, err := test.ReadVolume(dockerClient, releaseVolume)
@@ -159,10 +172,6 @@ func TestConfigDeploy(t *testing.T) {
 
 	if !reflect.DeepEqual(releaseData, map[string]string{"test": "unpacked"}) {
 		log.Panicln("unexpected release data:", releaseData)
-	}
-
-	if err := configContainer.RequestStop(); err != nil {
-		log.Panicln("error stopping config container:", err)
 	}
 
 	var prepareTerraformDebugOutput struct {

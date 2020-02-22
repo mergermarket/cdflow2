@@ -1,14 +1,15 @@
 package command
 
 import (
-	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
 
-	"github.com/docker/docker/client"
+	"github.com/mergermarket/cdflow2/docker"
+	"github.com/mergermarket/cdflow2/docker/official"
 	"github.com/mergermarket/cdflow2/manifest"
 )
 
@@ -24,15 +25,14 @@ type GlobalArgs struct {
 
 // GlobalState contains common to all commands.
 type GlobalState struct {
-	GlobalArgs    *GlobalArgs
-	Component     string
-	Commit        string
-	CodeDir       string
-	Manifest      *manifest.Manifest
-	DockerContext context.Context
-	DockerClient  *client.Client
-	OutputStream  io.Writer
-	ErrorStream   io.Writer
+	GlobalArgs   *GlobalArgs
+	Component    string
+	Commit       string
+	CodeDir      string
+	Manifest     *manifest.Manifest
+	OutputStream io.Writer
+	ErrorStream  io.Writer
+	DockerClient docker.Iface
 }
 
 // GetGlobalState collects info common to every command.
@@ -56,13 +56,6 @@ func GetGlobalState(globalArgs *GlobalArgs) (*GlobalState, error) {
 		return nil, errors.New("cdflow.yaml version must be 2 for cdflow2")
 	}
 
-	state.DockerContext = context.Background()
-
-	state.DockerClient, err = client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return nil, err
-	}
-
 	if globalArgs.Component == "" {
 		state.Component, err = GetComponentFromGit()
 		if err != nil {
@@ -83,6 +76,12 @@ func GetGlobalState(globalArgs *GlobalArgs) (*GlobalState, error) {
 
 	state.OutputStream = os.Stdout
 	state.ErrorStream = os.Stderr
+
+	dockerClient, err := official.NewClient()
+	if err != nil {
+		return nil, fmt.Errorf("error creating docker client: %w", err)
+	}
+	state.DockerClient = dockerClient
 
 	return &state, nil
 }

@@ -2,8 +2,8 @@ package command_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 	"testing"
@@ -16,18 +16,19 @@ import (
 
 func TestRunCommand(t *testing.T) {
 
+	// Given
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
+	// When
 	if err := release.RunCommand(
 		&command.GlobalState{
-			DockerClient:  test.GetDockerClient(),
-			DockerContext: context.Background(),
-			Component:     "test-component",
-			Commit:        "test-commit",
-			OutputStream:  &outputBuffer,
-			ErrorStream:   &errorBuffer,
-			CodeDir:       test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
+			DockerClient: test.GetDockerClient(),
+			Component:    "test-component",
+			Commit:       "test-commit",
+			OutputStream: &outputBuffer,
+			ErrorStream:  &errorBuffer,
+			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
 			Manifest: &manifest.Manifest{
 				Version: 2,
 				Team:    "test-team",
@@ -58,6 +59,7 @@ func TestRunCommand(t *testing.T) {
 		log.Fatalln("error running command:", err)
 	}
 
+	// Then
 	lines := strings.Split(errorBuffer.String(), "\n")
 	if len(lines) != 7 || lines[6] != "" {
 		log.Panicln("expected six lines with a trailing newline (empty string), got lines:", lines)
@@ -75,6 +77,7 @@ func TestRunCommand(t *testing.T) {
 		log.Panicln("unexpected output of release:", lines[2])
 	}
 
+	fmt.Println(lines[5])
 	checkUploadReleaseOutput(lines[4])
 
 	if lines[5] != "uploaded test-version" {
@@ -117,7 +120,7 @@ func checkUploadReleaseOutput(debugOutput string) {
 		ReleaseMetadata map[string]map[string]string
 	}
 	if err := json.Unmarshal([]byte(debugOutput), &decoded); err != nil {
-		log.Panicln("error decoding upload release debug output:", err)
+		log.Panicln("error decoding upload release debug output:", err, "'"+debugOutput+"'")
 	}
 
 	if decoded.Action != "upload_release" {

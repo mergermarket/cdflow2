@@ -73,7 +73,7 @@ if [[ "$(go version)" != *"go1.13."* ]]; then
     exit 1
 fi
 
-tests="$(go list ./... | grep -v 'cdflow2$' | grep -v cdflow2/test | sort)"
+tests="$(go list ./... | grep -v 'cdflow2$' | grep -v cdflow2/test | grep -v docker$ | sort)"
 if [[ ! -z "$1" ]]; then
     tests="$(echo "$tests" | grep "$1")"
 fi

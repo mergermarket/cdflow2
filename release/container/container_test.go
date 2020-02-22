@@ -11,16 +11,18 @@ import (
 )
 
 func TestRelese(t *testing.T) {
-	state := test.CreateState()
+	// Given
+	dockerClient := test.GetDockerClient()
 
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
-	buildVolume := test.CreateVolume(state)
-	//defer test.RemoveVolume(dockerClient, buildVolume)
+	buildVolume := test.CreateVolume(dockerClient)
+	defer test.RemoveVolume(dockerClient, buildVolume)
 
+	// When
 	releaseMetadata, err := container.Run(
-		state,
+		dockerClient,
 		test.GetConfig("TEST_RELEASE_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/release/sample-code",
 		buildVolume,
@@ -38,6 +40,7 @@ func TestRelese(t *testing.T) {
 		log.Panicln("unexpected error: ", err)
 	}
 
+	// Then
 	if errorBuffer.String() != "message to stderr from release\ndocker status: OK\n" {
 		log.Panicf("unexpected stderr output: '%v'", errorBuffer.String())
 	}

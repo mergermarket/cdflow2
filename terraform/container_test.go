@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -13,16 +14,18 @@ import (
 )
 
 func TestTerraformInitInitial(t *testing.T) {
-	state := test.CreateState()
+	// Given
+	dockerClient := test.GetDockerClient()
 
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
-	buildVolume := test.CreateVolume(state)
-	defer test.RemoveVolume(state, buildVolume)
+	buildVolume := test.CreateVolume(dockerClient)
+	defer test.RemoveVolume(dockerClient, buildVolume)
 
+	// When
 	if err := terraform.InitInitial(
-		state,
+		dockerClient,
 		test.GetConfig("TEST_TERRAFORM_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 		buildVolume,
@@ -32,13 +35,14 @@ func TestTerraformInitInitial(t *testing.T) {
 		log.Fatalln("unexpected error: ", err)
 	}
 
+	// Then
 	if outputBuffer.String() != "message to stdout\n" {
 		log.Fatalf("unexpected stdout output: '%v'", outputBuffer.String())
 	}
 
 	test.CheckTerraformInitInitialReflectedInput(errorBuffer.Bytes())
 
-	buildOutput, err := test.ReadVolume(state, buildVolume)
+	buildOutput, err := test.ReadVolume(dockerClient, buildVolume)
 	if err != nil {
 		log.Panicln("could not read build volume:", err)
 	}
@@ -49,36 +53,47 @@ func TestTerraformInitInitial(t *testing.T) {
 }
 
 func TestTerraformConfigureBackend(t *testing.T) {
-	state := test.CreateState()
+	// Given
+	dockerClient := test.GetDockerClient()
 
-	releaseVolume := test.CreateVolume(state)
-	defer test.RemoveVolume(state, releaseVolume)
-
-	terraformContainer, err := terraform.NewContainer(
-		state,
-		test.GetConfig("TEST_TERRAFORM_IMAGE"),
-		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
-		releaseVolume,
-	)
-	if err != nil {
-		log.Fatalln("error creating terraform container:", err)
-	}
-	defer terraformContainer.Done()
+	releaseVolume := test.CreateVolume(dockerClient)
+	defer test.RemoveVolume(dockerClient, releaseVolume)
 
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
-	if err := terraformContainer.ConfigureBackend(
-		&outputBuffer,
-		&errorBuffer,
-		[]terraform.BackendConfigParameter{
-			terraform.BackendConfigParameter{"key1", "value1"},
-			terraform.BackendConfigParameter{"key2", "value2"},
-		},
-	); err != nil {
-		log.Panicln("unexpected error: ", err)
+	// When
+	{
+		terraformContainer, err := terraform.NewContainer(
+			dockerClient,
+			test.GetConfig("TEST_TERRAFORM_IMAGE"),
+			test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
+			releaseVolume,
+			os.Stdout,
+			os.Stderr,
+		)
+		if err != nil {
+			log.Fatalln("error creating terraform container:", err)
+		}
+		defer func() {
+			if err := terraformContainer.Done(); err != nil {
+				log.Panicln("error cleaning up terraform container:", err)
+			}
+		}()
+
+		if err := terraformContainer.ConfigureBackend(
+			&outputBuffer,
+			&errorBuffer,
+			[]terraform.BackendConfigParameter{
+				terraform.BackendConfigParameter{"key1", "value1"},
+				terraform.BackendConfigParameter{"key2", "value2"},
+			},
+		); err != nil {
+			log.Panicln("unexpected error: ", err)
+		}
 	}
 
+	// Then
 	if outputBuffer.String() != "message to stdout\n" {
 		log.Panicf("unexpected stdout output: '%v'", outputBuffer.String())
 	}
@@ -99,35 +114,47 @@ func TestTerraformConfigureBackend(t *testing.T) {
 }
 
 func TestSwitchWorkspaceExisting(t *testing.T) {
-	state := test.CreateState()
+	// Given
+	dockerClient := test.GetDockerClient()
 
-	releaseVolume := test.CreateVolume(state)
-	defer test.RemoveVolume(state, releaseVolume)
-
-	terraformContainer, err := terraform.NewContainer(
-		state,
-		test.GetConfig("TEST_TERRAFORM_IMAGE"),
-		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
-		releaseVolume,
-	)
-	if err != nil {
-		log.Fatalln("error creating terraform container:", err)
-	}
-	defer terraformContainer.Done()
+	releaseVolume := test.CreateVolume(dockerClient)
+	defer test.RemoveVolume(dockerClient, releaseVolume)
 
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
 	workspaceName := "existing-workspace"
 
-	if err := terraformContainer.SwitchWorkspace(
-		workspaceName,
-		&outputBuffer,
-		&errorBuffer,
-	); err != nil {
-		log.Panicln("error switching workspace:", err)
+	// When
+	{
+		terraformContainer, err := terraform.NewContainer(
+			dockerClient,
+			test.GetConfig("TEST_TERRAFORM_IMAGE"),
+			test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
+			releaseVolume,
+			os.Stdout,
+			os.Stderr,
+		)
+		if err != nil {
+			log.Fatalln("error creating terraform container:", err)
+		}
+
+		defer func() {
+			if err := terraformContainer.Done(); err != nil {
+				log.Panicln("error cleaning up terraform container:", err)
+			}
+		}()
+
+		if err := terraformContainer.SwitchWorkspace(
+			workspaceName,
+			&outputBuffer,
+			&errorBuffer,
+		); err != nil {
+			log.Panicln("error switching workspace:", err)
+		}
 	}
 
+	// Then
 	lines := strings.Split(errorBuffer.String(), "\n")
 	if len(lines) != 3 || lines[2] != "" {
 		log.Panicln("expected two lines with a trailing newline (empty string), got lines:", lines)
@@ -153,35 +180,46 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 }
 
 func TestSwitchWorkspaceNew(t *testing.T) {
-	state := test.CreateState()
+	// When
+	dockerClient := test.GetDockerClient()
 
-	releaseVolume := test.CreateVolume(state)
-	defer test.RemoveVolume(state, releaseVolume)
-
-	terraformContainer, err := terraform.NewContainer(
-		state,
-		test.GetConfig("TEST_TERRAFORM_IMAGE"),
-		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
-		releaseVolume,
-	)
-	if err != nil {
-		log.Fatalln("error creating terraform container:", err)
-	}
-	defer terraformContainer.Done()
+	releaseVolume := test.CreateVolume(dockerClient)
+	defer test.RemoveVolume(dockerClient, releaseVolume)
 
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
 	workspaceName := "new-workspace"
 
-	if err := terraformContainer.SwitchWorkspace(
-		workspaceName,
-		&outputBuffer,
-		&errorBuffer,
-	); err != nil {
-		log.Panicln("error switching workspace:", err)
+	// When
+	{
+		terraformContainer, err := terraform.NewContainer(
+			dockerClient,
+			test.GetConfig("TEST_TERRAFORM_IMAGE"),
+			test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
+			releaseVolume,
+			os.Stdout,
+			os.Stderr,
+		)
+		if err != nil {
+			log.Fatalln("error creating terraform container:", err)
+		}
+		defer func() {
+			if err := terraformContainer.Done(); err != nil {
+				log.Panicln("error cleaning up terraform container:", err)
+			}
+		}()
+
+		if err := terraformContainer.SwitchWorkspace(
+			workspaceName,
+			&outputBuffer,
+			&errorBuffer,
+		); err != nil {
+			log.Panicln("error switching workspace:", err)
+		}
 	}
 
+	// Then
 	lines := strings.Split(errorBuffer.String(), "\n")
 	if len(lines) != 3 || lines[2] != "" {
 		log.Panicln("expected two lines with a trailing newline (empty string), got lines:", lines)

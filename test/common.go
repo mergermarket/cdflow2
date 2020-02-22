@@ -3,7 +3,6 @@ package test
 import (
 	"archive/tar"
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"log"
@@ -11,85 +10,52 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/volume"
-	"github.com/docker/docker/client"
-	"github.com/mergermarket/cdflow2/command"
-	"github.com/mergermarket/cdflow2/containers"
+	"github.com/mergermarket/cdflow2/docker"
+	"github.com/mergermarket/cdflow2/docker/official"
 )
 
-func GetDockerClient() *client.Client {
-	client, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+// GetDockerClient returns a docker client for testing.
+func GetDockerClient() docker.Iface {
+	dockerClient, err := official.NewClient()
 	if err != nil {
 		log.Fatalln("error creating docker client:", err)
 	}
-	return client
+	return dockerClient
 }
 
-// CreateState creates and returns a global state for testing.
-func CreateState() *command.GlobalState {
-	state := command.GlobalState{
-		DockerClient:  GetDockerClient(),
-		DockerContext: context.Background(),
-	}
-	return &state
-}
-
-func CreateVolume(state *command.GlobalState) string {
-	volume, err := state.DockerClient.VolumeCreate(
-		state.DockerContext,
-		volume.VolumeCreateBody{},
-	)
+func CreateVolume(dockerCient docker.Iface) string {
+	volume, err := dockerCient.CreateVolume()
 	if err != nil {
 		log.Panicln("could not create volume:", err)
 	}
-	return volume.Name
+	return volume
 }
 
-func RemoveVolume(state *command.GlobalState, volume string) {
-	if err := state.DockerClient.VolumeRemove(
-		state.DockerContext,
-		volume,
-		false,
-	); err != nil {
+func RemoveVolume(dockerClient docker.Iface, volume string) {
+	if err := dockerClient.RemoveVolume(volume); err != nil {
 		log.Panicf("error removing volume %v: %v", volume, err)
 	}
 }
 
-func ReadVolume(state *command.GlobalState, volume string) (map[string]string, error) {
+func ReadVolume(dockerClient docker.Iface, volume string) (map[string]string, error) {
 	image := "alpine:latest"
-	if err := containers.EnsureImage(state, image, nil); err != nil {
+	if err := dockerClient.EnsureImage(image, os.Stderr); err != nil {
 		log.Panicln("error pulling:", err)
 	}
-	container, err := state.DockerClient.ContainerCreate(
-		state.DockerContext,
-		&container.Config{
-			Image: image,
-		},
-		&container.HostConfig{
-			Binds: []string{volume + ":/root:ro"},
-		},
-		nil,
-		"",
-	)
+
+	container, err := dockerClient.CreateContainer(&docker.CreateContainerOptions{
+		Image: image,
+		Binds: []string{volume + ":/root:ro"},
+	})
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
-		if err := state.DockerClient.ContainerRemove(
-			state.DockerContext,
-			container.ID,
-			types.ContainerRemoveOptions{},
-		); err != nil {
+		if err := dockerClient.RemoveContainer(container); err != nil {
 			log.Fatalln("could not remove container for reading volume:", err)
 		}
 	}()
-	reader, _, err := state.DockerClient.CopyFromContainer(
-		state.DockerContext,
-		container.ID,
-		"/root/",
-	)
+	reader, err := dockerClient.CopyFromContainer(container, "/root/")
 	if err != nil {
 		return nil, err
 	}

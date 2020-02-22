@@ -6,20 +6,41 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/mergermarket/cdflow2/command"
-	"github.com/mergermarket/cdflow2/containers"
-	"github.com/mergermarket/cdflow2/util"
+	"github.com/mergermarket/cdflow2/docker"
 )
 
-func getReleaseMetadataFromContainer(state *command.GlobalState, id string) (map[string]string, error) {
-	reader, _, err := state.DockerClient.CopyFromContainer(
-		state.DockerContext,
-		id,
-		"/release-metadata.json",
-	)
+// Run creates and runs the release container, returning a map of release metadata.
+func Run(dockerClient docker.Iface, image, codeDir, buildVolume string, outputStream, errorStream io.Writer, env map[string]string) (map[string]string, error) {
+
+	var releaseMetadata map[string]string
+
+	return releaseMetadata, dockerClient.Run(&docker.RunOptions{
+		Image:        image,
+		OutputStream: outputStream,
+		ErrorStream:  errorStream,
+		WorkingDir:   "/code",
+		Env:          mapToDockerEnv(env),
+		Binds: []string{
+			codeDir + ":/code:ro",
+			buildVolume + ":/build",
+			"/var/run/docker.sock:/var/run/docker.sock",
+		},
+		NamePrefix: "cdflow2-release",
+		BeforeRemove: func(id string) error {
+			result, err := getReleaseMetadataFromContainer(dockerClient, id)
+			if err != nil {
+				return fmt.Errorf("could not get release metadata from container: %w", err)
+			}
+			releaseMetadata = result
+			return nil
+		},
+	})
+}
+
+func getReleaseMetadataFromContainer(dockerClient docker.Iface, id string) (map[string]string, error) {
+	reader, err := dockerClient.CopyFromContainer(id, "/release-metadata.json")
 	if err != nil {
 		return nil, err
 	}
@@ -41,57 +62,16 @@ func getReleaseMetadataFromContainer(state *command.GlobalState, id string) (map
 	return result, nil
 }
 
-// Run creates and runs the release container, returning a map of release metadata.
-func Run(state *command.GlobalState, image, codeDir, buildVolume string, outputStream, errorStream io.Writer, env map[string]string) (map[string]string, error) {
-	container, err := createReleaseContainer(state, image, codeDir, buildVolume, env)
-	if err != nil {
-		return nil, err
+func mapToDockerEnv(input map[string]string) []string {
+	keys := make([]string, 0, len(input))
+	for key := range input {
+		keys = append(keys, key)
 	}
-
-	if err := containers.Await(state, container, nil, outputStream, errorStream, nil); err != nil {
-		return nil, err
+	// sort to make it stable for testing
+	sort.Strings(keys)
+	var result []string
+	for _, key := range keys {
+		result = append(result, fmt.Sprintf("%s=%s", key, input[key]))
 	}
-
-	releaseMetadata, err := getReleaseMetadataFromContainer(state, container)
-	if err != nil {
-		return nil, fmt.Errorf("could not get release metadata from container: %w", err)
-	}
-
-	if err := state.DockerClient.ContainerRemove(
-		state.DockerContext,
-		container,
-		types.ContainerRemoveOptions{},
-	); err != nil {
-		return nil, err
-	}
-
-	return releaseMetadata, nil
-}
-
-func createReleaseContainer(state *command.GlobalState, image, codeDir, buildVolume string, env map[string]string) (string, error) {
-	response, err := state.DockerClient.ContainerCreate(
-		state.DockerContext,
-		&container.Config{
-			Image:        image,
-			AttachStdin:  false,
-			AttachStdout: true,
-			AttachStderr: true,
-			WorkingDir:   "/code",
-			Env:          containers.MapToDockerEnv(env),
-		},
-		&container.HostConfig{
-			LogConfig: container.LogConfig{Type: "none"},
-			Binds: []string{
-				codeDir + ":/code:ro",
-				buildVolume + ":/build",
-				"/var/run/docker.sock:/var/run/docker.sock",
-			},
-		},
-		nil,
-		util.RandomName("cdflow2-release"),
-	)
-	if err != nil {
-		return "", nil
-	}
-	return response.ID, nil
+	return result
 }

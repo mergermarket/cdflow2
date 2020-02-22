@@ -2,7 +2,6 @@ package deploy_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"log"
 	"reflect"
@@ -10,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/mergermarket/cdflow2/command"
-	"github.com/mergermarket/cdflow2/containers"
 	"github.com/mergermarket/cdflow2/deploy"
 	"github.com/mergermarket/cdflow2/manifest"
 	"github.com/mergermarket/cdflow2/test"
@@ -22,13 +20,12 @@ func TestRunCommand(t *testing.T) {
 	var errorBuffer bytes.Buffer
 
 	state := &command.GlobalState{
-		DockerClient:  test.GetDockerClient(),
-		DockerContext: context.Background(),
-		OutputStream:  &outputBuffer,
-		ErrorStream:   &errorBuffer,
-		CodeDir:       test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
-		Component:     "test-component",
-		Commit:        "test-commit",
+		DockerClient: test.GetDockerClient(),
+		OutputStream: &outputBuffer,
+		ErrorStream:  &errorBuffer,
+		CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
+		Component:    "test-component",
+		Commit:       "test-commit",
 		Manifest: &manifest.Manifest{
 			Version: 2,
 			Terraform: manifest.Terraform{
@@ -47,11 +44,14 @@ func TestRunCommand(t *testing.T) {
 		},
 	}
 
-	terraformDigest, err := containers.RepoDigest(state, test.GetConfig("TEST_TERRAFORM_IMAGE"))
+	repoDigests, err := state.DockerClient.GetImageRepoDigests(test.GetConfig("TEST_TERRAFORM_IMAGE"))
 	if err != nil {
-		log.Panicln("could not get repo digest for terraform container:", err)
+		log.Panicln("could not get repo digests for terraform container:", err)
 	}
-
+	if len(repoDigests) == 0 {
+		log.Panicln("no repo digests for terraform container", test.GetConfig("TEST_TERRAFORM_IMAGE"))
+	}
+	terraformDigest := repoDigests[0]
 	if err := deploy.RunCommand(state, "test-env", "test-version", map[string]string{
 		"TERRAFORM_DIGEST": terraformDigest,
 	}); err != nil {

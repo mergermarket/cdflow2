@@ -1,12 +1,11 @@
 package deploy
 
 import (
+	"fmt"
 	"log"
 
-	"github.com/docker/docker/api/types/volume"
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
-	"github.com/mergermarket/cdflow2/containers"
 	"github.com/mergermarket/cdflow2/terraform"
 	"github.com/mergermarket/cdflow2/util"
 )
@@ -15,26 +14,34 @@ import (
 func RunCommand(state *command.GlobalState, envName, version string, env map[string]string) error {
 	// TODO too long, consider factoring some parts out
 
-	if err := containers.MaybePullImage(!state.GlobalArgs.NoPullConfig, state, state.Manifest.Config.Image, "config"); err != nil {
-		return err
+	dockerClient := state.DockerClient
+
+	if !state.GlobalArgs.NoPullConfig {
+		if err := dockerClient.PullImage(state.Manifest.Config.Image, state.ErrorStream); err != nil {
+			return fmt.Errorf("error pulling config image: %w", err)
+		}
 	}
 
-	buildVolume, err := state.DockerClient.VolumeCreate(state.DockerContext, volume.VolumeCreateBody{})
+	buildVolume, err := dockerClient.CreateVolume()
 	if err != nil {
 		return err
 	}
-	defer state.DockerClient.VolumeRemove(state.DockerContext, buildVolume.Name, false)
+	defer func() {
+		if err := dockerClient.RemoveVolume(buildVolume); err != nil {
+			log.Panicln("error removing build release volume:", err)
+		}
+	}()
 
-	configContainer := config.NewContainer(state, state.Manifest.Config.Image, buildVolume.Name, state.ErrorStream)
-	if err := configContainer.Start(); err != nil {
+	configContainer, err := config.NewContainer(dockerClient, state.Manifest.Config.Image, buildVolume, state.ErrorStream)
+	if err != nil {
 		return err
 	}
 	defer func() {
 		if err := configContainer.RequestStop(); err != nil {
 			log.Panicln("error stopping config container:", err)
 		}
-		if err := configContainer.Remove(); err != nil {
-			log.Panicln("error removing config container:", err)
+		if err := configContainer.Done(); err != nil {
+			log.Panicln("error cleaning up config container:", err)
 		}
 	}()
 
@@ -43,22 +50,26 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 		return err
 	}
 
-	if err := containers.MaybePullImage(!state.GlobalArgs.NoPullTerraform, state, state.Manifest.Terraform.Image, "terraform"); err != nil {
-		return err
+	if !state.GlobalArgs.NoPullTerraform {
+		if err := dockerClient.EnsureImage(prepareTerraformResponse.TerraformImage, state.ErrorStream); err != nil {
+			return fmt.Errorf("error pulling terraform image %v: %w", prepareTerraformResponse.TerraformImage, err)
+		}
 	}
 
 	terraformContainer, err := terraform.NewContainer(
-		state,
+		dockerClient,
 		prepareTerraformResponse.TerraformImage,
 		state.CodeDir,
-		buildVolume.Name,
+		buildVolume,
+		state.OutputStream,
+		state.ErrorStream,
 	)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err := terraformContainer.Done(); err != nil {
-			log.Fatalln("error stopping terraform container:", err)
+			log.Fatalln("error cleaning up terraform container:", err)
 		}
 	}()
 

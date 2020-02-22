@@ -6,88 +6,67 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
+	"log"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	containertypes "github.com/docker/docker/api/types/container"
-	"github.com/mergermarket/cdflow2/command"
-	"github.com/mergermarket/cdflow2/containers"
-	"github.com/mergermarket/cdflow2/util"
+	"github.com/mergermarket/cdflow2/docker"
 )
 
 // Container represents a config container.
 type Container struct {
-	state         *command.GlobalState
-	ID            string
-	completion    chan error
-	image         string
-	releaseVolume string
-	reader        *bufio.Reader
-	readStream    io.Reader
-	writeStream   io.Writer
-	errorStream   io.Writer
+	dockerClient docker.Iface
+	id           string
+	done         chan error
+	reader       *bufio.Reader
+	writeStream  io.Writer
+	finished     bool
 }
 
 // NewContainer creates and returns a new config container.
-func NewContainer(state *command.GlobalState, image, releaseVolume string, errorStream io.Writer) *Container {
-	return &Container{
-		state:         state,
-		completion:    make(chan error, 1),
-		image:         image,
-		releaseVolume: releaseVolume,
-		errorStream:   errorStream,
-	}
-}
+func NewContainer(dockerClient docker.Iface, image, releaseVolume string, errorStream io.Writer) (*Container, error) {
+	started := make(chan string, 1)
+	defer close(started)
 
-// Start starts the config container.
-func (configContainer *Container) Start() error {
-	id, err := configContainer.createContainer()
-	if err != nil {
-		return err
-	}
-	configContainer.ID = id
+	done := make(chan error, 1)
 
 	inputReadStream, inputWriteStream := io.Pipe()
 	outputReadStream, outputWriteStream := io.Pipe()
-
-	configContainer.readStream = outputReadStream
-	configContainer.reader = bufio.NewReader(outputReadStream)
-	configContainer.writeStream = inputWriteStream
-
-	started := make(chan error, 1)
-	go func() {
-		configContainer.completion <- containers.Await(configContainer.state, configContainer.ID, inputReadStream, outputWriteStream, configContainer.errorStream, started)
-		inputReadStream.Close()
-		outputWriteStream.Close()
-	}()
-	return <-started
-}
-
-func (configContainer *Container) createContainer() (string, error) {
-	id := util.RandomName("cdflow2-config")
-	if _, err := configContainer.state.DockerClient.ContainerCreate(
-		configContainer.state.DockerContext,
-		&containertypes.Config{
-			Image:        configContainer.image,
-			OpenStdin:    true,
-			StdinOnce:    true,
-			AttachStdout: true,
-			AttachStderr: true,
-			WorkingDir:   "/release",
-		},
-		&container.HostConfig{
-			LogConfig: container.LogConfig{Type: "none"},
-			Binds:     []string{configContainer.releaseVolume + ":/release"},
-		},
-		nil,
-		id,
-	); err != nil {
-		return "", fmt.Errorf("error creating config container: %w", err)
+	container := &Container{
+		dockerClient: dockerClient,
+		done:         done,
+		reader:       bufio.NewReader(outputReadStream),
+		writeStream:  inputWriteStream,
 	}
-	return id, nil
+
+	go func() {
+		err := dockerClient.Run(&docker.RunOptions{
+			NamePrefix:   "cdflow2-config",
+			Image:        image,
+			InputStream:  inputReadStream,
+			OutputStream: outputWriteStream,
+			ErrorStream:  errorStream,
+			WorkingDir:   "/release",
+			Binds:        []string{releaseVolume + ":/release"},
+			Started:      started,
+		})
+		container.finished = true
+		if err := inputReadStream.Close(); err != nil {
+			log.Panicln("error closing read stream:", err)
+		}
+		if err := outputWriteStream.Close(); err != nil {
+			log.Panicln("error closing write stream:", err)
+		}
+		done <- err
+	}()
+
+	select {
+	case id := <-started:
+		container.id = id
+		return container, nil
+	case err := <-done:
+		return nil, err
+	}
 }
 
 func (configContainer *Container) readline() ([]byte, error) {
@@ -109,20 +88,6 @@ func (configContainer *Container) write(message []byte) error {
 	return nil
 }
 
-// Stop stops the container.
-func (configContainer *Container) Stop(timeout *time.Duration) error {
-	return configContainer.state.DockerClient.ContainerStop(configContainer.state.DockerContext, configContainer.ID, timeout)
-}
-
-// Remove removes the config container.
-func (configContainer *Container) Remove() error {
-	return configContainer.state.DockerClient.ContainerRemove(
-		configContainer.state.DockerContext,
-		configContainer.ID,
-		types.ContainerRemoveOptions{},
-	)
-}
-
 type stopRequest struct {
 	Action string
 }
@@ -136,7 +101,7 @@ func (configContainer *Container) RequestStop() error {
 	if err := configContainer.write(append(request, '\n')); err != nil {
 		return err
 	}
-	return <-configContainer.completion
+	return nil
 }
 
 type configureReleaseConfigRequest struct {
@@ -205,13 +170,7 @@ func (configContainer *Container) WriteReleaseMetadata(releaseMetadata map[strin
 		return err
 	}
 
-	if err := configContainer.state.DockerClient.CopyToContainer(
-		configContainer.state.DockerContext,
-		configContainer.ID,
-		"/",
-		buffer,
-		types.CopyToContainerOptions{},
-	); err != nil {
+	if err := configContainer.dockerClient.CopyToContainer(configContainer.id, "/", buffer); err != nil {
 		return err
 	}
 	return nil
@@ -299,4 +258,14 @@ func (configContainer *Container) PrepareTerraform(
 		return nil, errors.New("config container failed to prepare for running terraform")
 	}
 	return &response, nil
+}
+
+// Done stops and removes the config container.
+func (configContainer *Container) Done() error {
+	if !configContainer.finished {
+		if err := configContainer.dockerClient.Stop(configContainer.id, 10*time.Second); err != nil {
+			return err
+		}
+	}
+	return <-configContainer.done
 }
