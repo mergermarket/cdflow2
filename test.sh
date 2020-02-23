@@ -78,4 +78,4 @@ if [[ ! -z "$1" ]]; then
     tests="$(echo "$tests" | grep "$1")"
 fi
 
-go test $tests
+go test -race $tests
