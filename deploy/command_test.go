@@ -11,19 +11,17 @@ import (
 	"github.com/mergermarket/cdflow2/deploy"
 	"github.com/mergermarket/cdflow2/manifest"
 	"github.com/mergermarket/cdflow2/test"
-	"github.com/mergermarket/cdflow2/util"
 )
 
 func TestRunCommand(t *testing.T) {
 
 	// Given
-	var outputBuffer util.Buffer
-	var errorBuffer util.Buffer
+	outputCollector := test.NewOutputCollector()
 
 	state := &command.GlobalState{
 		DockerClient: test.GetDockerClient(),
-		OutputStream: &outputBuffer,
-		ErrorStream:  &errorBuffer,
+		OutputStream: outputCollector.OutputWriter,
+		ErrorStream:  outputCollector.ErrorWriter,
 		CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
 		Component:    "test-component",
 		Commit:       "test-commit",
@@ -58,11 +56,16 @@ func TestRunCommand(t *testing.T) {
 	if err := deploy.RunCommand(state, "test-env", "test-version", map[string]string{
 		"TERRAFORM_DIGEST": terraformDigest,
 	}); err != nil {
-		log.Fatalln("error running deploy command:", err, errorBuffer.String())
+		log.Fatalln("error running deploy command:", err)
 	}
 
 	// Then
-	lines := strings.Split(errorBuffer.String(), "\n")
+	_, errors, err := outputCollector.Collect()
+	if err != nil {
+		log.Panicln("error collecting output:", err)
+	}
+
+	lines := strings.Split(string(errors), "\n")
 	if len(lines) != 6 || lines[5] != "" {
 		log.Panicf("expected five lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
 	}

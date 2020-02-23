@@ -12,6 +12,7 @@ import (
 
 	"github.com/mergermarket/cdflow2/docker"
 	"github.com/mergermarket/cdflow2/docker/official"
+	"golang.org/x/sync/errgroup"
 )
 
 // GetDockerClient returns a docker client for testing.
@@ -150,4 +151,61 @@ func DumpLines(lines []string) string {
 		result += "  " + line + "\n"
 	}
 	return result
+}
+
+// OutputCollector is an experimental alternative to bytes.Buffer for collecting output in order to track down bug.
+type OutputCollector struct {
+	OutputWriter io.WriteCloser
+	ErrorWriter  io.WriteCloser
+	outputBuffer *[]byte
+	errorBuffer  *[]byte
+	eg           *errgroup.Group
+}
+
+func collect(eg *errgroup.Group) (io.WriteCloser, *[]byte) {
+	reader, writer := io.Pipe()
+	var initial []byte
+	var data *[]byte = &initial
+	eg.Go(func() error {
+		for {
+			buffer := make([]byte, 10*1024)
+			n, err := reader.Read(buffer)
+			if n > 0 {
+				newData := append(*data, buffer[:n]...)
+				*data = newData
+			}
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return writer, data
+}
+
+// NewOutputCollector returns a new output collector.
+func NewOutputCollector() *OutputCollector {
+	var eg errgroup.Group
+	outputWriter, outputBuffer := collect(&eg)
+	errorwriter, errorBuffer := collect(&eg)
+	return &OutputCollector{
+		OutputWriter: outputWriter,
+		ErrorWriter:  errorwriter,
+		outputBuffer: outputBuffer,
+		errorBuffer:  errorBuffer,
+		eg:           &eg,
+	}
+}
+
+// Collect returns the stdout & stderr output.
+func (collector *OutputCollector) Collect() (string, string, error) {
+	collector.OutputWriter.Close()
+	collector.ErrorWriter.Close()
+	if err := collector.eg.Wait(); err != nil {
+		return "", "", err
+	}
+	return string(*collector.outputBuffer), string(*collector.errorBuffer), nil
 }

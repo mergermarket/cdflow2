@@ -1,7 +1,6 @@
 package container_test
 
 import (
-	"bytes"
 	"log"
 	"reflect"
 	"testing"
@@ -14,8 +13,7 @@ func TestRelese(t *testing.T) {
 	// Given
 	dockerClient := test.GetDockerClient()
 
-	var outputBuffer bytes.Buffer
-	var errorBuffer bytes.Buffer
+	outputCollector := test.NewOutputCollector()
 
 	buildVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, buildVolume)
@@ -26,8 +24,8 @@ func TestRelese(t *testing.T) {
 		test.GetConfig("TEST_RELEASE_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/release/sample-code",
 		buildVolume,
-		&outputBuffer,
-		&errorBuffer,
+		outputCollector.OutputWriter,
+		outputCollector.ErrorWriter,
 		map[string]string{
 			"VERSION":      "test-version",
 			"TEAM":         "test-team",
@@ -41,8 +39,13 @@ func TestRelese(t *testing.T) {
 	}
 
 	// Then
-	if errorBuffer.String() != "message to stderr from release\ndocker status: OK\n" {
-		log.Panicf("unexpected stderr output: '%v'", errorBuffer.String())
+	_, errors, err := outputCollector.Collect()
+	if err != nil {
+		log.Panicln("error collecting output:", err)
+	}
+
+	if errors != "message to stderr from release\ndocker status: OK\n" {
+		log.Panicf("unexpected stderr output: '%v'", errors)
 	}
 
 	if !reflect.DeepEqual(releaseMetadata, map[string]string{

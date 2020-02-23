@@ -1,7 +1,6 @@
 package config_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"log"
 	"reflect"
@@ -19,14 +18,14 @@ func TestConfigRelease(t *testing.T) {
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 
-	var errorBuffer bytes.Buffer
+	outputCollector := test.NewOutputCollector()
 
 	var configureReleaseResponse *config.ConfigureReleaseConfigResponse
 	var uploadReleaseResponse *config.UploadReleaseResponse
 
 	// When
 	func() {
-		configContainer, err := config.NewContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, &errorBuffer)
+		configContainer, err := config.NewContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, outputCollector.ErrorWriter)
 		if err != nil {
 			log.Panicln("error creating config container:", err)
 		}
@@ -78,7 +77,12 @@ func TestConfigRelease(t *testing.T) {
 		log.Panicln("unexpected message:", uploadReleaseResponse.Message)
 	}
 
-	lines := strings.Split(errorBuffer.String(), "\n")
+	_, errors, err := outputCollector.Collect()
+	if err != nil {
+		log.Panicln("error collecting output:", err)
+	}
+
+	lines := strings.Split(errors, "\n")
 	if len(lines) != 3 || lines[2] != "" {
 		log.Panicf("expected two lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
 	}
@@ -109,12 +113,12 @@ func TestConfigDeploy(t *testing.T) {
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 
-	var errorBuffer bytes.Buffer
+	outputCollector := test.NewOutputCollector()
 	var prepareTerraformResponse *config.PrepareTerraformResponse
 
 	// When
 	func() {
-		configContainer, err := config.NewContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, &errorBuffer)
+		configContainer, err := config.NewContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, outputCollector.ErrorWriter)
 		if err != nil {
 			log.Panicln("error creating config container:", err)
 		}
@@ -174,13 +178,18 @@ func TestConfigDeploy(t *testing.T) {
 		log.Panicln("unexpected release data:", releaseData)
 	}
 
+	_, errors, err := outputCollector.Collect()
+	if err != nil {
+		log.Panicln("error collecting output:", err)
+	}
+
 	var prepareTerraformDebugOutput struct {
 		Action  string
 		Request struct {
 			EnvName string
 		}
 	}
-	if err := json.Unmarshal(errorBuffer.Bytes(), &prepareTerraformDebugOutput); err != nil {
+	if err := json.Unmarshal([]byte(errors), &prepareTerraformDebugOutput); err != nil {
 		log.Panicln("error decoding prepare terraform debug output:", err)
 	}
 
