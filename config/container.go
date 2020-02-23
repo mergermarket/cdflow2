@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"time"
@@ -19,7 +20,7 @@ type Container struct {
 	id           string
 	done         chan error
 	reader       *bufio.Reader
-	writeStream  io.Writer
+	writeStream  io.WriteCloser
 	finished     bool
 }
 
@@ -266,6 +267,9 @@ func (configContainer *Container) Done() error {
 		if err := configContainer.dockerClient.Stop(configContainer.id, 10*time.Second); err != nil {
 			return err
 		}
+	}
+	if err := configContainer.writeStream.Close(); err != nil {
+		return fmt.Errorf("error closing pipe to config container: %w", err)
 	}
 	return <-configContainer.done
 }

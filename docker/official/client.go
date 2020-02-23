@@ -66,7 +66,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 		return err
 	}
 
-	if err := dockerClient.await(response.ID, options.InputStream, options.OutputStream, options.ErrorStream, options.Started); err != nil {
+	if err := dockerClient.runContainer(response.ID, options.InputStream, options.OutputStream, options.ErrorStream, options.Started); err != nil {
 		return err
 	}
 
@@ -92,7 +92,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 	return dockerClient.client.ContainerRemove(dockerClient.context, response.ID, types.ContainerRemoveOptions{})
 }
 
-func (dockerClient *Client) await(container string, inputStream io.ReadCloser, outputStream, errorStream io.Writer, started chan string) error {
+func (dockerClient *Client) runContainer(container string, inputStream io.ReadCloser, outputStream, errorStream io.Writer, started chan string) error {
 	stdin := false
 	if inputStream != nil {
 		stdin = true
@@ -120,36 +120,6 @@ func (dockerClient *Client) await(container string, inputStream io.ReadCloser, o
 		}
 		return nil
 	})
-}
-
-func (dockerClient *Client) streamHijackedResponse(hijackedResponse types.HijackedResponse, inputStream io.ReadCloser, outputStream, errorStream io.Writer, start func() error) error {
-	if inputStream != nil {
-		go func() {
-			defer inputStream.Close()
-			defer hijackedResponse.CloseWrite()
-			io.Copy(hijackedResponse.Conn, inputStream)
-		}()
-	}
-	outputDone := make(chan error, 1)
-	defer close(outputDone)
-	go func() {
-		defer hijackedResponse.Close()
-		_, err := stdcopy.StdCopy(outputStream, errorStream, hijackedResponse.Reader)
-		outputDone <- err
-	}()
-
-	if err := start(); err != nil {
-		return err
-	}
-
-	for {
-		select {
-		case err := <-outputDone:
-			return err
-		case <-dockerClient.context.Done():
-			return dockerClient.context.Err()
-		}
-	}
 }
 
 // EnsureImage pulls an image if it does not exist locally.
@@ -289,4 +259,31 @@ func (dockerClient *Client) CopyFromContainer(id string, path string) (io.ReadCl
 // CopyToContainer takes a tar stream and copies it into the container.
 func (dockerClient *Client) CopyToContainer(id string, path string, reader io.Reader) error {
 	return dockerClient.client.CopyToContainer(dockerClient.context, id, path, reader, types.CopyToContainerOptions{})
+}
+
+func (dockerClient *Client) streamHijackedResponse(hijackedResponse types.HijackedResponse, inputStream io.ReadCloser, outputStream, errorStream io.Writer, start func() error) error {
+	if inputStream != nil {
+		go func() {
+			defer hijackedResponse.CloseWrite()
+			io.Copy(hijackedResponse.Conn, inputStream)
+		}()
+	}
+	outputDone := make(chan error, 1)
+	defer close(outputDone)
+	go func() {
+		defer hijackedResponse.Close()
+		_, err := stdcopy.StdCopy(outputStream, errorStream, hijackedResponse.Reader)
+		outputDone <- err
+	}()
+
+	if err := start(); err != nil {
+		return err
+	}
+
+	select {
+	case err := <-outputDone:
+		return err
+	case <-dockerClient.context.Done():
+		return dockerClient.context.Err()
+	}
 }
