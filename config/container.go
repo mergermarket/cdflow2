@@ -11,6 +11,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/docker"
 )
 
@@ -259,6 +260,47 @@ func (configContainer *Container) PrepareTerraform(
 		return nil, errors.New("config container failed to prepare for running terraform")
 	}
 	return &response, nil
+}
+
+// SetupTerraform creates the config container and prepares terraform in one.
+func SetupTerraform(state *command.GlobalState, envName, version string, env map[string]string) (string, string, error) {
+	dockerClient := state.DockerClient
+
+	if !state.GlobalArgs.NoPullConfig {
+		if err := dockerClient.PullImage(state.Manifest.Config.Image, state.ErrorStream); err != nil {
+			return "", "", fmt.Errorf("error pulling config image: %w", err)
+		}
+	}
+
+	buildVolume, err := dockerClient.CreateVolume()
+	if err != nil {
+		return "", "", err
+	}
+
+	configContainer, err := NewContainer(dockerClient, state.Manifest.Config.Image, buildVolume, state.ErrorStream)
+	if err != nil {
+		return "", "", err
+	}
+	defer func() {
+		if err := configContainer.RequestStop(); err != nil {
+			log.Panicln("error stopping config container:", err)
+		}
+		if err := configContainer.Done(); err != nil {
+			log.Panicln("error cleaning up config container:", err)
+		}
+	}()
+
+	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, envName, state.Manifest.Config.Params, env)
+	if err != nil {
+		return "", "", err
+	}
+
+	if !state.GlobalArgs.NoPullTerraform {
+		if err := dockerClient.EnsureImage(prepareTerraformResponse.TerraformImage, state.ErrorStream); err != nil {
+			return "", "", fmt.Errorf("error pulling terraform image %v: %w", prepareTerraformResponse.TerraformImage, err)
+		}
+	}
+	return prepareTerraformResponse.TerraformImage, buildVolume, nil
 }
 
 // Done stops and removes the config container.
