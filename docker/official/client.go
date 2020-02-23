@@ -268,22 +268,12 @@ func (dockerClient *Client) streamHijackedResponse(hijackedResponse types.Hijack
 			io.Copy(hijackedResponse.Conn, inputStream)
 		}()
 	}
-	outputDone := make(chan error, 1)
-	defer close(outputDone)
-	go func() {
-		defer hijackedResponse.Close()
-		_, err := stdcopy.StdCopy(outputStream, errorStream, hijackedResponse.Reader)
-		outputDone <- err
-	}()
+	defer hijackedResponse.Close()
 
 	if err := start(); err != nil {
 		return err
 	}
 
-	select {
-	case err := <-outputDone:
-		return err
-	case <-dockerClient.context.Done():
-		return dockerClient.context.Err()
-	}
+	_, err := stdcopy.StdCopy(outputStream, errorStream, hijackedResponse.Reader)
+	return err
 }
