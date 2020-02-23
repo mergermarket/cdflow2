@@ -80,7 +80,7 @@ func TestConfigRelease(t *testing.T) {
 
 	lines := strings.Split(errorBuffer.String(), "\n")
 	if len(lines) != 3 || lines[2] != "" {
-		log.Panicln("expected two lines with a trailing newline (empty string), got lines:", lines)
+		log.Panicf("expected two lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
 	}
 
 	var configureReleaseDebugOutput map[string]interface{}

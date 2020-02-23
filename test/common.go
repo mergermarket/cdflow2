@@ -142,3 +142,12 @@ func CheckTerraformWorkspaceNew(line, workspaceName string) {
 		log.Panicln("unexpected args for workspace new:", input.Args)
 	}
 }
+
+// DumpLines outputs a set of lines with indentation.
+func DumpLines(lines []string) string {
+	result := ""
+	for _, line := range lines {
+		result += "  " + line + "\n"
+	}
+	return result
+}

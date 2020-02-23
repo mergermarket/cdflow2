@@ -16,6 +16,7 @@ import (
 
 func TestRunCommand(t *testing.T) {
 
+	// Given
 	var outputBuffer util.Buffer
 	var errorBuffer util.Buffer
 
@@ -52,15 +53,18 @@ func TestRunCommand(t *testing.T) {
 		log.Panicln("no repo digests for terraform container", test.GetConfig("TEST_TERRAFORM_IMAGE"))
 	}
 	terraformDigest := repoDigests[0]
+
+	// When
 	if err := deploy.RunCommand(state, "test-env", "test-version", map[string]string{
 		"TERRAFORM_DIGEST": terraformDigest,
 	}); err != nil {
 		log.Fatalln("error running deploy command:", err, errorBuffer.String())
 	}
 
+	// Then
 	lines := strings.Split(errorBuffer.String(), "\n")
 	if len(lines) != 6 || lines[5] != "" {
-		log.Panicln("expected five lines with a trailing newline (empty string), got lines:", len(lines))
+		log.Panicf("expected five lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
 	}
 
 	checkPrepareTerraformOutput(lines[0])
