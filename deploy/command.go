@@ -50,7 +50,7 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 		"plan",
 		"-input=false",
 		"-var-file=/release/release-metadata.json",
-		"-var-file=config/test-env.json",
+		"-var-file=config/" + envName + ".json",
 		"-out=" + planFilename,
 		"infra/",
 	}, state.OutputStream, state.ErrorStream); err != nil {
