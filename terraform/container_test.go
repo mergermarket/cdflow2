@@ -3,7 +3,6 @@ package terraform_test
 import (
 	"encoding/json"
 	"log"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -69,8 +68,6 @@ func TestTerraformConfigureBackend(t *testing.T) {
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
 			test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 			releaseVolume,
-			os.Stdout,
-			os.Stderr,
 		)
 		if err != nil {
 			log.Fatalln("error creating terraform container:", err)
@@ -132,8 +129,6 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
 			test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 			releaseVolume,
-			os.Stdout,
-			os.Stderr,
 		)
 		if err != nil {
 			log.Fatalln("error creating terraform container:", err)
@@ -198,8 +193,6 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
 			test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 			releaseVolume,
-			os.Stdout,
-			os.Stderr,
 		)
 		if err != nil {
 			log.Fatalln("error creating terraform container:", err)

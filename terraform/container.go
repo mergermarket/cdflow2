@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -32,19 +33,21 @@ type Container struct {
 }
 
 // NewContainer creates and returns a terraformContainer for running terraform commands in.
-func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolume string, outputStream, errorStream io.Writer) (*Container, error) {
+func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolume string) (*Container, error) {
 
 	started := make(chan string, 1)
 	defer close(started)
 
 	done := make(chan error, 1)
 
+	var outputBuffer bytes.Buffer
+
 	go func() {
 		done <- dockerClient.Run(&docker.RunOptions{
 			Image: image,
 			// output to user in case there's an error (e.g. terraform container doesn't have /bin/sleep)
-			OutputStream:  outputStream,
-			ErrorStream:   errorStream,
+			OutputStream:  &outputBuffer,
+			ErrorStream:   &outputBuffer,
 			WorkingDir:    "/code",
 			Entrypoint:    []string{"/bin/sleep"},
 			Cmd:           []string{strconv.Itoa(365 * 24 * 60 * 60)}, // a long time!
@@ -65,7 +68,7 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 			done:         done,
 		}, nil
 	case err := <-done:
-		return nil, err
+		return nil, fmt.Errorf("could not start terraform container: %w\nOutput: %v", err, outputBuffer.String())
 	}
 }
 

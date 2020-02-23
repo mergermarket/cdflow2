@@ -27,8 +27,6 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 		terraformImage,
 		state.CodeDir,
 		buildVolume,
-		state.OutputStream,
-		state.ErrorStream,
 	)
 	if err != nil {
 		return err
@@ -57,12 +55,10 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 		return err
 	}
 
-	if err := terraformContainer.RunCommand([]string{
-		"terraform",
-		"apply",
-		"-input=false",
-		planFilename,
-	}, state.OutputStream, state.ErrorStream); err != nil {
+	if err := terraformContainer.RunCommand(
+		[]string{"terraform", "apply", "-input=false", planFilename},
+		state.OutputStream, state.ErrorStream,
+	); err != nil {
 		return err
 	}
 
