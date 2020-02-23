@@ -12,8 +12,6 @@ import (
 
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, envName, version string, env map[string]string) error {
-	// TODO too long, consider factoring some parts out
-
 	dockerClient := state.DockerClient
 
 	if !state.GlobalArgs.NoPullConfig {
