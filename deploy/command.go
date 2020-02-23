@@ -11,21 +11,19 @@ import (
 
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, envName, version string, env map[string]string) error {
-	dockerClient := state.DockerClient
-
 	terraformImage, buildVolume, err := config.SetupTerraform(state, envName, version, env)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		if err := dockerClient.RemoveVolume(buildVolume); err != nil {
+		if err := state.DockerClient.RemoveVolume(buildVolume); err != nil {
 			log.Panicln("error removing build release volume:", err)
 		}
 	}()
 
 	terraformContainer, err := terraform.NewContainer(
-		dockerClient,
+		state.DockerClient,
 		terraformImage,
 		state.CodeDir,
 		buildVolume,
