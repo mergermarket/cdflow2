@@ -2,10 +2,10 @@ package official
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log"
+	"os/exec"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/mergermarket/cdflow2/docker"
 	"github.com/mergermarket/cdflow2/util"
+	"golang.org/x/sync/errgroup"
 )
 
 // Client is a concrete inplementation of our docker interface that uses the official client library.
@@ -159,52 +160,35 @@ func (dockerClient *Client) GetImageRepoDigests(image string) ([]string, error) 
 
 // Exec execs a process in a docker container (like `docker exec` in the cli).
 func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
-	exec, err := dockerClient.client.ContainerExecCreate(
-		dockerClient.context,
-		options.ID,
-		types.ExecConfig{
-			AttachStdout: true,
-			AttachStderr: true,
-			Cmd:          options.Cmd,
-		},
-	)
+
+	cmd := exec.Command("docker", append([]string{"exec", options.ID}, options.Cmd...)...)
+
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("error creating docker exec: %w", err)
+		return err
 	}
-
-	attachResponse, err := dockerClient.client.ContainerExecAttach(
-		dockerClient.context,
-		exec.ID,
-		types.ExecStartCheck{},
-	)
+	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("error attaching to docker exec: %w", err)
-	}
-	defer attachResponse.Close()
-
-	if err := dockerClient.streamHijackedResponse(attachResponse, nil, options.OutputStream, options.ErrorStream, func() error {
-		return dockerClient.client.ContainerExecStart(
-			dockerClient.context,
-			exec.ID,
-			types.ExecStartCheck{},
-		)
-	}); err != nil {
-		return fmt.Errorf("error streaming data from exec: %w", err)
+		return err
 	}
 
-	details, err := dockerClient.client.ContainerExecInspect(
-		dockerClient.context,
-		exec.ID,
-	)
-	if err != nil {
-		return fmt.Errorf("error inspecting exec: %w", err)
-	}
+	var eg errgroup.Group
 
-	if details.ExitCode != 0 {
-		return errors.New("exec process exited with error status code " + string(details.ExitCode))
-	}
+	eg.Go(func() error {
+		_, err := io.Copy(options.OutputStream, stdout)
+		return err
+	})
 
-	return nil
+	eg.Go(func() error {
+		_, err := io.Copy(options.ErrorStream, stderr)
+		return err
+	})
+
+	eg.Go(func() error {
+		return cmd.Run()
+	})
+
+	return eg.Wait()
 }
 
 // Stop stops a container.
@@ -273,7 +257,6 @@ func (dockerClient *Client) streamHijackedResponse(hijackedResponse types.Hijack
 	if err := start(); err != nil {
 		return err
 	}
-
 	_, err := stdcopy.StdCopy(outputStream, errorStream, hijackedResponse.Reader)
 	return err
 }
