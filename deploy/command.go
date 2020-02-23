@@ -32,33 +32,14 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 		}
 	}()
 
-	configContainer, err := config.NewContainer(dockerClient, state.Manifest.Config.Image, buildVolume, state.ErrorStream)
+	terraformImage, err := prepareTerraform(state, envName, version, buildVolume, env)
 	if err != nil {
 		return err
-	}
-	defer func() {
-		if err := configContainer.RequestStop(); err != nil {
-			log.Panicln("error stopping config container:", err)
-		}
-		if err := configContainer.Done(); err != nil {
-			log.Panicln("error cleaning up config container:", err)
-		}
-	}()
-
-	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, envName, state.Manifest.Config.Params, env)
-	if err != nil {
-		return err
-	}
-
-	if !state.GlobalArgs.NoPullTerraform {
-		if err := dockerClient.EnsureImage(prepareTerraformResponse.TerraformImage, state.ErrorStream); err != nil {
-			return fmt.Errorf("error pulling terraform image %v: %w", prepareTerraformResponse.TerraformImage, err)
-		}
 	}
 
 	terraformContainer, err := terraform.NewContainer(
 		dockerClient,
-		prepareTerraformResponse.TerraformImage,
+		terraformImage,
 		state.CodeDir,
 		buildVolume,
 		state.OutputStream,
@@ -101,4 +82,33 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 	}
 
 	return nil
+}
+
+func prepareTerraform(state *command.GlobalState, envName, version, buildVolume string, env map[string]string) (string, error) {
+	dockerClient := state.DockerClient
+
+	configContainer, err := config.NewContainer(dockerClient, state.Manifest.Config.Image, buildVolume, state.ErrorStream)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		if err := configContainer.RequestStop(); err != nil {
+			log.Panicln("error stopping config container:", err)
+		}
+		if err := configContainer.Done(); err != nil {
+			log.Panicln("error cleaning up config container:", err)
+		}
+	}()
+
+	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, envName, state.Manifest.Config.Params, env)
+	if err != nil {
+		return "", err
+	}
+
+	if !state.GlobalArgs.NoPullTerraform {
+		if err := dockerClient.EnsureImage(prepareTerraformResponse.TerraformImage, state.ErrorStream); err != nil {
+			return "", fmt.Errorf("error pulling terraform image %v: %w", prepareTerraformResponse.TerraformImage, err)
+		}
+	}
+	return prepareTerraformResponse.TerraformImage, nil
 }
