@@ -167,9 +167,9 @@ func writePullProgress(reader io.ReadCloser, outputStream io.Writer) error {
 		}
 		if message.Status != "Downloading" && message.Status != "Extracting" {
 			if message.ID != "" {
-				fmt.Fprintf(outputStream, "%s: %s", message.ID, message.Status)
+				fmt.Fprintf(outputStream, "%s: %s\n", message.ID, message.Status)
 			} else {
-				fmt.Fprintf(outputStream, message.Status)
+				fmt.Fprintln(outputStream, message.Status)
 			}
 		}
 		if err := scanner.Err(); err != nil {
