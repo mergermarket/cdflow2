@@ -44,7 +44,7 @@ Usage:
 Args:
 
   VERSION     - the version being released. We recommend using evergreen version numbers (i.e. simple incrementing integers,
-			    probably from your CI service), combined with something to identify the commit - e.g. "34-a5dbc4a7".
+                probably from your CI service), combined with something to identify the commit - e.g. "34-a5dbc4a7".
 
 ` + globalArgs
 
