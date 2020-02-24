@@ -19,8 +19,7 @@ import (
 
 // Client is a concrete inplementation of our docker interface that uses the official client library.
 type Client struct {
-	client  *client.Client
-	context context.Context
+	client *client.Client
 }
 
 // NewClient creates and returns a new client.
@@ -30,8 +29,7 @@ func NewClient() (*Client, error) {
 		return nil, err
 	}
 	return &Client{
-		client:  client,
-		context: context.Background(),
+		client: client,
 	}, nil
 }
 
@@ -42,7 +40,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 		stdin = true
 	}
 	response, err := dockerClient.client.ContainerCreate(
-		dockerClient.context,
+		context.Background(),
 		&container.Config{
 			Image:        options.Image,
 			OpenStdin:    stdin,
@@ -70,7 +68,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 		return err
 	}
 
-	result, err := dockerClient.client.ContainerInspect(dockerClient.context, response.ID)
+	result, err := dockerClient.client.ContainerInspect(context.Background(), response.ID)
 	if err != nil {
 		return err
 	}
@@ -89,7 +87,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 		}
 	}
 
-	return dockerClient.client.ContainerRemove(dockerClient.context, response.ID, types.ContainerRemoveOptions{})
+	return dockerClient.client.ContainerRemove(context.Background(), response.ID, types.ContainerRemoveOptions{})
 }
 
 func (dockerClient *Client) runContainer(container string, inputStream io.ReadCloser, outputStream, errorStream io.Writer, started chan string) error {
@@ -97,7 +95,7 @@ func (dockerClient *Client) runContainer(container string, inputStream io.ReadCl
 	if inputStream != nil {
 		stdin = true
 	}
-	hijackedResponse, err := dockerClient.client.ContainerAttach(dockerClient.context, container, types.ContainerAttachOptions{
+	hijackedResponse, err := dockerClient.client.ContainerAttach(context.Background(), container, types.ContainerAttachOptions{
 		Stream: true,
 		Stdout: true,
 		Stderr: true,
@@ -109,7 +107,7 @@ func (dockerClient *Client) runContainer(container string, inputStream io.ReadCl
 
 	return dockerClient.streamHijackedResponse(hijackedResponse, inputStream, outputStream, errorStream, func() error {
 		if err := dockerClient.client.ContainerStart(
-			dockerClient.context,
+			context.Background(),
 			container,
 			types.ContainerStartOptions{},
 		); err != nil {
@@ -126,7 +124,7 @@ func (dockerClient *Client) runContainer(container string, inputStream io.ReadCl
 func (dockerClient *Client) EnsureImage(image string, outputStream io.Writer) error {
 	// TODO bit lax, this should check the error type
 	if _, _, err := dockerClient.client.ImageInspectWithRaw(
-		dockerClient.context,
+		context.Background(),
 		image,
 	); err == nil {
 		return nil
@@ -137,7 +135,7 @@ func (dockerClient *Client) EnsureImage(image string, outputStream io.Writer) er
 // PullImage pulls and image.
 func (dockerClient *Client) PullImage(image string, outputStream io.Writer) error {
 	reader, err := dockerClient.client.ImagePull(
-		dockerClient.context,
+		context.Background(),
 		image,
 		types.ImagePullOptions{},
 	)
@@ -150,7 +148,7 @@ func (dockerClient *Client) PullImage(image string, outputStream io.Writer) erro
 
 // GetImageRepoDigests inspects an image and pulls out the repo digests.
 func (dockerClient *Client) GetImageRepoDigests(image string) ([]string, error) {
-	details, _, err := dockerClient.client.ImageInspectWithRaw(dockerClient.context, image)
+	details, _, err := dockerClient.client.ImageInspectWithRaw(context.Background(), image)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +158,7 @@ func (dockerClient *Client) GetImageRepoDigests(image string) ([]string, error) 
 // Exec execs a process in a docker container (like `docker exec` in the cli).
 func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	exec, err := dockerClient.client.ContainerExecCreate(
-		dockerClient.context,
+		context.Background(),
 		options.ID,
 		types.ExecConfig{
 			AttachStdout: true,
@@ -173,7 +171,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	}
 
 	attachResponse, err := dockerClient.client.ContainerExecAttach(
-		dockerClient.context,
+		context.Background(),
 		exec.ID,
 		types.ExecStartCheck{},
 	)
@@ -184,7 +182,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 
 	if err := dockerClient.streamHijackedResponse(attachResponse, nil, options.OutputStream, options.ErrorStream, func() error {
 		return dockerClient.client.ContainerExecStart(
-			dockerClient.context,
+			context.Background(),
 			exec.ID,
 			types.ExecStartCheck{},
 		)
@@ -193,7 +191,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	}
 
 	details, err := dockerClient.client.ContainerExecInspect(
-		dockerClient.context,
+		context.Background(),
 		exec.ID,
 	)
 	if err != nil {
@@ -209,12 +207,12 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 
 // Stop stops a container.
 func (dockerClient *Client) Stop(id string, timeout time.Duration) error {
-	return dockerClient.client.ContainerStop(dockerClient.context, id, &timeout)
+	return dockerClient.client.ContainerStop(context.Background(), id, &timeout)
 }
 
 // CreateVolume creates a docker volume and returns its ID.
 func (dockerClient *Client) CreateVolume() (string, error) {
-	volume, err := dockerClient.client.VolumeCreate(dockerClient.context, volume.VolumeCreateBody{})
+	volume, err := dockerClient.client.VolumeCreate(context.Background(), volume.VolumeCreateBody{})
 	if err != nil {
 		return "", err
 	}
@@ -223,13 +221,13 @@ func (dockerClient *Client) CreateVolume() (string, error) {
 
 // RemoveVolume removes a docker volume given its ID.
 func (dockerClient *Client) RemoveVolume(id string) error {
-	return dockerClient.client.VolumeRemove(dockerClient.context, id, false)
+	return dockerClient.client.VolumeRemove(context.Background(), id, false)
 }
 
 // CreateContainer creates a docker container.
 func (dockerClient *Client) CreateContainer(options *docker.CreateContainerOptions) (string, error) {
 	container, err := dockerClient.client.ContainerCreate(
-		dockerClient.context,
+		context.Background(),
 		&container.Config{
 			Image: options.Image,
 		},
@@ -247,18 +245,18 @@ func (dockerClient *Client) CreateContainer(options *docker.CreateContainerOptio
 
 // RemoveContainer removes a docker container.
 func (dockerClient *Client) RemoveContainer(id string) error {
-	return dockerClient.client.ContainerRemove(dockerClient.context, id, types.ContainerRemoveOptions{})
+	return dockerClient.client.ContainerRemove(context.Background(), id, types.ContainerRemoveOptions{})
 }
 
 // CopyFromContainer returns a tar stream for a path within a container (like `docker cp CONTAINER -`).
 func (dockerClient *Client) CopyFromContainer(id string, path string) (io.ReadCloser, error) {
-	reader, _, err := dockerClient.client.CopyFromContainer(dockerClient.context, id, path)
+	reader, _, err := dockerClient.client.CopyFromContainer(context.Background(), id, path)
 	return reader, err
 }
 
 // CopyToContainer takes a tar stream and copies it into the container.
 func (dockerClient *Client) CopyToContainer(id string, path string, reader io.Reader) error {
-	return dockerClient.client.CopyToContainer(dockerClient.context, id, path, reader, types.CopyToContainerOptions{})
+	return dockerClient.client.CopyToContainer(context.Background(), id, path, reader, types.CopyToContainerOptions{})
 }
 
 func (dockerClient *Client) streamHijackedResponse(hijackedResponse types.HijackedResponse, inputStream io.ReadCloser, outputStream, errorStream io.Writer, start func() error) error {
