@@ -59,7 +59,7 @@ func main() {
 		"cwd": dir, "file": string(fileContents),
 	})
 
-	if len(os.Args) == 3 && os.Args[1] == "init" && os.Args[2] == "/code/infra" {
+	if len(os.Args) == 4 && os.Args[1] == "init" && os.Args[2] == "-backend=false" && os.Args[3] == "/code/infra" {
 		if err := ioutil.WriteFile("build-output-test", []byte("build output"), 0644); err != nil {
 			log.Fatalln("could not write file:", err)
 		}

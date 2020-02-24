@@ -16,7 +16,7 @@ func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume s
 	return dockerClient.Run(&docker.RunOptions{
 		Image:        image,
 		WorkingDir:   "/build",
-		Cmd:          []string{"init", "/code/infra"},
+		Cmd:          []string{"init", "-backend=false", "/code/infra"},
 		Env:          []string{"TF_IN_AUTOMATION=true"},
 		Binds:        []string{codeDir + ":/code:ro", buildVolume + ":/build"},
 		NamePrefix:   "cdflow2-terraform-init",

@@ -117,7 +117,7 @@ func CheckTerraformInitInitialReflectedInput(output []byte) {
 	}
 
 	// interface is that the code is mapped to /code and the terraform is in the infra subfolder
-	if !reflect.DeepEqual(input.Args, []string{"init", "/code/infra"}) {
+	if !reflect.DeepEqual(input.Args, []string{"init", "-backend=false", "/code/infra"}) {
 		log.Fatalf("unexpected args: %v", input.Args)
 	}
 
