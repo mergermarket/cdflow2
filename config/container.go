@@ -285,11 +285,10 @@ func SetupTerraform(state *command.GlobalState, envName, version string, env map
 		if err := configContainer.RequestStop(); err != nil {
 			if returnedError != nil {
 				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
-				return
 			} else {
 				returnedError = err
-				return
 			}
+			return
 		}
 		if err := configContainer.Done(); err != nil {
 			if returnedError != nil {
@@ -297,6 +296,7 @@ func SetupTerraform(state *command.GlobalState, envName, version string, env map
 			} else {
 				returnedError = err
 			}
+			return
 		}
 	}()
 
