@@ -1,7 +1,9 @@
 package official
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -142,6 +144,41 @@ func (dockerClient *Client) EnsureImage(image string, outputStream io.Writer) er
 	return dockerClient.PullImage(image, outputStream)
 }
 
+// PullProgressDetail is the progress returned from docker for an image pull.
+type PullProgressDetail struct {
+	Current  int64
+	Total    int64
+	Progress string
+}
+
+// PullMessage is the line format returned from dockder during an image pull.
+type PullMessage struct {
+	Status         string
+	ProgressDetail PullProgressDetail
+	ID             string
+}
+
+func writePullProgress(reader io.ReadCloser, outputStream io.Writer) error {
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		var message PullMessage
+		if err := json.Unmarshal(scanner.Bytes(), &message); err != nil {
+			return err
+		}
+		if message.Status != "Downloading" && message.Status != "Extracting" {
+			if message.ID != "" {
+				fmt.Fprintf(outputStream, "%s: %s", message.ID, message.Status)
+			} else {
+				fmt.Fprintf(outputStream, message.Status)
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			return err
+		}
+	}
+	return reader.Close()
+}
+
 // PullImage pulls and image.
 func (dockerClient *Client) PullImage(image string, outputStream io.Writer) error {
 	reader, err := dockerClient.client.ImagePull(
@@ -152,8 +189,8 @@ func (dockerClient *Client) PullImage(image string, outputStream io.Writer) erro
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(outputStream, reader)
-	return err
+
+	return writePullProgress(reader, outputStream)
 }
 
 // GetImageRepoDigests inspects an image and pulls out the repo digests.
