@@ -38,11 +38,46 @@ func TestParseArgsCommandOnly(t *testing.T) {
 	if err != nil {
 		log.Fatalln("unexpected error from parseArgs:", err)
 	}
+	if globalArgs.Quiet {
+		log.Fatalln("expected quiet to default to false")
+	}
 	if globalArgs.Command != "test-command" {
 		log.Fatalln("expecting empty test-command command, got:", globalArgs.Command)
 	}
 	if !reflect.DeepEqual(remainingArgs, []string{}) {
 		log.Fatalln("expected empty remaining args, got:", remainingArgs)
+	}
+}
+
+func TestParseArgsQuietShort(t *testing.T) {
+	globalArgs, remainingArgs, err := command.ParseArgs([]string{"-q", "test-command", "1", "2"})
+	if err != nil {
+		log.Fatalln("unexpected error from parseArgs:", err)
+	}
+	if globalArgs.Command != "test-command" {
+		log.Fatalln("expecting test-command command after long component, got:", globalArgs.Command)
+	}
+	if !globalArgs.Quiet {
+		log.Fatalln("expecting quiet to be true")
+	}
+	if !reflect.DeepEqual(remainingArgs, []string{"1", "2"}) {
+		log.Fatalln("unexpected remaining args after component arg, got:", remainingArgs)
+	}
+}
+
+func TestParseArgsQuietLong(t *testing.T) {
+	globalArgs, remainingArgs, err := command.ParseArgs([]string{"--quiet", "test-command", "1", "2"})
+	if err != nil {
+		log.Fatalln("unexpected error from parseArgs:", err)
+	}
+	if globalArgs.Command != "test-command" {
+		log.Fatalln("expecting test-command command after long component, got:", globalArgs.Command)
+	}
+	if !globalArgs.Quiet {
+		log.Fatalln("expecting quiet to be true")
+	}
+	if !reflect.DeepEqual(remainingArgs, []string{"1", "2"}) {
+		log.Fatalln("unexpected remaining args after component arg, got:", remainingArgs)
 	}
 }
 

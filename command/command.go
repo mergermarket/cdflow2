@@ -21,6 +21,7 @@ type GlobalArgs struct {
 	NoPullConfig    bool
 	NoPullRelease   bool
 	NoPullTerraform bool
+	Quiet           bool
 }
 
 // GlobalState contains common to all commands.
@@ -114,6 +115,8 @@ func ParseArgs(args []string) (*GlobalArgs, []string, error) {
 			globalArgs.NoPullRelease = true
 		} else if args[i] == "--no-pull-terraform" {
 			globalArgs.NoPullTerraform = true
+		} else if args[i] == "--quiet" || args[i] == "-q" {
+			globalArgs.Quiet = true
 		} else if args[i] == "help" || args[i] == "--help" || args[i] == "-h" {
 			globalArgs.Command = "help"
 			remainingArgs = args[i+1:]
