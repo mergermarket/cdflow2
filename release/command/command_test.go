@@ -1,6 +1,7 @@
 package command_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,14 +12,13 @@ import (
 	"github.com/mergermarket/cdflow2/manifest"
 	release "github.com/mergermarket/cdflow2/release/command"
 	"github.com/mergermarket/cdflow2/test"
-	"github.com/mergermarket/cdflow2/util"
 )
 
 func TestRunCommand(t *testing.T) {
 
 	// Given
-	var outputBuffer util.Buffer
-	var errorBuffer util.Buffer
+	var outputBuffer bytes.Buffer
+	var errorBuffer bytes.Buffer
 
 	// When
 	if err := release.RunCommand(

@@ -1,6 +1,7 @@
 package terraform_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"reflect"
@@ -9,15 +10,14 @@ import (
 
 	"github.com/mergermarket/cdflow2/terraform"
 	"github.com/mergermarket/cdflow2/test"
-	"github.com/mergermarket/cdflow2/util"
 )
 
 func TestTerraformInitInitial(t *testing.T) {
 	// Given
 	dockerClient := test.GetDockerClient()
 
-	var outputBuffer util.Buffer
-	var errorBuffer util.Buffer
+	var outputBuffer bytes.Buffer
+	var errorBuffer bytes.Buffer
 
 	buildVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, buildVolume)
@@ -58,8 +58,8 @@ func TestTerraformConfigureBackend(t *testing.T) {
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 
-	var outputBuffer util.Buffer
-	var errorBuffer util.Buffer
+	var outputBuffer bytes.Buffer
+	var errorBuffer bytes.Buffer
 
 	// When
 	func() {
@@ -117,8 +117,8 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 
-	var outputBuffer util.Buffer
-	var errorBuffer util.Buffer
+	var outputBuffer bytes.Buffer
+	var errorBuffer bytes.Buffer
 
 	workspaceName := "existing-workspace"
 
@@ -181,8 +181,8 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 
-	var outputBuffer util.Buffer
-	var errorBuffer util.Buffer
+	var outputBuffer bytes.Buffer
+	var errorBuffer bytes.Buffer
 
 	workspaceName := "new-workspace"
 

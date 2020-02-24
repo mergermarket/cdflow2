@@ -1,6 +1,7 @@
 package deploy_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"reflect"
@@ -11,14 +12,13 @@ import (
 	"github.com/mergermarket/cdflow2/deploy"
 	"github.com/mergermarket/cdflow2/manifest"
 	"github.com/mergermarket/cdflow2/test"
-	"github.com/mergermarket/cdflow2/util"
 )
 
 func TestRunCommand(t *testing.T) {
 
 	// Given
-	var outputBuffer util.Buffer
-	var errorBuffer util.Buffer
+	var outputBuffer bytes.Buffer
+	var errorBuffer bytes.Buffer
 
 	state := &command.GlobalState{
 		DockerClient: test.GetDockerClient(),
