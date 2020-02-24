@@ -98,12 +98,16 @@ func ParseArgs(args []string) (*GlobalArgs, []string, error) {
 			}
 			globalArgs.Component = args[i+1]
 			i++
+		} else if strings.HasPrefix(args[i], "--component=") {
+			globalArgs.Component = strings.TrimPrefix(args[i], "--component=")
 		} else if args[i] == "--commit" {
 			if i+1 == len(args) {
 				return nil, remainingArgs, errors.New("no value for commit parameter")
 			}
 			globalArgs.Commit = args[i+1]
 			i++
+		} else if strings.HasPrefix(args[i], "--commit=") {
+			globalArgs.Commit = strings.TrimPrefix(args[i], "--commit=")
 		} else if args[i] == "--no-pull-config" {
 			globalArgs.NoPullConfig = true
 		} else if args[i] == "--no-pull-release" {

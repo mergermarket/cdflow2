@@ -78,8 +78,40 @@ func TestParseArgsComponentLong(t *testing.T) {
 	}
 }
 
+func TestParseArgsComponentLongWithEquals(t *testing.T) {
+	globalArgs, remainingArgs, err := command.ParseArgs([]string{"--component=test-component", "test-command", "1", "2"})
+	if err != nil {
+		log.Fatalln("unexpected error from parseArgs:", err)
+	}
+	if globalArgs.Command != "test-command" {
+		log.Fatalln("expecting test-command command after long component, got:", globalArgs.Command)
+	}
+	if globalArgs.Component != "test-component" {
+		log.Fatalln("expecting test-component from short arg, got:", globalArgs.Component)
+	}
+	if !reflect.DeepEqual(remainingArgs, []string{"1", "2"}) {
+		log.Fatalln("unexpected remaining args after component arg, got:", remainingArgs)
+	}
+}
+
 func TestParseArgsCommitLong(t *testing.T) {
 	globalArgs, remainingArgs, err := command.ParseArgs([]string{"--commit", "test-commit", "test-command", "1", "2"})
+	if err != nil {
+		log.Fatalln("unexpected error from parseArgs:", err)
+	}
+	if globalArgs.Command != "test-command" {
+		log.Fatalln("expecting test-command command after long component, got:", globalArgs.Command)
+	}
+	if globalArgs.Commit != "test-commit" {
+		log.Fatalln("expecting test-commit from short arg, got:", globalArgs.Commit)
+	}
+	if !reflect.DeepEqual(remainingArgs, []string{"1", "2"}) {
+		log.Fatalln("unexpected remaining args after commit arg, got:", remainingArgs)
+	}
+}
+
+func TestParseArgsCommitLongWithPrefix(t *testing.T) {
+	globalArgs, remainingArgs, err := command.ParseArgs([]string{"--commit=test-commit", "test-command", "1", "2"})
 	if err != nil {
 		log.Fatalln("unexpected error from parseArgs:", err)
 	}
