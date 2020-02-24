@@ -19,7 +19,8 @@ import (
 
 // Client is a concrete inplementation of our docker interface that uses the official client library.
 type Client struct {
-	client *client.Client
+	client      *client.Client
+	debugVolume string
 }
 
 // NewClient creates and returns a new client.
@@ -33,11 +34,20 @@ func NewClient() (*Client, error) {
 	}, nil
 }
 
+// SetDebugVolume sets a volume that will be mapped to /debug in each container, for an out of band way to get data out for testing.
+func (dockerClient *Client) SetDebugVolume(volume string) {
+	dockerClient.debugVolume = volume
+}
+
 // Run runs a container (much like `docker run` in the cli).
 func (dockerClient *Client) Run(options *docker.RunOptions) error {
 	stdin := false
 	if options.InputStream != nil {
 		stdin = true
+	}
+	binds := options.Binds
+	if dockerClient.debugVolume != "" {
+		binds = append(binds, dockerClient.debugVolume+":/debug")
 	}
 	response, err := dockerClient.client.ContainerCreate(
 		context.Background(),
@@ -54,7 +64,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 		},
 		&container.HostConfig{
 			LogConfig: container.LogConfig{Type: "none"},
-			Binds:     options.Binds,
+			Binds:     binds,
 			Init:      &options.Init,
 		},
 		nil,
@@ -178,7 +188,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	if err != nil {
 		return fmt.Errorf("error attaching to docker exec: %w", err)
 	}
-	defer attachResponse.Close()
+	defer attachResponse.Close() // does not return error
 
 	if err := dockerClient.streamHijackedResponse(attachResponse, nil, options.OutputStream, options.ErrorStream, func() error {
 		return dockerClient.client.ContainerExecStart(
@@ -262,11 +272,11 @@ func (dockerClient *Client) CopyToContainer(id string, path string, reader io.Re
 func (dockerClient *Client) streamHijackedResponse(hijackedResponse types.HijackedResponse, inputStream io.ReadCloser, outputStream, errorStream io.Writer, start func() error) error {
 	if inputStream != nil {
 		go func() {
-			defer hijackedResponse.CloseWrite()
-			io.Copy(hijackedResponse.Conn, inputStream)
+			defer hijackedResponse.CloseWrite()         // add to error below
+			io.Copy(hijackedResponse.Conn, inputStream) // expected error here - catch and check
 		}()
 	}
-	defer hijackedResponse.Close()
+	defer hijackedResponse.Close() // no error return value
 
 	if err := start(); err != nil {
 		return err

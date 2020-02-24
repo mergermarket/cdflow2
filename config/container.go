@@ -28,7 +28,7 @@ type Container struct {
 // NewContainer creates and returns a new config container.
 func NewContainer(dockerClient docker.Iface, image, releaseVolume string, errorStream io.Writer) (*Container, error) {
 	started := make(chan string, 1)
-	defer close(started)
+	defer close(started) // does not error so no named returns
 
 	done := make(chan error, 1)
 
@@ -263,7 +263,7 @@ func (configContainer *Container) PrepareTerraform(
 }
 
 // SetupTerraform creates the config container and prepares terraform in one.
-func SetupTerraform(state *command.GlobalState, envName, version string, env map[string]string) (string, string, error) {
+func SetupTerraform(state *command.GlobalState, envName, version string, env map[string]string) (returnedTerraformImage, returnedBuildVolume string, returnedError error) {
 	dockerClient := state.DockerClient
 
 	if !state.GlobalArgs.NoPullConfig {
@@ -281,12 +281,22 @@ func SetupTerraform(state *command.GlobalState, envName, version string, env map
 	if err != nil {
 		return "", "", err
 	}
-	defer func() {
+	defer func() { // meh defer
 		if err := configContainer.RequestStop(); err != nil {
-			log.Panicln("error stopping config container:", err)
+			if returnedError != nil {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+				return
+			} else {
+				returnedError = err
+				return
+			}
 		}
 		if err := configContainer.Done(); err != nil {
-			log.Panicln("error cleaning up config container:", err)
+			if returnedError != nil {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+			} else {
+				returnedError = err
+			}
 		}
 	}()
 

@@ -23,6 +23,14 @@ func GetDockerClient() docker.Iface {
 	return dockerClient
 }
 
+// GetDockerClientWithDebugVolume returns a docker client and debug volume for testing.
+func GetDockerClientWithDebugVolume() (docker.Iface, string) {
+	dockerClient := GetDockerClient()
+	debugVolume := CreateVolume(dockerClient)
+	dockerClient.SetDebugVolume(debugVolume)
+	return dockerClient, debugVolume
+}
+
 func CreateVolume(dockerCient docker.Iface) string {
 	volume, err := dockerCient.CreateVolume()
 	if err != nil {
@@ -33,11 +41,13 @@ func CreateVolume(dockerCient docker.Iface) string {
 
 func RemoveVolume(dockerClient docker.Iface, volume string) {
 	if err := dockerClient.RemoveVolume(volume); err != nil {
-		log.Panicf("error removing volume %v: %v", volume, err)
+		// treat this as a warning since it generally means another failure has already happened (i.e. a container failed) and
+		// we don't want to obscure this error
+		log.Printf("error removing volume %v: %v\n", volume, err)
 	}
 }
 
-func ReadVolume(dockerClient docker.Iface, volume string) (map[string]string, error) {
+func ReadVolume(dockerClient docker.Iface, volume string) (map[string][]byte, error) {
 	image := "alpine:latest"
 	if err := dockerClient.EnsureImage(image, os.Stderr); err != nil {
 		log.Panicln("error pulling:", err)
@@ -61,7 +71,7 @@ func ReadVolume(dockerClient docker.Iface, volume string) (map[string]string, er
 	}
 	defer reader.Close()
 	tarReader := tar.NewReader(reader)
-	result := make(map[string]string)
+	result := make(map[string][]byte)
 	for {
 		header, err := tarReader.Next()
 		if err == io.EOF {
@@ -75,7 +85,7 @@ func ReadVolume(dockerClient docker.Iface, volume string) (map[string]string, er
 		}
 		var contents bytes.Buffer
 		io.Copy(&contents, tarReader)
-		result[strings.TrimPrefix(header.Name, "root/")] = contents.String()
+		result[strings.TrimPrefix(header.Name, "root/")] = contents.Bytes()
 	}
 	return result, nil
 }
@@ -120,9 +130,9 @@ func CheckTerraformInitInitialReflectedInput(output []byte) {
 }
 
 // CheckTerraformWorkspaceList checks the debug output for the terraform list workspace command during workspace selection in deployment.
-func CheckTerraformWorkspaceList(line string) {
+func CheckTerraformWorkspaceList(line []byte) {
 	var input ReflectedInput
-	if err := json.Unmarshal([]byte(line), &input); err != nil {
+	if err := json.Unmarshal(line, &input); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
 
@@ -132,9 +142,9 @@ func CheckTerraformWorkspaceList(line string) {
 }
 
 // CheckTerraformWorkspaceNew checks the debug output for the terraform workspace new command during workspace selections in deployment.
-func CheckTerraformWorkspaceNew(line, workspaceName string) {
+func CheckTerraformWorkspaceNew(line []byte, workspaceName string) {
 	var input ReflectedInput
-	if err := json.Unmarshal([]byte(line), &input); err != nil {
+	if err := json.Unmarshal(line, &input); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
 
@@ -144,10 +154,10 @@ func CheckTerraformWorkspaceNew(line, workspaceName string) {
 }
 
 // DumpLines outputs a set of lines with indentation.
-func DumpLines(lines []string) string {
+func DumpLines(lines [][]byte) string {
 	result := ""
 	for _, line := range lines {
-		result += "  " + line + "\n"
+		result += "  " + string(line) + "\n"
 	}
 	return result
 }

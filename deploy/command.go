@@ -1,7 +1,7 @@
 package deploy
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
@@ -10,7 +10,7 @@ import (
 )
 
 // RunCommand runs the release command.
-func RunCommand(state *command.GlobalState, envName, version string, env map[string]string) error {
+func RunCommand(state *command.GlobalState, envName, version string, env map[string]string) (returnedError error) {
 	terraformImage, buildVolume, err := config.SetupTerraform(state, envName, version, env)
 	if err != nil {
 		return err
@@ -18,7 +18,11 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 
 	defer func() {
 		if err := state.DockerClient.RemoveVolume(buildVolume); err != nil {
-			log.Panicln("error removing build release volume:", err)
+			if returnedError != nil {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+			} else {
+				returnedError = err
+			}
 		}
 	}()
 
@@ -33,7 +37,11 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 	}
 	defer func() {
 		if err := terraformContainer.Done(); err != nil {
-			log.Fatalln("error cleaning up terraform container:", err)
+			if returnedError != nil {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+			} else {
+				returnedError = err
+			}
 		}
 	}()
 

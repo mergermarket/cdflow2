@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/mergermarket/cdflow2/config"
@@ -14,7 +13,8 @@ import (
 
 func TestConfigRelease(t *testing.T) {
 	// Given
-	dockerClient := test.GetDockerClient()
+	dockerClient, debugVolume := test.GetDockerClientWithDebugVolume()
+	defer test.RemoveVolume(dockerClient, debugVolume)
 
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
@@ -66,6 +66,7 @@ func TestConfigRelease(t *testing.T) {
 	}()
 
 	// Then
+
 	if !reflect.DeepEqual(configureReleaseResponse.Env, map[string]string{
 		"TEST_VERSION":                 "test-version",
 		"TEST_RELEASE_VAR_FROM_CONFIG": "config value",
@@ -78,13 +79,13 @@ func TestConfigRelease(t *testing.T) {
 		log.Panicln("unexpected message:", uploadReleaseResponse.Message)
 	}
 
-	lines := strings.Split(errorBuffer.String(), "\n")
-	if len(lines) != 3 || lines[2] != "" {
-		log.Panicf("expected two lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
+	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
+	if err != nil {
+		log.Panicln("error getting debug info:", err)
 	}
 
 	var configureReleaseDebugOutput map[string]interface{}
-	if err := json.Unmarshal([]byte(lines[0]), &configureReleaseDebugOutput); err != nil {
+	if err := json.Unmarshal(debugInfo["configure-release.json"], &configureReleaseDebugOutput); err != nil {
 		log.Panicln("error decoding configure release debug output:", err)
 	}
 
@@ -93,7 +94,7 @@ func TestConfigRelease(t *testing.T) {
 	}
 
 	var uploadReleaseDebugOutput map[string]interface{}
-	if err := json.Unmarshal([]byte(lines[1]), &uploadReleaseDebugOutput); err != nil {
+	if err := json.Unmarshal(debugInfo["upload-release.json"], &uploadReleaseDebugOutput); err != nil {
 		log.Panicln("error decoding upload release debug output:", err)
 	}
 
@@ -104,7 +105,8 @@ func TestConfigRelease(t *testing.T) {
 
 func TestConfigDeploy(t *testing.T) {
 	// Given
-	dockerClient := test.GetDockerClient()
+	dockerClient, debugVolume := test.GetDockerClientWithDebugVolume()
+	defer test.RemoveVolume(dockerClient, debugVolume)
 
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
@@ -145,7 +147,6 @@ func TestConfigDeploy(t *testing.T) {
 	}()
 
 	// Then
-
 	if !reflect.DeepEqual(prepareTerraformResponse.Env, map[string]string{
 		"TEST_ENV_VAR":    "env value",
 		"TEST_CONFIG_VAR": "config value",
@@ -170,8 +171,13 @@ func TestConfigDeploy(t *testing.T) {
 		log.Panicln("could not read release volume:", err)
 	}
 
-	if !reflect.DeepEqual(releaseData, map[string]string{"test": "unpacked"}) {
+	if !reflect.DeepEqual(releaseData, map[string][]byte{"test": []byte("unpacked")}) {
 		log.Panicln("unexpected release data:", releaseData)
+	}
+
+	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
+	if err != nil {
+		log.Panicln("error getting debug info:", err)
 	}
 
 	var prepareTerraformDebugOutput struct {
@@ -180,7 +186,8 @@ func TestConfigDeploy(t *testing.T) {
 			EnvName string
 		}
 	}
-	if err := json.Unmarshal(errorBuffer.Bytes(), &prepareTerraformDebugOutput); err != nil {
+
+	if err := json.Unmarshal(debugInfo["prepare-terraform.json"], &prepareTerraformDebugOutput); err != nil {
 		log.Panicln("error decoding prepare terraform debug output:", err)
 	}
 

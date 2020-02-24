@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/mergermarket/cdflow2/terraform"
@@ -14,7 +13,8 @@ import (
 
 func TestTerraformInitInitial(t *testing.T) {
 	// Given
-	dockerClient := test.GetDockerClient()
+	dockerClient, debugVolume := test.GetDockerClientWithDebugVolume()
+	defer test.RemoveVolume(dockerClient, debugVolume)
 
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
@@ -39,21 +39,27 @@ func TestTerraformInitInitial(t *testing.T) {
 		log.Fatalf("unexpected stdout output: '%v'", outputBuffer.String())
 	}
 
-	test.CheckTerraformInitInitialReflectedInput(errorBuffer.Bytes())
+	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
+	if err != nil {
+		log.Panicln("error getting debug info:", err)
+	}
+
+	test.CheckTerraformInitInitialReflectedInput(debugInfo["terraform"])
 
 	buildOutput, err := test.ReadVolume(dockerClient, buildVolume)
 	if err != nil {
 		log.Panicln("could not read build volume:", err)
 	}
 
-	if !reflect.DeepEqual(buildOutput, map[string]string{"build-output-test": "build output"}) {
+	if !reflect.DeepEqual(buildOutput, map[string][]byte{"build-output-test": []byte("build output")}) {
 		log.Panicln("unexpected build output:", buildOutput)
 	}
 }
 
 func TestTerraformConfigureBackend(t *testing.T) {
 	// Given
-	dockerClient := test.GetDockerClient()
+	dockerClient, debugVolume := test.GetDockerClientWithDebugVolume()
+	defer test.RemoveVolume(dockerClient, debugVolume)
 
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
@@ -95,8 +101,13 @@ func TestTerraformConfigureBackend(t *testing.T) {
 		log.Panicf("unexpected stdout output: '%v'", outputBuffer.String())
 	}
 
+	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
+	if err != nil {
+		log.Panicln("error getting debug info:", err)
+	}
+
 	var input test.ReflectedInput
-	if err := json.Unmarshal(errorBuffer.Bytes(), &input); err != nil {
+	if err := json.Unmarshal(debugInfo["terraform"], &input); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
 	if !reflect.DeepEqual(input.Args, []string{
@@ -112,7 +123,8 @@ func TestTerraformConfigureBackend(t *testing.T) {
 
 func TestSwitchWorkspaceExisting(t *testing.T) {
 	// Given
-	dockerClient := test.GetDockerClient()
+	dockerClient, debugVolume := test.GetDockerClientWithDebugVolume()
+	defer test.RemoveVolume(dockerClient, debugVolume)
 
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
@@ -150,13 +162,18 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 	}()
 
 	// Then
-	lines := strings.Split(errorBuffer.String(), "\n")
-	if len(lines) != 3 || lines[2] != "" {
+	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
+	if err != nil {
+		log.Panicln("error getting debug info:", err)
+	}
+
+	lines := bytes.Split(debugInfo["terraform"], []byte{'\n'})
+	if len(lines) != 3 || len(lines[2]) != 0 {
 		log.Panicf("expected two lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
 	}
 
 	var listInput test.ReflectedInput
-	if err := json.Unmarshal([]byte(lines[0]), &listInput); err != nil {
+	if err := json.Unmarshal(lines[0], &listInput); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
 
@@ -165,7 +182,7 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 	}
 
 	var selectInput test.ReflectedInput
-	if err := json.Unmarshal([]byte(lines[1]), &selectInput); err != nil {
+	if err := json.Unmarshal(lines[1], &selectInput); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
 
@@ -176,7 +193,8 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 
 func TestSwitchWorkspaceNew(t *testing.T) {
 	// When
-	dockerClient := test.GetDockerClient()
+	dockerClient, debugVolume := test.GetDockerClientWithDebugVolume()
+	defer test.RemoveVolume(dockerClient, debugVolume)
 
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
@@ -213,8 +231,13 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 	}()
 
 	// Then
-	lines := strings.Split(errorBuffer.String(), "\n")
-	if len(lines) != 3 || lines[2] != "" {
+	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
+	if err != nil {
+		log.Panicln("error getting debug info:", err)
+	}
+
+	lines := bytes.Split(debugInfo["terraform"], []byte{'\n'})
+	if len(lines) != 3 || len(lines[2]) != 0 {
 		log.Panicf("expected two lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
 	}
 

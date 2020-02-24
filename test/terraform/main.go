@@ -29,7 +29,17 @@ func main() {
 		fmt.Println("message to stdout")
 	}
 
-	encoder := json.NewEncoder(os.Stderr)
+	file, err := os.OpenFile("/debug/terraform", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		log.Fatalf("failed opening file: %s", err)
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Fatalf("failed closing file: %s", err)
+		}
+	}()
+
+	encoder := json.NewEncoder(file)
 
 	fileContents, err := ioutil.ReadFile("/code/mapped-dir-test")
 	if err != nil {

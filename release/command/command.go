@@ -11,7 +11,7 @@ import (
 )
 
 // RunCommand runs the release command.
-func RunCommand(state *command.GlobalState, version string, env map[string]string) error {
+func RunCommand(state *command.GlobalState, version string, env map[string]string) (returnedError error) {
 
 	dockerClient := state.DockerClient
 
@@ -42,7 +42,12 @@ func RunCommand(state *command.GlobalState, version string, env map[string]strin
 	}
 	defer func() {
 		if err := dockerClient.RemoveVolume(buildVolume); err != nil {
-			log.Panicln("error removing build volume:", err)
+			if returnedError != nil {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+			} else {
+				returnedError = err
+			}
+			return
 		}
 	}()
 
@@ -74,7 +79,7 @@ func RunCommand(state *command.GlobalState, version string, env map[string]strin
 	return nil
 }
 
-func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, savedTerraformImage string, env map[string]string) (string, error) {
+func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, savedTerraformImage string, env map[string]string) (returnedMessage string, returnedError error) {
 	dockerClient := state.DockerClient
 	configContainer, err := config.NewContainer(dockerClient, state.Manifest.Config.Image, buildVolume, state.ErrorStream)
 	if err != nil {
@@ -82,10 +87,20 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 	}
 	defer func() {
 		if err := configContainer.RequestStop(); err != nil {
-			log.Panicln("error stopping config container:", err)
+			if returnedError != nil {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+			} else {
+				returnedError = err
+			}
+			return
 		}
 		if err := configContainer.Done(); err != nil {
-			log.Panicln("error cleaning up config container:", err)
+			if returnedError != nil {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+			} else {
+				returnedError = err
+			}
+			return
 		}
 	}()
 

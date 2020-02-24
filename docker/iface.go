@@ -19,6 +19,7 @@ type Iface interface {
 	RemoveContainer(id string) error
 	CopyFromContainer(id, path string) (io.ReadCloser, error)
 	CopyToContainer(id, path string, reader io.Reader) error
+	SetDebugVolume(volume string)
 }
 
 // RunOptions represents the options to the Run method.

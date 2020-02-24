@@ -3,9 +3,7 @@ package command_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
-	"strings"
 	"testing"
 
 	"github.com/mergermarket/cdflow2/command"
@@ -20,10 +18,13 @@ func TestRunCommand(t *testing.T) {
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
+	dockerClient, debugVolume := test.GetDockerClientWithDebugVolume()
+	defer test.RemoveVolume(dockerClient, debugVolume)
+
 	// When
 	if err := release.RunCommand(
 		&command.GlobalState{
-			DockerClient: test.GetDockerClient(),
+			DockerClient: dockerClient,
 			Component:    "test-component",
 			Commit:       "test-commit",
 			OutputStream: &outputBuffer,
@@ -60,32 +61,23 @@ func TestRunCommand(t *testing.T) {
 	}
 
 	// Then
-	lines := strings.Split(errorBuffer.String(), "\n")
-	if len(lines) != 7 || lines[6] != "" {
-		log.Panicf("expected six lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
+	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
+	if err != nil {
+		log.Panicln("error getting debug info:", err)
 	}
 
-	test.CheckTerraformInitInitialReflectedInput([]byte(lines[0]))
+	test.CheckTerraformInitInitialReflectedInput(debugInfo["terraform"])
 
-	checkConfigureReleaseOutput(lines[1])
+	checkConfigureReleaseOutput(debugInfo["configure-release.json"])
 
-	if lines[2] != "message to stderr from release" {
-		log.Panicln("unexpected output of release:", lines[2])
-	}
+	checkUploadReleaseOutput(debugInfo["upload-release.json"])
 
-	if lines[3] != "docker status: OK" {
-		log.Panicln("unexpected output of release:", lines[2])
-	}
-
-	fmt.Println(lines[5])
-	checkUploadReleaseOutput(lines[4])
-
-	if lines[5] != "uploaded test-version" {
-		log.Panic("expected 'uploaded test-version' message from config container, got:", lines[5])
+	if errorBuffer.String() != "message to stderr from release\ndocker status: OK\nuploaded test-version\n" {
+		log.Panicln("unexpected output of release:", errorBuffer.String())
 	}
 }
 
-func checkConfigureReleaseOutput(debugOutput string) {
+func checkConfigureReleaseOutput(debugOutput []byte) {
 	var decoded struct {
 		Action  string
 		Request struct {
@@ -94,7 +86,7 @@ func checkConfigureReleaseOutput(debugOutput string) {
 		}
 	}
 
-	if err := json.Unmarshal([]byte(debugOutput), &decoded); err != nil {
+	if err := json.Unmarshal(debugOutput, &decoded); err != nil {
 		log.Panicln("error decoding configure release debug output:", err)
 	}
 
@@ -111,7 +103,7 @@ func checkConfigureReleaseOutput(debugOutput string) {
 	}
 }
 
-func checkUploadReleaseOutput(debugOutput string) {
+func checkUploadReleaseOutput(debugOutput []byte) {
 	var decoded struct {
 		Action  string
 		Request struct {
@@ -119,8 +111,8 @@ func checkUploadReleaseOutput(debugOutput string) {
 		}
 		ReleaseMetadata map[string]map[string]string
 	}
-	if err := json.Unmarshal([]byte(debugOutput), &decoded); err != nil {
-		log.Panicln("error decoding upload release debug output:", err, "'"+debugOutput+"'")
+	if err := json.Unmarshal(debugOutput, &decoded); err != nil {
+		log.Panicf("error decoding upload release debug output: %v, '%v'", err, string(debugOutput))
 	}
 
 	if decoded.Action != "upload_release" {

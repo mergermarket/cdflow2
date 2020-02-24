@@ -39,12 +39,21 @@ func Run(dockerClient docker.Iface, image, codeDir, buildVolume string, outputSt
 	})
 }
 
-func getReleaseMetadataFromContainer(dockerClient docker.Iface, id string) (map[string]string, error) {
+func getReleaseMetadataFromContainer(dockerClient docker.Iface, id string) (returnedMetadata map[string]string, returnedError error) {
 	reader, err := dockerClient.CopyFromContainer(id, "/release-metadata.json")
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			if returnedError != nil {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+			} else {
+				returnedError = err
+			}
+			return
+		}
+	}()
 
 	tarReader := tar.NewReader(reader)
 

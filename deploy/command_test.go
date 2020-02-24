@@ -20,8 +20,11 @@ func TestRunCommand(t *testing.T) {
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
+	dockerClient, debugVolume := test.GetDockerClientWithDebugVolume()
+	defer test.RemoveVolume(dockerClient, debugVolume)
+
 	state := &command.GlobalState{
-		DockerClient: test.GetDockerClient(),
+		DockerClient: dockerClient,
 		OutputStream: &outputBuffer,
 		ErrorStream:  &errorBuffer,
 		CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
@@ -62,21 +65,26 @@ func TestRunCommand(t *testing.T) {
 	}
 
 	// Then
-	lines := strings.Split(errorBuffer.String(), "\n")
-	if len(lines) != 6 || lines[5] != "" {
-		log.Panicf("expected five lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
+	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
+	if err != nil {
+		log.Panicln("error getting debug info:", err)
 	}
 
-	checkPrepareTerraformOutput(lines[0])
+	checkPrepareTerraformOutput(debugInfo["prepare-terraform.json"])
 
-	test.CheckTerraformWorkspaceList(lines[1])
-	test.CheckTerraformWorkspaceNew(lines[2], "test-env")
+	lines := bytes.Split(debugInfo["terraform"], []byte{'\n'})
+	if len(lines) != 5 || len(lines[4]) != 0 {
+		log.Panicf("expected four lines with a trailing newline (empty string), got %v lines:\n%v", len(lines), test.DumpLines(lines))
+	}
 
-	planFilename := checkTerraformPlanOutput(lines[3])
-	checkTerraformApplyOutput(lines[4], planFilename)
+	test.CheckTerraformWorkspaceList(lines[0])
+	test.CheckTerraformWorkspaceNew(lines[1], "test-env")
+
+	planFilename := checkTerraformPlanOutput(lines[2])
+	checkTerraformApplyOutput(lines[3], planFilename)
 }
 
-func checkPrepareTerraformOutput(debugOutput string) {
+func checkPrepareTerraformOutput(debugOutput []byte) {
 	var decoded struct {
 		Action  string
 		Request struct {
@@ -88,7 +96,7 @@ func checkPrepareTerraformOutput(debugOutput string) {
 		PWD string
 	}
 
-	if err := json.Unmarshal([]byte(debugOutput), &decoded); err != nil {
+	if err := json.Unmarshal(debugOutput, &decoded); err != nil {
 		log.Panicln("error decoding prepare terraform debug output:", err)
 	}
 
@@ -110,9 +118,9 @@ func checkPrepareTerraformOutput(debugOutput string) {
 
 }
 
-func checkTerraformPlanOutput(output string) string {
+func checkTerraformPlanOutput(output []byte) string {
 	var input test.ReflectedInput
-	if err := json.Unmarshal([]byte(output), &input); err != nil {
+	if err := json.Unmarshal(output, &input); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
 
@@ -131,9 +139,9 @@ func checkTerraformPlanOutput(output string) string {
 	return planFilename
 }
 
-func checkTerraformApplyOutput(output, planFilename string) {
+func checkTerraformApplyOutput(output []byte, planFilename string) {
 	var input test.ReflectedInput
-	if err := json.Unmarshal([]byte(output), &input); err != nil {
+	if err := json.Unmarshal(output, &input); err != nil {
 		log.Panicln("error parsing json:", err)
 	}
 

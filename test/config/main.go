@@ -27,14 +27,29 @@ func NewHandler() common.Handler {
 	return &handler{}
 }
 
+func writeDebug(data interface{}, path string) {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Panicf("error opening %v for write: %v\n", path, err)
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Panicf("error closing %v: %v\n", path, err)
+		}
+	}()
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(data); err != nil {
+		log.Panicf("error serialising %v as json to %v: %v", data, path, err)
+	}
+}
+
 // ConfigureRelease handles a configure release request in order to prepare for the release container to be ran.
 func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, response *common.ConfigureReleaseResponse, errorStream io.Writer) error {
-	if err := json.NewEncoder(errorStream).Encode(map[string]interface{}{
+	writeDebug(map[string]interface{}{
 		"Action":  "configure_release",
 		"Request": &request,
-	}); err != nil {
-		return err
-	}
+	}, "/debug/configure-release.json")
 	response.Env = map[string]string{
 		"TEST_VERSION":                 request.Version,
 		"TEST_RELEASE_VAR_FROM_ENV":    request.Env["TEST_ENV_VAR"],
@@ -53,13 +68,11 @@ func (*handler) UploadRelease(request *common.UploadReleaseRequest, response *co
 	if err := json.Unmarshal(data, &releaseMetadata); err != nil {
 		log.Panicln("could not decode /release/release-metadata.json:", err)
 	}
-	if err := json.NewEncoder(errorStream).Encode(map[string]interface{}{
+	writeDebug(map[string]interface{}{
 		"Action":          "upload_release",
 		"Request":         &request,
 		"ReleaseMetadata": releaseMetadata,
-	}); err != nil {
-		return err
-	}
+	}, "/debug/upload-release.json")
 	response.Message = "uploaded " + version
 	return nil
 }
@@ -76,13 +89,11 @@ func (*handler) PrepareTerraform(request *common.PrepareTerraformRequest, respon
 	if err := ioutil.WriteFile("/release/test", []byte("unpacked"), 0644); err != nil {
 		log.Fatalln("could not write to /release/test:", err)
 	}
-	if err := json.NewEncoder(errorStream).Encode(map[string]interface{}{
+	writeDebug(map[string]interface{}{
 		"Action":  "prepare_terraform",
 		"Request": &request,
 		"PWD":     dir,
-	}); err != nil {
-		return err
-	}
+	}, "/debug/prepare-terraform.json")
 	response.TerraformImage = request.Env["TERRAFORM_DIGEST"]
 	response.Env = map[string]string{
 		"TEST_ENV_VAR":    request.Env["TEST_ENV_VAR"],
