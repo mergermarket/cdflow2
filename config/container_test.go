@@ -50,7 +50,7 @@ func TestConfigRelease(t *testing.T) {
 		}
 
 		configContainer.WriteReleaseMetadata(map[string]map[string]string{
-			"release": map[string]string{
+			"release": {
 				"metadata-key": "metadata-value",
 			},
 		})

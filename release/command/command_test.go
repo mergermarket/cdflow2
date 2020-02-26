@@ -34,7 +34,7 @@ func TestRunCommand(t *testing.T) {
 				Version: 2,
 				Team:    "test-team",
 				Builds: map[string]manifest.Build{
-					"release": manifest.Build{
+					"release": {
 						Image: test.GetConfig("TEST_RELEASE_IMAGE"),
 					},
 				},

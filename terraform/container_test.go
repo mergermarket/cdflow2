@@ -88,8 +88,8 @@ func TestTerraformConfigureBackend(t *testing.T) {
 			&outputBuffer,
 			&errorBuffer,
 			[]terraform.BackendConfigParameter{
-				terraform.BackendConfigParameter{"key1", "value1"},
-				terraform.BackendConfigParameter{"key2", "value2"},
+				{"key1", "value1"},
+				{"key2", "value2"},
 			},
 		); err != nil {
 			log.Panicln("unexpected error: ", err)
