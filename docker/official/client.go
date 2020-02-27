@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -102,7 +101,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 	return dockerClient.client.ContainerRemove(context.Background(), response.ID, types.ContainerRemoveOptions{})
 }
 
-func (dockerClient *Client) runContainer(container string, inputStream io.ReadCloser, outputStream, errorStream io.Writer, started chan string) error {
+func (dockerClient *Client) runContainer(container string, inputStream io.Reader, outputStream, errorStream io.Writer, started chan string) error {
 	stdin := false
 	if inputStream != nil {
 		stdin = true
@@ -204,10 +203,15 @@ func (dockerClient *Client) GetImageRepoDigests(image string) ([]string, error) 
 
 // Exec execs a process in a docker container (like `docker exec` in the cli).
 func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
+	stdin := false
+	if options.InputStream != nil {
+		stdin = true
+	}
 	exec, err := dockerClient.client.ContainerExecCreate(
 		context.Background(),
 		options.ID,
 		types.ExecConfig{
+			AttachStdin:  stdin,
 			AttachStdout: true,
 			AttachStderr: true,
 			Cmd:          options.Cmd,
@@ -227,7 +231,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	}
 	defer attachResponse.Close() // does not return error
 
-	if err := dockerClient.streamHijackedResponse(attachResponse, nil, options.OutputStream, options.ErrorStream, func() error {
+	if err := dockerClient.streamHijackedResponse(attachResponse, options.InputStream, options.OutputStream, options.ErrorStream, func() error {
 		return dockerClient.client.ContainerExecStart(
 			context.Background(),
 			exec.ID,
@@ -246,7 +250,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	}
 
 	if details.ExitCode != 0 {
-		return errors.New("exec process exited with error status code " + string(details.ExitCode))
+		return fmt.Errorf("exec process exited with error status code %d", details.ExitCode)
 	}
 
 	return nil
@@ -306,7 +310,7 @@ func (dockerClient *Client) CopyToContainer(id string, path string, reader io.Re
 	return dockerClient.client.CopyToContainer(context.Background(), id, path, reader, types.CopyToContainerOptions{})
 }
 
-func (dockerClient *Client) streamHijackedResponse(hijackedResponse types.HijackedResponse, inputStream io.ReadCloser, outputStream, errorStream io.Writer, start func() error) error {
+func (dockerClient *Client) streamHijackedResponse(hijackedResponse types.HijackedResponse, inputStream io.Reader, outputStream, errorStream io.Writer, start func() error) error {
 	if inputStream != nil {
 		go func() {
 			defer hijackedResponse.CloseWrite()         // add to error below

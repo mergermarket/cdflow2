@@ -17,7 +17,7 @@ type Message struct {
 }
 
 func main() {
-	common.Run(NewHandler(), os.Stdin, os.Stdout, os.Stderr)
+	common.Run(NewHandler(), os.Args[1:], os.Stdin, os.Stdout, os.Stderr, "")
 }
 
 type handler struct{}
@@ -59,7 +59,13 @@ func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, respon
 }
 
 // UploadRelease handles an upload release request in order to upload the release after the release container is run.
-func (*handler) UploadRelease(request *common.UploadReleaseRequest, response *common.UploadReleaseResponse, errorStream io.Writer, version string) error {
+func (*handler) UploadRelease(
+	request *common.UploadReleaseRequest,
+	response *common.UploadReleaseResponse,
+	errorStream io.Writer,
+	version string,
+	config map[string]interface{},
+) error {
 	var releaseMetadata map[string]map[string]string
 	data, err := ioutil.ReadFile("/release/release-metadata.json")
 	if err != nil {

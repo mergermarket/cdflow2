@@ -46,7 +46,7 @@ func TestConfigRelease(t *testing.T) {
 			},
 		)
 		if err != nil {
-			log.Panicln("error in configureRelease:", err)
+			log.Panicln("error in configureRelease:", err, errorBuffer.String())
 		}
 
 		configContainer.WriteReleaseMetadata(map[string]map[string]string{

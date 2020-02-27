@@ -22,6 +22,7 @@ type Container struct {
 	done         chan error
 	reader       *bufio.Reader
 	writeStream  io.WriteCloser
+	errorStream  io.Writer
 	finished     bool
 }
 
@@ -39,6 +40,7 @@ func NewContainer(dockerClient docker.Iface, image, releaseVolume string, errorS
 		done:         done,
 		reader:       bufio.NewReader(outputReadStream),
 		writeStream:  inputWriteStream,
+		errorStream:  errorStream,
 	}
 
 	go func() {
@@ -90,19 +92,39 @@ func (configContainer *Container) write(message []byte) error {
 	return nil
 }
 
+func (configContainer *Container) request(request interface{}, response interface{}) error {
+	var rawRequest bytes.Buffer
+	if err := json.NewEncoder(&rawRequest).Encode(request); err != nil {
+		return err
+	}
+	var rawResponse bytes.Buffer
+	if err := configContainer.dockerClient.Exec(&docker.ExecOptions{
+		ID:           configContainer.id,
+		Cmd:          []string{"/app", "forward"},
+		InputStream:  &rawRequest,
+		OutputStream: &rawResponse,
+		ErrorStream:  configContainer.errorStream,
+	}); err != nil {
+		return err
+	}
+	if response != nil { // no response for stop
+		if err := json.NewDecoder(&rawResponse).Decode(response); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type stopRequest struct {
 	Action string
 }
 
 // RequestStop sends a message to the config container asking it to stop gracefully.
 func (configContainer *Container) RequestStop() error {
-	request, err := json.Marshal(&stopRequest{Action: "stop"})
-	if err != nil {
-		return err
-	}
-	if err := configContainer.write(append(request, '\n')); err != nil {
-		return err
-	}
+	configContainer.request(&stopRequest{
+		Action: "stop",
+	}, nil)
+	// the above can error since the exec gets killed when the container stops, but that's okay
 	return nil
 }
 
@@ -125,19 +147,13 @@ func (configContainer *Container) ConfigureRelease(
 	config map[string]interface{},
 	env map[string]string,
 ) (*ConfigureReleaseConfigResponse, error) {
-	request, err := json.Marshal(&configureReleaseConfigRequest{Action: "configure_release", Version: version, Config: config, Env: env})
-	if err != nil {
-		return nil, err
-	}
-	if err := configContainer.write(append(request, '\n')); err != nil {
-		return nil, err
-	}
-	received, err := configContainer.readline()
-	if err != nil {
-		return nil, err
-	}
 	var response ConfigureReleaseConfigResponse
-	if err := json.Unmarshal(received, &response); err != nil {
+	if err := configContainer.request(&configureReleaseConfigRequest{
+		Action:  "configure_release",
+		Version: version,
+		Config:  config,
+		Env:     env,
+	}, &response); err != nil {
 		return nil, err
 	}
 	if !response.Success {
@@ -191,19 +207,11 @@ type UploadReleaseResponse struct {
 
 // UploadRelease requests that the config container uploads the release and returns the response.
 func (configContainer *Container) UploadRelease(terraformImage string) (*UploadReleaseResponse, error) {
-	request, err := json.Marshal(&uploadReleaseRequest{Action: "upload_release", TerraformImage: terraformImage})
-	if err != nil {
-		return nil, err
-	}
-	if err := configContainer.write(append(request, '\n')); err != nil {
-		return nil, err
-	}
-	received, err := configContainer.readline()
-	if err != nil {
-		return nil, err
-	}
 	var response UploadReleaseResponse
-	if err := json.Unmarshal(received, &response); err != nil {
+	if err := configContainer.request(&uploadReleaseRequest{
+		Action:         "upload_release",
+		TerraformImage: terraformImage,
+	}, &response); err != nil {
 		return nil, err
 	}
 	if !response.Success {
@@ -235,25 +243,15 @@ func (configContainer *Container) PrepareTerraform(
 	config map[string]interface{},
 	env map[string]string,
 ) (*PrepareTerraformResponse, error) {
-	request, err := json.Marshal(&prepareTerraformRequest{
+
+	var response PrepareTerraformResponse
+	if err := configContainer.request(&prepareTerraformRequest{
 		Action:  "prepare_terraform",
 		Config:  config,
 		Env:     env,
 		EnvName: envName,
 		Version: version,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if err := configContainer.write(append(request, '\n')); err != nil {
-		return nil, err
-	}
-	received, err := configContainer.readline()
-	if err != nil {
-		return nil, err
-	}
-	var response PrepareTerraformResponse
-	if err := json.Unmarshal(received, &response); err != nil {
+	}, &response); err != nil {
 		return nil, err
 	}
 	if !response.Success {

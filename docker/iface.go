@@ -31,7 +31,7 @@ type RunOptions struct {
 	Env           []string
 	Binds         []string
 	NamePrefix    string
-	InputStream   io.ReadCloser
+	InputStream   io.Reader
 	OutputStream  io.Writer
 	ErrorStream   io.Writer
 	Started       chan string
@@ -50,6 +50,7 @@ type CreateContainerOptions struct {
 type ExecOptions struct {
 	ID           string
 	Cmd          []string
+	InputStream  io.Reader
 	OutputStream io.Writer
 	ErrorStream  io.Writer
 }
