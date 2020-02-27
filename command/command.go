@@ -24,6 +24,12 @@ type GlobalArgs struct {
 	Quiet           bool
 }
 
+func (globalArgs GlobalArgs) setComponent(value parameterValue) {
+	if value.err != nil {
+
+	}
+}
+
 // GlobalState contains common to all commands.
 type GlobalState struct {
 	GlobalArgs   *GlobalArgs
@@ -87,48 +93,69 @@ func GetGlobalState(globalArgs *GlobalArgs) (*GlobalState, error) {
 	return &state, nil
 }
 
+type parameterValue struct {
+	value string
+	err   error
+}
+
+func handleArg(arg string, globalArgs *GlobalArgs, take func() (string, error)) (bool, error) {
+	if arg == "-c" || arg == "--component" {
+		value, err := take()
+		if err != nil {
+			return false, err
+		}
+		globalArgs.Component = value
+	} else if strings.HasPrefix(arg, "--component=") {
+		globalArgs.Component = strings.TrimPrefix(arg, "--component=")
+	} else if arg == "--commit" {
+		value, err := take()
+		if err != nil {
+			return false, err
+		}
+		globalArgs.Commit = value
+	} else if strings.HasPrefix(arg, "--commit=") {
+		globalArgs.Commit = strings.TrimPrefix(arg, "--commit=")
+	} else if arg == "--no-pull-config" {
+		globalArgs.NoPullConfig = true
+	} else if arg == "--no-pull-release" {
+		globalArgs.NoPullRelease = true
+	} else if arg == "--no-pull-terraform" {
+		globalArgs.NoPullTerraform = true
+	} else if arg == "--quiet" || arg == "-q" {
+		globalArgs.Quiet = true
+	} else if arg == "help" || arg == "--help" || arg == "-h" {
+		globalArgs.Command = "help"
+		return true, nil
+	} else if arg == "version" || arg == "--version" || arg == "-v" {
+		globalArgs.Command = "version"
+		return true, nil
+	} else if strings.HasPrefix(arg, "-") {
+		return false, errors.New("Unknown global option: " + arg)
+	} else {
+		globalArgs.Command = arg
+		return true, nil
+	}
+	return false, nil
+}
+
 // ParseArgs takes arguments and splits them into global and remaining args.
 func ParseArgs(args []string) (*GlobalArgs, []string, error) {
 	var globalArgs GlobalArgs
 	remainingArgs := []string{}
 	i := 0
+	take := func() (string, error) {
+		if i > len(args) {
+			return "", errors.New("missing value")
+		}
+		i++
+		return args[i], nil
+	}
 	for ; i < len(args); i++ {
-		if args[i] == "-c" || args[i] == "--component" {
-			if i+1 == len(args) {
-				return nil, remainingArgs, errors.New("no value for component parameter")
-			}
-			globalArgs.Component = args[i+1]
-			i++
-		} else if strings.HasPrefix(args[i], "--component=") {
-			globalArgs.Component = strings.TrimPrefix(args[i], "--component=")
-		} else if args[i] == "--commit" {
-			if i+1 == len(args) {
-				return nil, remainingArgs, errors.New("no value for commit parameter")
-			}
-			globalArgs.Commit = args[i+1]
-			i++
-		} else if strings.HasPrefix(args[i], "--commit=") {
-			globalArgs.Commit = strings.TrimPrefix(args[i], "--commit=")
-		} else if args[i] == "--no-pull-config" {
-			globalArgs.NoPullConfig = true
-		} else if args[i] == "--no-pull-release" {
-			globalArgs.NoPullRelease = true
-		} else if args[i] == "--no-pull-terraform" {
-			globalArgs.NoPullTerraform = true
-		} else if args[i] == "--quiet" || args[i] == "-q" {
-			globalArgs.Quiet = true
-		} else if args[i] == "help" || args[i] == "--help" || args[i] == "-h" {
-			globalArgs.Command = "help"
-			remainingArgs = args[i+1:]
-			break
-		} else if args[i] == "version" || args[i] == "--version" || args[i] == "-v" {
-			globalArgs.Command = "version"
-			remainingArgs = args[i+1:]
-			break
-		} else if strings.HasPrefix(args[i], "-") {
-			return nil, remainingArgs, errors.New("Unknown global option: " + args[i])
-		} else {
-			globalArgs.Command = args[i]
+		done, err := handleArg(args[i], &globalArgs, take)
+		if err != nil {
+			return nil, remainingArgs, err
+		}
+		if done {
 			remainingArgs = args[i+1:]
 			break
 		}
