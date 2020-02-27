@@ -93,10 +93,9 @@ func handleArg(arg string, globalArgs *GlobalArgs, take func() (string, error)) 
 			return false, nil
 		}
 		return handleFlag(arg, globalArgs, take)
-	} else {
-		globalArgs.Command = arg
-		return true, nil
 	}
+	globalArgs.Command = arg
+	return true, nil
 }
 
 func handleSimpleFlag(arg string, globalArgs *GlobalArgs) bool {
