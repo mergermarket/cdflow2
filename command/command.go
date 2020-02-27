@@ -24,12 +24,6 @@ type GlobalArgs struct {
 	Quiet           bool
 }
 
-func (globalArgs GlobalArgs) setComponent(value parameterValue) {
-	if value.err != nil {
-
-	}
-}
-
 // GlobalState contains common to all commands.
 type GlobalState struct {
 	GlobalArgs   *GlobalArgs
@@ -93,12 +87,36 @@ func GetGlobalState(globalArgs *GlobalArgs) (*GlobalState, error) {
 	return &state, nil
 }
 
-type parameterValue struct {
-	value string
-	err   error
+func handleArg(arg string, globalArgs *GlobalArgs, take func() (string, error)) (bool, error) {
+	if strings.HasPrefix(arg, "-") {
+		if handleSimpleFlag(arg, globalArgs) {
+			return false, nil
+		}
+		return handleFlag(arg, globalArgs, take)
+	} else {
+		globalArgs.Command = arg
+		return true, nil
+	}
 }
 
-func handleArg(arg string, globalArgs *GlobalArgs, take func() (string, error)) (bool, error) {
+func handleSimpleFlag(arg string, globalArgs *GlobalArgs) bool {
+	if arg == "--no-pull-config" {
+		globalArgs.NoPullConfig = true
+		return true
+	} else if arg == "--no-pull-release" {
+		globalArgs.NoPullRelease = true
+		return true
+	} else if arg == "--no-pull-terraform" {
+		globalArgs.NoPullTerraform = true
+		return true
+	} else if arg == "--quiet" || arg == "-q" {
+		globalArgs.Quiet = true
+		return true
+	}
+	return false
+}
+
+func handleFlag(arg string, globalArgs *GlobalArgs, take func() (string, error)) (bool, error) {
 	if arg == "-c" || arg == "--component" {
 		value, err := take()
 		if err != nil {
@@ -115,25 +133,14 @@ func handleArg(arg string, globalArgs *GlobalArgs, take func() (string, error)) 
 		globalArgs.Commit = value
 	} else if strings.HasPrefix(arg, "--commit=") {
 		globalArgs.Commit = strings.TrimPrefix(arg, "--commit=")
-	} else if arg == "--no-pull-config" {
-		globalArgs.NoPullConfig = true
-	} else if arg == "--no-pull-release" {
-		globalArgs.NoPullRelease = true
-	} else if arg == "--no-pull-terraform" {
-		globalArgs.NoPullTerraform = true
-	} else if arg == "--quiet" || arg == "-q" {
-		globalArgs.Quiet = true
-	} else if arg == "help" || arg == "--help" || arg == "-h" {
+	} else if arg == "--help" || arg == "-h" {
 		globalArgs.Command = "help"
 		return true, nil
-	} else if arg == "version" || arg == "--version" || arg == "-v" {
+	} else if arg == "--version" || arg == "-v" {
 		globalArgs.Command = "version"
 		return true, nil
-	} else if strings.HasPrefix(arg, "-") {
-		return false, errors.New("Unknown global option: " + arg)
 	} else {
-		globalArgs.Command = arg
-		return true, nil
+		return false, errors.New("Unknown global option: " + arg)
 	}
 	return false, nil
 }
