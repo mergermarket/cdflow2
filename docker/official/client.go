@@ -18,7 +18,7 @@ import (
 	"github.com/mergermarket/cdflow2/util"
 )
 
-// Client is a concrete inplementation of our docker interface that uses the official client library.
+// Client is a concrete implementation of our docker interface that uses the official client library.
 type Client struct {
 	client      *client.Client
 	debugVolume string
