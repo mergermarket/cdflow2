@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,7 +16,7 @@ type Message struct {
 }
 
 func main() {
-	common.Run(NewHandler(), os.Args[1:], os.Stdin, os.Stdout, os.Stderr, "")
+	common.Run(NewHandler(), os.Args[1:], os.Stdin, os.Stdout, "")
 }
 
 type handler struct{}
@@ -45,7 +44,7 @@ func writeDebug(data interface{}, path string) {
 }
 
 // ConfigureRelease handles a configure release request in order to prepare for the release container to be ran.
-func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, response *common.ConfigureReleaseResponse, errorStream io.Writer) error {
+func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, response *common.ConfigureReleaseResponse) error {
 	writeDebug(map[string]interface{}{
 		"Action":  "configure_release",
 		"Request": &request,
@@ -62,7 +61,6 @@ func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, respon
 func (*handler) UploadRelease(
 	request *common.UploadReleaseRequest,
 	response *common.UploadReleaseResponse,
-	errorStream io.Writer,
 	version string,
 	config map[string]interface{},
 ) error {
@@ -84,7 +82,7 @@ func (*handler) UploadRelease(
 }
 
 // PrepareTerraform handles a prepare terraform request in order to provide configuration for terraform during a deploy, destroy, etc.
-func (*handler) PrepareTerraform(request *common.PrepareTerraformRequest, response *common.PrepareTerraformResponse, errorStream io.Writer) error {
+func (*handler) PrepareTerraform(request *common.PrepareTerraformRequest, response *common.PrepareTerraformResponse) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		log.Fatalln("could not get working directory:", err)

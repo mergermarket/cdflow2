@@ -77,9 +77,10 @@ Error in global options:
 
 	%v
 
-For options run:
+For usage run:
 
-    cdflow --help
+	cdflow --help
+
 `
 
 func main() {
