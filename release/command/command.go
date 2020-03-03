@@ -95,7 +95,14 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 		}
 	}()
 
-	configureReleaseResponse, err := configContainer.ConfigureRelease(version, state.Manifest.Config.Params, env)
+	configureReleaseResponse, err := configContainer.ConfigureRelease(
+		version,
+		state.Component,
+		state.Commit,
+		state.Manifest.Team,
+		state.Manifest.Config.Params,
+		env,
+	)
 	if err != nil {
 		return "", err
 	}

@@ -96,9 +96,12 @@ func (configContainer *Container) request(request interface{}, response interfac
 }
 
 type setupConfigRequest struct {
-	Action string
-	Config map[string]interface{}
-	Env    map[string]string
+	Action    string
+	Config    map[string]interface{}
+	Env       map[string]string
+	Component string
+	Commit    string
+	Team      string
 }
 
 type setupConfigResponse struct {
@@ -109,12 +112,16 @@ type setupConfigResponse struct {
 func (configContainer *Container) Setup(
 	config map[string]interface{},
 	env map[string]string,
+	component, commit, team string,
 ) error {
 	var response setupConfigResponse
 	if err := configContainer.request(&setupConfigRequest{
-		Action: "setup",
-		Config: config,
-		Env:    env,
+		Action:    "setup",
+		Config:    config,
+		Env:       env,
+		Component: component,
+		Commit:    commit,
+		Team:      team,
 	}, &response); err != nil {
 		return err
 	}
@@ -125,10 +132,13 @@ func (configContainer *Container) Setup(
 }
 
 type configureReleaseConfigRequest struct {
-	Action  string
-	Version string
-	Config  map[string]interface{}
-	Env     map[string]string
+	Action    string
+	Version   string
+	Component string
+	Commit    string
+	Team      string
+	Config    map[string]interface{}
+	Env       map[string]string
 }
 
 // ConfigureReleaseConfigResponse contains the response to the configure release request.
@@ -139,16 +149,19 @@ type ConfigureReleaseConfigResponse struct {
 
 // ConfigureRelease requests the container configures the release and returns the response.
 func (configContainer *Container) ConfigureRelease(
-	version string,
+	version, component, commit, team string,
 	config map[string]interface{},
 	env map[string]string,
 ) (*ConfigureReleaseConfigResponse, error) {
 	var response ConfigureReleaseConfigResponse
 	if err := configContainer.request(&configureReleaseConfigRequest{
-		Action:  "configure_release",
-		Version: version,
-		Config:  config,
-		Env:     env,
+		Action:    "configure_release",
+		Version:   version,
+		Component: component,
+		Commit:    commit,
+		Team:      team,
+		Config:    config,
+		Env:       env,
 	}, &response); err != nil {
 		return nil, err
 	}

@@ -46,6 +46,9 @@ func TestConfigRelease(t *testing.T) {
 
 		configureReleaseResponse, err = configContainer.ConfigureRelease(
 			"test-version",
+			"test-component",
+			"test-commit",
+			"test-team",
 			map[string]interface{}{
 				"TEST_CONFIG_VAR": "config value",
 			},
@@ -73,6 +76,9 @@ func TestConfigRelease(t *testing.T) {
 
 	if !reflect.DeepEqual(configureReleaseResponse.Env, map[string]string{
 		"TEST_VERSION":                 "test-version",
+		"TEST_COMPONENT":               "test-component",
+		"TEST_COMMIT":                  "test-commit",
+		"TEST_TEAM":                    "test-team",
 		"TEST_RELEASE_VAR_FROM_CONFIG": "config value",
 		"TEST_RELEASE_VAR_FROM_ENV":    "env value",
 	}) {

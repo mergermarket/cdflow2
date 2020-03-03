@@ -31,5 +31,5 @@ func RunCommand(state *command.GlobalState, env map[string]string) (returnedErro
 		}
 	}()
 
-	return configContainer.Setup(state.Manifest.Config.Params, env)
+	return configContainer.Setup(state.Manifest.Config.Params, env, state.Component, state.Commit, state.Manifest.Team)
 }
