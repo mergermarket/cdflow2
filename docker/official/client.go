@@ -97,16 +97,15 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 			return fmt.Errorf("error in BeforeRemove function for container: %w", err)
 		}
 	}
-
 	return dockerClient.client.ContainerRemove(context.Background(), response.ID, types.ContainerRemoveOptions{})
 }
 
-func (dockerClient *Client) runContainer(container string, inputStream io.Reader, outputStream, errorStream io.Writer, started chan string) error {
+func (dockerClient *Client) runContainer(id string, inputStream io.Reader, outputStream, errorStream io.Writer, started chan string) error {
 	stdin := false
 	if inputStream != nil {
 		stdin = true
 	}
-	hijackedResponse, err := dockerClient.client.ContainerAttach(context.Background(), container, types.ContainerAttachOptions{
+	hijackedResponse, err := dockerClient.client.ContainerAttach(context.Background(), id, types.ContainerAttachOptions{
 		Stream: true,
 		Stdout: true,
 		Stderr: true,
@@ -119,13 +118,13 @@ func (dockerClient *Client) runContainer(container string, inputStream io.Reader
 	return dockerClient.streamHijackedResponse(hijackedResponse, inputStream, outputStream, errorStream, func() error {
 		if err := dockerClient.client.ContainerStart(
 			context.Background(),
-			container,
+			id,
 			types.ContainerStartOptions{},
 		); err != nil {
 			return err
 		}
 		if started != nil {
-			started <- container
+			started <- id
 		}
 		return nil
 	})
@@ -231,13 +230,19 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	}
 	defer attachResponse.Close() // does not return error
 
-	if err := dockerClient.streamHijackedResponse(attachResponse, options.InputStream, options.OutputStream, options.ErrorStream, func() error {
-		return dockerClient.client.ContainerExecStart(
-			context.Background(),
-			exec.ID,
-			types.ExecStartCheck{},
-		)
-	}); err != nil {
+	if err := dockerClient.streamHijackedResponse(
+		attachResponse,
+		options.InputStream,
+		options.OutputStream,
+		options.ErrorStream,
+		func() error {
+			return dockerClient.client.ContainerExecStart(
+				context.Background(),
+				exec.ID,
+				types.ExecStartCheck{},
+			)
+		},
+	); err != nil {
 		return fmt.Errorf("error streaming data from exec: %w", err)
 	}
 

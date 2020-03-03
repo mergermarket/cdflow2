@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/test"
 )
@@ -19,14 +20,21 @@ func TestConfigRelease(t *testing.T) {
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 
+	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
+
+	state := &command.GlobalState{
+		DockerClient: dockerClient,
+		OutputStream: &outputBuffer,
+		ErrorStream:  &errorBuffer,
+	}
 
 	var configureReleaseResponse *config.ConfigureReleaseConfigResponse
 	var uploadReleaseResponse *config.UploadReleaseResponse
 
 	// When
 	func() {
-		configContainer, err := config.NewContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, &errorBuffer)
+		configContainer, err := config.NewContainer(state, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume)
 		if err != nil {
 			log.Panicln("error creating config container:", err)
 		}
@@ -58,10 +66,6 @@ func TestConfigRelease(t *testing.T) {
 		uploadReleaseResponse, err = configContainer.UploadRelease("terraform:image")
 		if err != nil {
 			log.Panicln("error in uploadRelease:", err)
-		}
-
-		if err := configContainer.RequestStop(); err != nil {
-			log.Panicln("error stopping config container:", err)
 		}
 	}()
 
@@ -111,12 +115,20 @@ func TestConfigDeploy(t *testing.T) {
 	releaseVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, releaseVolume)
 
+	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
+
+	state := &command.GlobalState{
+		DockerClient: dockerClient,
+		OutputStream: &outputBuffer,
+		ErrorStream:  &errorBuffer,
+	}
+
 	var prepareTerraformResponse *config.PrepareTerraformResponse
 
 	// When
 	func() {
-		configContainer, err := config.NewContainer(dockerClient, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume, &errorBuffer)
+		configContainer, err := config.NewContainer(state, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume)
 		if err != nil {
 			log.Panicln("error creating config container:", err)
 		}
@@ -139,10 +151,6 @@ func TestConfigDeploy(t *testing.T) {
 		)
 		if err != nil {
 			log.Panicln(err)
-		}
-
-		if err := configContainer.RequestStop(); err != nil {
-			log.Panicln("error stopping config container:", err)
 		}
 	}()
 

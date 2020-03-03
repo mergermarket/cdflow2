@@ -16,7 +16,11 @@ type Message struct {
 }
 
 func main() {
-	common.Run(NewHandler(), os.Args[1:], os.Stdin, os.Stdout, "")
+	if len(os.Args) == 2 && os.Args[1] == "forward" {
+		common.Forward(os.Stdin, os.Stdout, "")
+	} else {
+		common.Listen(NewHandler(), "", nil)
+	}
 }
 
 type handler struct{}

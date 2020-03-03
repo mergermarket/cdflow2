@@ -2,7 +2,6 @@ package config
 
 import (
 	"archive/tar"
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -20,47 +19,40 @@ type Container struct {
 	dockerClient docker.Iface
 	id           string
 	done         chan error
-	reader       *bufio.Reader
-	writeStream  io.WriteCloser
-	errorStream  io.Writer
 	finished     bool
+	errorStream  io.Writer
 }
 
 // NewContainer creates and returns a new config container.
-func NewContainer(dockerClient docker.Iface, image, releaseVolume string, errorStream io.Writer) (*Container, error) {
+func NewContainer(state *command.GlobalState, image, releaseVolume string) (*Container, error) {
+	dockerClient := state.DockerClient
+
 	started := make(chan string, 1)
 	defer close(started) // does not error so no named returns
 
 	done := make(chan error, 1)
 
-	inputReadStream, inputWriteStream := io.Pipe()
-	outputReadStream, outputWriteStream := io.Pipe()
 	container := &Container{
 		dockerClient: dockerClient,
 		done:         done,
-		reader:       bufio.NewReader(outputReadStream),
-		writeStream:  inputWriteStream,
-		errorStream:  errorStream,
+		errorStream:  state.ErrorStream,
 	}
 
 	go func() {
 		err := dockerClient.Run(&docker.RunOptions{
 			NamePrefix:   "cdflow2-config",
 			Image:        image,
-			InputStream:  inputReadStream,
-			OutputStream: outputWriteStream,
-			ErrorStream:  errorStream,
+			InputStream:  state.InputStream,
+			OutputStream: state.OutputStream,
+			ErrorStream:  state.ErrorStream,
 			WorkingDir:   "/release",
 			Binds:        []string{releaseVolume + ":/release"},
 			Started:      started,
 		})
+		if err != nil {
+			log.Panicln("error from run:", err)
+		}
 		container.finished = true
-		if err := inputReadStream.Close(); err != nil {
-			log.Panicln("error closing read stream:", err)
-		}
-		if err := outputWriteStream.Close(); err != nil {
-			log.Panicln("error closing write stream:", err)
-		}
 		done <- err
 	}()
 
@@ -73,58 +65,28 @@ func NewContainer(dockerClient docker.Iface, image, releaseVolume string, errorS
 	}
 }
 
-func (configContainer *Container) readline() ([]byte, error) {
-	line, err := configContainer.reader.ReadBytes('\n')
-	if err == io.EOF {
-		return line, errors.New("config container disconnected")
-	}
-	return line, err
-}
-
-func (configContainer *Container) write(message []byte) error {
-	n, err := configContainer.writeStream.Write(message)
-	if err != nil {
-		return err
-	}
-	if n != len(message) {
-		return errors.New("incomplete write to container")
-	}
-	return nil
-}
-
 func (configContainer *Container) request(request interface{}, response interface{}) error {
 	var rawRequest bytes.Buffer
 	if err := json.NewEncoder(&rawRequest).Encode(request); err != nil {
 		return err
 	}
+	var errors bytes.Buffer
 	var rawResponse bytes.Buffer
 	if err := configContainer.dockerClient.Exec(&docker.ExecOptions{
 		ID:           configContainer.id,
 		Cmd:          []string{"/app", "forward"},
 		InputStream:  &rawRequest,
 		OutputStream: &rawResponse,
-		ErrorStream:  configContainer.errorStream,
+		ErrorStream:  &errors,
 	}); err != nil {
 		return err
 	}
-	if response != nil { // no response for stop
-		if err := json.NewDecoder(&rawResponse).Decode(response); err != nil {
-			return err
-		}
+	if len(rawResponse.Bytes()) == 0 {
+		return fmt.Errorf("no response returned")
 	}
-	return nil
-}
-
-type stopRequest struct {
-	Action string
-}
-
-// RequestStop sends a message to the config container asking it to stop gracefully.
-func (configContainer *Container) RequestStop() error {
-	configContainer.request(&stopRequest{
-		Action: "stop",
-	}, nil)
-	// the above can error since the exec gets killed when the container stops, but that's okay
+	if err := json.NewDecoder(&rawResponse).Decode(response); err != nil {
+		return fmt.Errorf("error decoding response: %w", err)
+	}
 	return nil
 }
 
@@ -157,7 +119,7 @@ func (configContainer *Container) ConfigureRelease(
 		return nil, err
 	}
 	if !response.Success {
-		return nil, errors.New("config container failed to prepare configuration for release")
+		return nil, command.Failure(1)
 	}
 	return &response, nil
 }
@@ -275,19 +237,11 @@ func SetupTerraform(state *command.GlobalState, envName, version string, env map
 		return "", "", err
 	}
 
-	configContainer, err := NewContainer(dockerClient, state.Manifest.Config.Image, buildVolume, state.ErrorStream)
+	configContainer, err := NewContainer(state, state.Manifest.Config.Image, buildVolume)
 	if err != nil {
 		return "", "", err
 	}
-	defer func() { // meh defer
-		if err := configContainer.RequestStop(); err != nil {
-			if returnedError != nil {
-				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
-			} else {
-				returnedError = err
-			}
-			return
-		}
+	defer func() {
 		if err := configContainer.Done(); err != nil {
 			if returnedError != nil {
 				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
@@ -314,12 +268,9 @@ func SetupTerraform(state *command.GlobalState, envName, version string, env map
 // Done stops and removes the config container.
 func (configContainer *Container) Done() error {
 	if !configContainer.finished {
-		if err := configContainer.dockerClient.Stop(configContainer.id, 10*time.Second); err != nil {
+		if err := configContainer.dockerClient.Stop(configContainer.id, 2*time.Second); err != nil {
 			return err
 		}
-	}
-	if err := configContainer.writeStream.Close(); err != nil {
-		return fmt.Errorf("error closing pipe to config container: %w", err)
 	}
 	return <-configContainer.done
 }

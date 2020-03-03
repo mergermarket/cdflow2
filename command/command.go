@@ -13,6 +13,14 @@ import (
 	"github.com/mergermarket/cdflow2/manifest"
 )
 
+// Failure represents a non-zero exit status without the need for further output.
+type Failure int
+
+// Error outputs and empty string - the reason for failure will have already been output to the user.
+func (Failure) Error() string {
+	return ""
+}
+
 // GlobalArgs represents the global (non command specific) arguments.
 type GlobalArgs struct {
 	Command         string
@@ -31,6 +39,7 @@ type GlobalState struct {
 	Commit       string
 	CodeDir      string
 	Manifest     *manifest.Manifest
+	InputStream  io.Reader
 	OutputStream io.Writer
 	ErrorStream  io.Writer
 	DockerClient docker.Iface
@@ -75,6 +84,7 @@ func GetGlobalState(globalArgs *GlobalArgs) (*GlobalState, error) {
 		state.Commit = globalArgs.Commit
 	}
 
+	state.InputStream = os.Stdin
 	state.OutputStream = os.Stdout
 	state.ErrorStream = os.Stderr
 

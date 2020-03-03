@@ -105,6 +105,9 @@ func main() {
 
 	state, err := command.GetGlobalState(globalArgs)
 	if err != nil {
+		if status, ok := err.(command.Failure); ok {
+			os.Exit(int(status))
+		}
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

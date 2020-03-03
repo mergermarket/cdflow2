@@ -81,19 +81,11 @@ func RunCommand(state *command.GlobalState, version string, env map[string]strin
 
 func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, savedTerraformImage string, env map[string]string) (returnedMessage string, returnedError error) {
 	dockerClient := state.DockerClient
-	configContainer, err := config.NewContainer(dockerClient, state.Manifest.Config.Image, buildVolume, state.ErrorStream)
+	configContainer, err := config.NewContainer(state, state.Manifest.Config.Image, buildVolume)
 	if err != nil {
 		return "", err
 	}
 	defer func() {
-		if err := configContainer.RequestStop(); err != nil {
-			if returnedError != nil {
-				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
-			} else {
-				returnedError = err
-			}
-			return
-		}
 		if err := configContainer.Done(); err != nil {
 			if returnedError != nil {
 				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
@@ -106,7 +98,7 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 
 	configureReleaseResponse, err := configContainer.ConfigureRelease(version, state.Manifest.Config.Params, env)
 	if err != nil {
-		return "", fmt.Errorf("error configuring release: %w", err)
+		return "", err
 	}
 
 	releaseEnv := configureReleaseResponse.Env
