@@ -13,6 +13,13 @@ import (
 
 // InitInitial runs terraform init as part of the release in order to download providers and modules.
 func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume string, outputStream, errorStream io.Writer) error {
+
+	fmt.Fprintf(
+		errorStream,
+		"\nInitialising terraform...\n\n$ %v\n\n",
+		"terraform init -backend=false /code/infra",
+	)
+
 	return dockerClient.Run(&docker.RunOptions{
 		Image:        image,
 		WorkingDir:   "/build",

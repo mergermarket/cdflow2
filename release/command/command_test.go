@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"strings"
 	"testing"
 
 	"github.com/mergermarket/cdflow2/command"
@@ -72,7 +73,7 @@ func TestRunCommand(t *testing.T) {
 
 	checkUploadReleaseOutput(debugInfo["upload-release.json"])
 
-	if errorBuffer.String() != "message to stderr from release\ndocker status: OK\nuploaded test-version\n" {
+	if !strings.Contains(errorBuffer.String(), "message to stderr from release\ndocker status: OK\nuploaded test-version\n") {
 		log.Panicln("unexpected output of release:", errorBuffer.String())
 	}
 }

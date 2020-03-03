@@ -39,16 +39,21 @@ func NewContainer(state *command.GlobalState, image, releaseVolume string) (*Con
 	}
 
 	go func() {
-		err := dockerClient.Run(&docker.RunOptions{
+		options := docker.RunOptions{
 			NamePrefix:   "cdflow2-config",
 			Image:        image,
 			InputStream:  state.InputStream,
 			OutputStream: state.OutputStream,
 			ErrorStream:  state.ErrorStream,
-			WorkingDir:   "/release",
-			Binds:        []string{releaseVolume + ":/release"},
 			Started:      started,
-		})
+		}
+		if releaseVolume == "" { // setup doesn't need a volume
+			options.WorkingDir = "/"
+		} else {
+			options.WorkingDir = "/release"
+			options.Binds = []string{releaseVolume + ":/release"}
+		}
+		err := dockerClient.Run(&options)
 		if err != nil {
 			log.Panicln("error from run:", err)
 		}
@@ -86,6 +91,35 @@ func (configContainer *Container) request(request interface{}, response interfac
 	}
 	if err := json.NewDecoder(&rawResponse).Decode(response); err != nil {
 		return fmt.Errorf("error decoding response: %w", err)
+	}
+	return nil
+}
+
+type setupConfigRequest struct {
+	Action string
+	Config map[string]interface{}
+	Env    map[string]string
+}
+
+type setupConfigResponse struct {
+	Success bool
+}
+
+// Setup requests the container does setup.
+func (configContainer *Container) Setup(
+	config map[string]interface{},
+	env map[string]string,
+) error {
+	var response setupConfigResponse
+	if err := configContainer.request(&setupConfigRequest{
+		Action: "setup",
+		Config: config,
+		Env:    env,
+	}, &response); err != nil {
+		return err
+	}
+	if !response.Success {
+		return command.Failure(1)
 	}
 	return nil
 }
@@ -273,4 +307,16 @@ func (configContainer *Container) Done() error {
 		}
 	}
 	return <-configContainer.done
+}
+
+// Pull pulls the config image.
+func Pull(state *command.GlobalState) error {
+	if state.GlobalArgs.NoPullConfig {
+		return nil
+	}
+	fmt.Fprintf(state.ErrorStream, "\nPulling config image %v...\n\n", state.Manifest.Config.Image)
+	if err := state.DockerClient.PullImage(state.Manifest.Config.Image, state.ErrorStream); err != nil {
+		return fmt.Errorf("error pulling config image: %w", err)
+	}
+	return nil
 }

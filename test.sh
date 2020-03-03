@@ -78,4 +78,9 @@ if [[ ! -z "$1" ]]; then
     tests="$(echo "$tests" | grep "$1")"
 fi
 
-go test -race $tests
+flags=
+if [ "$VERBOSE" != "" ]; then
+    flags=-v
+fi
+
+go test -race $flags $tests

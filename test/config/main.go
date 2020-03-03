@@ -47,6 +47,13 @@ func writeDebug(data interface{}, path string) {
 	}
 }
 
+// Setup handles a setup request in order to pipeline setup.
+func (*handler) Setup(request *common.SetupRequest, response *common.SetupResponse) error {
+	fmt.Println("output to stdout from setup")
+	fmt.Fprintln(os.Stderr, "output to stderr from setup")
+	return nil
+}
+
 // ConfigureRelease handles a configure release request in order to prepare for the release container to be ran.
 func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, response *common.ConfigureReleaseResponse) error {
 	writeDebug(map[string]interface{}{

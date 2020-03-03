@@ -16,6 +16,7 @@ func RunCommand(state *command.GlobalState, version string, env map[string]strin
 	dockerClient := state.DockerClient
 
 	if !state.GlobalArgs.NoPullTerraform {
+		fmt.Fprintf(state.ErrorStream, "\nPulling terraform image %v...\n\n", state.Manifest.Terraform.Image)
 		if err := dockerClient.PullImage(state.Manifest.Terraform.Image, state.ErrorStream); err != nil {
 			return fmt.Errorf("error pulling terraform image: %w", err)
 		}
@@ -62,10 +63,8 @@ func RunCommand(state *command.GlobalState, version string, env map[string]strin
 		return err
 	}
 
-	if !state.GlobalArgs.NoPullConfig {
-		if err := dockerClient.PullImage(state.Manifest.Config.Image, state.ErrorStream); err != nil {
-			return fmt.Errorf("error pulling config image: %w", err)
-		}
+	if err := config.Pull(state); err != nil {
+		return err
 	}
 
 	message, err := buildAndUploadRelease(state, buildVolume, version, savedTerraformImage, env)

@@ -7,6 +7,7 @@ import (
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/deploy"
 	release "github.com/mergermarket/cdflow2/release/command"
+	"github.com/mergermarket/cdflow2/setup"
 	"github.com/mergermarket/cdflow2/util"
 )
 
@@ -31,6 +32,7 @@ Usage:
 
 Commands:
 
+  setup                 - configure your pipeline
   release VERSION       - build and publish a new software artefact
   deploy ENV VERSION    - create & update infrastructure using software artefact
   help [ COMMAND ]      - displayed detailed help and usage information for a command
@@ -61,11 +63,20 @@ Args:
 
 ` + globalArgs
 
+const setupHelp string = `
+Usage:
+
+  cdflow2 [ GLOBALARGS ] setup
+
+` + globalArgs
+
 func usage(subcommand string) {
 	if subcommand == "release" {
 		fmt.Println(releaseHelp)
 	} else if subcommand == "deploy" {
 		fmt.Println(deployHelp)
+	} else if subcommand == "setup" {
+		fmt.Println(setupHelp)
 	} else {
 		fmt.Println(help)
 	}
@@ -105,9 +116,6 @@ func main() {
 
 	state, err := command.GetGlobalState(globalArgs)
 	if err != nil {
-		if status, ok := err.(command.Failure); ok {
-			os.Exit(int(status))
-		}
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -120,6 +128,9 @@ func main() {
 			os.Exit(1)
 		}
 		if err := release.RunCommand(state, remainingArgs[0], env); err != nil {
+			if status, ok := err.(command.Failure); ok {
+				os.Exit(int(status))
+			}
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -128,6 +139,20 @@ func main() {
 			usage("deploy")
 		}
 		if err := deploy.RunCommand(state, remainingArgs[0], remainingArgs[1], env); err != nil {
+			if status, ok := err.(command.Failure); ok {
+				os.Exit(int(status))
+			}
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	} else if globalArgs.Command == "setup" {
+		if len(remainingArgs) != 0 {
+			usage("setup")
+		}
+		if err := setup.RunCommand(state, env); err != nil {
+			if status, ok := err.(command.Failure); ok {
+				os.Exit(int(status))
+			}
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
