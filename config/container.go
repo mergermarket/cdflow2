@@ -96,12 +96,13 @@ func (configContainer *Container) request(request interface{}, response interfac
 }
 
 type setupConfigRequest struct {
-	Action    string
-	Config    map[string]interface{}
-	Env       map[string]string
-	Component string
-	Commit    string
-	Team      string
+	Action              string
+	Config              map[string]interface{}
+	Env                 map[string]string
+	Component           string
+	Commit              string
+	Team                string
+	ReleaseRequirements map[string]map[string]interface{}
 }
 
 type setupConfigResponse struct {
@@ -113,15 +114,17 @@ func (configContainer *Container) Setup(
 	config map[string]interface{},
 	env map[string]string,
 	component, commit, team string,
+	releaseRequirements map[string]map[string]interface{},
 ) error {
 	var response setupConfigResponse
 	if err := configContainer.request(&setupConfigRequest{
-		Action:    "setup",
-		Config:    config,
-		Env:       env,
-		Component: component,
-		Commit:    commit,
-		Team:      team,
+		Action:              "setup",
+		Config:              config,
+		Env:                 env,
+		Component:           component,
+		Commit:              commit,
+		Team:                team,
+		ReleaseRequirements: releaseRequirements,
 	}, &response); err != nil {
 		return err
 	}
@@ -132,13 +135,14 @@ func (configContainer *Container) Setup(
 }
 
 type configureReleaseConfigRequest struct {
-	Action    string
-	Version   string
-	Component string
-	Commit    string
-	Team      string
-	Config    map[string]interface{}
-	Env       map[string]string
+	Action              string
+	Version             string
+	Component           string
+	Commit              string
+	Team                string
+	Config              map[string]interface{}
+	Env                 map[string]string
+	ReleaseRequirements map[string]map[string]interface{}
 }
 
 // ConfigureReleaseConfigResponse contains the response to the configure release request.
@@ -152,16 +156,18 @@ func (configContainer *Container) ConfigureRelease(
 	version, component, commit, team string,
 	config map[string]interface{},
 	env map[string]string,
+	releaseRequirements map[string]map[string]interface{},
 ) (*ConfigureReleaseConfigResponse, error) {
 	var response ConfigureReleaseConfigResponse
 	if err := configContainer.request(&configureReleaseConfigRequest{
-		Action:    "configure_release",
-		Version:   version,
-		Component: component,
-		Commit:    commit,
-		Team:      team,
-		Config:    config,
-		Env:       env,
+		Action:              "configure_release",
+		Version:             version,
+		Component:           component,
+		Commit:              commit,
+		Team:                team,
+		Config:              config,
+		Env:                 env,
+		ReleaseRequirements: releaseRequirements,
 	}, &response); err != nil {
 		return nil, err
 	}

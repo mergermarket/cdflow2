@@ -55,6 +55,11 @@ func TestConfigRelease(t *testing.T) {
 			map[string]string{
 				"TEST_ENV_VAR": "env value",
 			},
+			map[string]map[string]interface{}{
+				"release": {
+					"key": "value",
+				},
+			},
 		)
 		if err != nil {
 			log.Panicln("error in configureRelease:", err, errorBuffer.String())
@@ -101,6 +106,11 @@ func TestConfigRelease(t *testing.T) {
 
 	if configureReleaseDebugOutput["Action"] != "configure_release" {
 		log.Panicln("expected configure_release, got ", configureReleaseDebugOutput["Action"])
+	}
+
+	releaseRequirements, _ := configureReleaseDebugOutput["ReleaseRequirements"].(map[string]interface{})
+	if releaseRequirements, ok := releaseRequirements["release"].(map[string]interface{}); !ok || releaseRequirements["key"] != "value" {
+		log.Panicln("unexpected release requirements:", configureReleaseDebugOutput["ReleaseRequirements"])
 	}
 
 	var uploadReleaseDebugOutput map[string]interface{}

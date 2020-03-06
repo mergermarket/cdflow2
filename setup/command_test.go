@@ -60,7 +60,7 @@ func TestRunCommand(t *testing.T) {
 	if outputBuffer.String() != "output to stdout from setup, component: test-component, commit: test-commit, team: test-team\n" {
 		log.Fatalln("unexpected output to stdout:", outputBuffer.String())
 	}
-	if errorBuffer.String() != "output to stderr from setup\n" {
+	if errorBuffer.String() != "output to stderr from setup, requirements: FOO, BAR\n" {
 		log.Fatalln("unexpected output to stderr:", errorBuffer.String())
 	}
 }

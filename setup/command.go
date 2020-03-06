@@ -5,12 +5,18 @@ import (
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
+	release "github.com/mergermarket/cdflow2/release/command"
 )
 
 // RunCommand runs the setup command.
 func RunCommand(state *command.GlobalState, env map[string]string) (returnedError error) {
 
 	// TODO check cdflow.yaml setup
+
+	releaseRequirements, err := release.GetReleaseRequirements(state)
+	if err != nil {
+		return err
+	}
 
 	if err := config.Pull(state); err != nil {
 		return err
@@ -31,5 +37,5 @@ func RunCommand(state *command.GlobalState, env map[string]string) (returnedErro
 		}
 	}()
 
-	return configContainer.Setup(state.Manifest.Config.Params, env, state.Component, state.Commit, state.Manifest.Team)
+	return configContainer.Setup(state.Manifest.Config.Params, env, state.Component, state.Commit, state.Manifest.Team, releaseRequirements)
 }

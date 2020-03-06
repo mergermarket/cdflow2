@@ -79,6 +79,12 @@ func RunCommand(state *command.GlobalState, version string, env map[string]strin
 }
 
 func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, savedTerraformImage string, env map[string]string) (returnedMessage string, returnedError error) {
+
+	releaseRequirements, err := GetReleaseRequirements(state)
+	if err != nil {
+		return "", err
+	}
+
 	dockerClient := state.DockerClient
 	configContainer, err := config.NewContainer(state, state.Manifest.Config.Image, buildVolume)
 	if err != nil {
@@ -102,6 +108,7 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 		state.Manifest.Team,
 		state.Manifest.Config.Params,
 		env,
+		releaseRequirements,
 	)
 	if err != nil {
 		return "", err
@@ -149,4 +156,17 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 		return "", fmt.Errorf("error uploading release: %w", err)
 	}
 	return uploadReleaseResponse.Message, nil
+}
+
+// GetReleaseRequirements runs the release containers in order to get their requirements.
+func GetReleaseRequirements(state *command.GlobalState) (map[string]map[string]interface{}, error) {
+	result := make(map[string]map[string]interface{})
+	for buildID, build := range state.Manifest.Builds {
+		requirements, err := container.GetReleaseRequirements(state.DockerClient, build.Image, state.ErrorStream)
+		if err != nil {
+			return nil, err
+		}
+		result[buildID] = requirements
+	}
+	return result, nil
 }

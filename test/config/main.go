@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 
 	common "github.com/mergermarket/cdflow2-config-common"
 )
@@ -50,15 +51,17 @@ func writeDebug(data interface{}, path string) {
 // Setup handles a setup request in order to pipeline setup.
 func (*handler) Setup(request *common.SetupRequest, response *common.SetupResponse) error {
 	fmt.Println("output to stdout from setup, component: " + request.Component + ", commit: " + request.Commit + ", team: " + request.Team)
-	fmt.Fprintln(os.Stderr, "output to stderr from setup")
+	fmt.Fprintln(os.Stderr, "output to stderr from setup, requirements:", strings.Join(request.ReleaseRequiredEnv["release"], ", "))
 	return nil
 }
 
 // ConfigureRelease handles a configure release request in order to prepare for the release container to be ran.
 func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, response *common.ConfigureReleaseResponse) error {
 	writeDebug(map[string]interface{}{
-		"Action":  "configure_release",
-		"Request": &request,
+		"Action":              "configure_release",
+		"Request":             &request,
+		"ReleaseRequirements": request.ReleaseRequirements,
+		"ReleaseRequiredEnv":  request.ReleaseRequiredEnv,
 	}, "/debug/configure-release.json")
 	response.Env = map[string]string{
 		"TEST_VERSION":                 request.Version,

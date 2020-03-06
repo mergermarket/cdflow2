@@ -11,6 +11,25 @@ import (
 	"github.com/mergermarket/cdflow2/docker"
 )
 
+// GetReleaseRequirements runs the container in order to get requirements.
+func GetReleaseRequirements(dockerClient docker.Iface, image string, errorStream io.Writer) (map[string]interface{}, error) {
+	var outputBuffer bytes.Buffer
+	if err := dockerClient.Run(&docker.RunOptions{
+		Image:        image,
+		OutputStream: &outputBuffer,
+		ErrorStream:  errorStream,
+		NamePrefix:   "cdflow2-release-reqirements",
+		Cmd:          []string{"requirements"},
+	}); err != nil {
+		return nil, err
+	}
+	var result map[string]interface{}
+	if err := json.NewDecoder(&outputBuffer).Decode(&result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 // Run creates and runs the release container, returning a map of release metadata.
 func Run(dockerClient docker.Iface, image, codeDir, buildVolume string, outputStream, errorStream io.Writer, env map[string]string) (map[string]string, error) {
 

@@ -14,6 +14,16 @@ import (
 )
 
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == "requirements" {
+		// requirements is a way for the release container to communciate its requirements to the
+		// config container
+		if err := json.NewEncoder(os.Stdout).Encode(map[string]interface{}{
+			"env": []string{"FOO", "BAR"},
+		}); err != nil {
+			log.Panicln("error encoding requirements:", err)
+		}
+		return
+	}
 	fmt.Println("message to stdout from release")
 	fmt.Fprintln(os.Stderr, "message to stderr from release")
 	fmt.Fprintf(os.Stderr, "docker status: %v\n", dockerStatus())
