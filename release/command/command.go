@@ -128,6 +128,7 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 			build.Image,
 			state.CodeDir,
 			buildVolume,
+			buildID,
 			state.OutputStream,
 			state.ErrorStream,
 			releaseEnv,

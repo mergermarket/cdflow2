@@ -31,7 +31,7 @@ func GetReleaseRequirements(dockerClient docker.Iface, image string, errorStream
 }
 
 // Run creates and runs the release container, returning a map of release metadata.
-func Run(dockerClient docker.Iface, image, codeDir, buildVolume string, outputStream, errorStream io.Writer, env map[string]string) (map[string]string, error) {
+func Run(dockerClient docker.Iface, image, codeDir, buildVolume, buildID string, outputStream, errorStream io.Writer, env map[string]string) (map[string]string, error) {
 
 	var releaseMetadata map[string]string
 
@@ -40,7 +40,7 @@ func Run(dockerClient docker.Iface, image, codeDir, buildVolume string, outputSt
 		OutputStream: outputStream,
 		ErrorStream:  errorStream,
 		WorkingDir:   "/code",
-		Env:          mapToDockerEnv(env),
+		Env:          append(mapToDockerEnv(env), "BUILD_ID="+buildID),
 		Binds: []string{
 			codeDir + ":/code:ro",
 			buildVolume + ":/build",

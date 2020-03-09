@@ -26,6 +26,7 @@ func TestRelese(t *testing.T) {
 		test.GetConfig("TEST_RELEASE_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/release/sample-code",
 		buildVolume,
+		"test-build-id",
 		&outputBuffer,
 		&errorBuffer,
 		map[string]string{
@@ -51,6 +52,7 @@ func TestRelese(t *testing.T) {
 		"team_from_defaults":      "test-team",
 		"component_from_defaults": "test_component",
 		"commit_from_defaults":    "test-commit",
+		"build_id_from_defaults":  "test-build-id",
 		"test_from_config":        "test-version",
 	}) {
 		log.Panicf("unexpected release metadata: %v\n", releaseMetadata)

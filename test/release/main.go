@@ -34,6 +34,7 @@ func main() {
 		"team_from_defaults":      os.Getenv("TEAM"),
 		"component_from_defaults": os.Getenv("COMPONENT"),
 		"commit_from_defaults":    os.Getenv("COMMIT"),
+		"build_id_from_defaults":  os.Getenv("BUILD_ID"),
 		// test environment variable passed through from config
 		"test_from_config": os.Getenv("TEST_VERSION"),
 	})
