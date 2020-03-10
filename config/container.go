@@ -147,7 +147,7 @@ type configureReleaseConfigRequest struct {
 
 // ConfigureReleaseConfigResponse contains the response to the configure release request.
 type ConfigureReleaseConfigResponse struct {
-	Env     map[string]string
+	Env     map[string]map[string]string
 	Success bool
 }
 

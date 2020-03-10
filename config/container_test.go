@@ -79,13 +79,15 @@ func TestConfigRelease(t *testing.T) {
 
 	// Then
 
-	if !reflect.DeepEqual(configureReleaseResponse.Env, map[string]string{
-		"TEST_VERSION":                 "test-version",
-		"TEST_COMPONENT":               "test-component",
-		"TEST_COMMIT":                  "test-commit",
-		"TEST_TEAM":                    "test-team",
-		"TEST_RELEASE_VAR_FROM_CONFIG": "config value",
-		"TEST_RELEASE_VAR_FROM_ENV":    "env value",
+	if !reflect.DeepEqual(configureReleaseResponse.Env, map[string]map[string]string{
+		"release": map[string]string{
+			"TEST_VERSION":                 "test-version",
+			"TEST_COMPONENT":               "test-component",
+			"TEST_COMMIT":                  "test-commit",
+			"TEST_TEAM":                    "test-team",
+			"TEST_RELEASE_VAR_FROM_CONFIG": "config value",
+			"TEST_RELEASE_VAR_FROM_ENV":    "env value",
+		},
 	}) {
 		log.Panicln("unexpected env in response:", configureReleaseResponse.Env)
 	}

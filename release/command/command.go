@@ -115,23 +115,24 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 	}
 
 	releaseEnv := configureReleaseResponse.Env
-	// these are built in and cannot be overridden by the config container (since choosing the clashing name would likely be an accident)
-	releaseEnv["VERSION"] = version
-	releaseEnv["TEAM"] = state.Manifest.Team
-	releaseEnv["COMPONENT"] = state.Component
-	releaseEnv["COMMIT"] = state.Commit
 
 	releaseMetadata := make(map[string]map[string]string)
 	for buildID, build := range state.Manifest.Builds {
+		env := releaseEnv[buildID]
+		// these are built in and cannot be overridden by the config container (since choosing the clashing name would likely be an accident)
+		env["VERSION"] = version
+		env["TEAM"] = state.Manifest.Team
+		env["COMPONENT"] = state.Component
+		env["COMMIT"] = state.Commit
+		env["BUILD_ID"] = buildID
 		metadata, err := container.Run(
 			dockerClient,
 			build.Image,
 			state.CodeDir,
 			buildVolume,
-			buildID,
 			state.OutputStream,
 			state.ErrorStream,
-			releaseEnv,
+			env,
 		)
 		if err != nil {
 			return "", fmt.Errorf("error running release '%v': %w", buildID, err)

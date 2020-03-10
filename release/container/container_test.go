@@ -26,7 +26,6 @@ func TestRelese(t *testing.T) {
 		test.GetConfig("TEST_RELEASE_IMAGE"),
 		test.GetConfig("TEST_ROOT")+"/test/release/sample-code",
 		buildVolume,
-		"test-build-id",
 		&outputBuffer,
 		&errorBuffer,
 		map[string]string{
@@ -34,6 +33,7 @@ func TestRelese(t *testing.T) {
 			"TEAM":         "test-team",
 			"COMPONENT":    "test_component",
 			"COMMIT":       "test-commit",
+			"BUILD_ID":     "test-build-id",
 			"TEST_VERSION": "test-version",
 		},
 	)

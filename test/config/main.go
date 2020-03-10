@@ -63,13 +63,15 @@ func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, respon
 		"ReleaseRequirements": request.ReleaseRequirements,
 		"ReleaseRequiredEnv":  request.ReleaseRequiredEnv,
 	}, "/debug/configure-release.json")
-	response.Env = map[string]string{
-		"TEST_VERSION":                 request.Version,
-		"TEST_COMPONENT":               request.Component,
-		"TEST_COMMIT":                  request.Commit,
-		"TEST_TEAM":                    request.Team,
-		"TEST_RELEASE_VAR_FROM_ENV":    request.Env["TEST_ENV_VAR"],
-		"TEST_RELEASE_VAR_FROM_CONFIG": fmt.Sprintf("%v", request.Config["TEST_CONFIG_VAR"]),
+	for buildID := range request.ReleaseRequirements {
+		response.Env[buildID] = map[string]string{
+			"TEST_VERSION":                 request.Version,
+			"TEST_COMPONENT":               request.Component,
+			"TEST_COMMIT":                  request.Commit,
+			"TEST_TEAM":                    request.Team,
+			"TEST_RELEASE_VAR_FROM_ENV":    request.Env["TEST_ENV_VAR"],
+			"TEST_RELEASE_VAR_FROM_CONFIG": fmt.Sprintf("%v", request.Config["TEST_CONFIG_VAR"]),
+		}
 	}
 	return nil
 }
