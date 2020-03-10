@@ -8,13 +8,15 @@ import (
 	"io"
 	"sort"
 
+	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/docker"
 )
 
 // GetReleaseRequirements runs the container in order to get requirements.
-func GetReleaseRequirements(dockerClient docker.Iface, image string, errorStream io.Writer) (map[string]interface{}, error) {
+func GetReleaseRequirements(state *command.GlobalState, buildID, image string, errorStream io.Writer) (map[string]interface{}, error) {
+	fmt.Fprintf(state.ErrorStream, "\nGetting requirements for build: '%v' (%v)...\n", buildID, image)
 	var outputBuffer bytes.Buffer
-	if err := dockerClient.Run(&docker.RunOptions{
+	if err := state.DockerClient.Run(&docker.RunOptions{
 		Image:        image,
 		OutputStream: &outputBuffer,
 		ErrorStream:  errorStream,
@@ -27,6 +29,7 @@ func GetReleaseRequirements(dockerClient docker.Iface, image string, errorStream
 	if err := json.NewDecoder(&outputBuffer).Decode(&result); err != nil {
 		return nil, err
 	}
+	fmt.Fprintf(state.ErrorStream, "Got: %v\n", result)
 	return result, nil
 }
 

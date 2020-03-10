@@ -169,7 +169,7 @@ func GetReleaseRequirements(state *command.GlobalState) (map[string]map[string]i
 				return nil, fmt.Errorf("error pulling build image (%v): %w", buildID, err)
 			}
 		}
-		requirements, err := container.GetReleaseRequirements(state.DockerClient, build.Image, state.ErrorStream)
+		requirements, err := container.GetReleaseRequirements(state, buildID, build.Image, state.ErrorStream)
 		if err != nil {
 			return nil, err
 		}
