@@ -163,6 +163,12 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 func GetReleaseRequirements(state *command.GlobalState) (map[string]map[string]interface{}, error) {
 	result := make(map[string]map[string]interface{})
 	for buildID, build := range state.Manifest.Builds {
+		if !state.GlobalArgs.NoPullRelease {
+			fmt.Fprintf(state.ErrorStream, "\nPulling build image (%v): %v...\n\n", buildID, build.Image)
+			if err := state.DockerClient.PullImage(build.Image, state.ErrorStream); err != nil {
+				return nil, fmt.Errorf("error pulling build image (%v): %w", buildID, err)
+			}
+		}
 		requirements, err := container.GetReleaseRequirements(state.DockerClient, build.Image, state.ErrorStream)
 		if err != nil {
 			return nil, err
