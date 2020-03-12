@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -125,6 +126,11 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 		env["COMPONENT"] = state.Component
 		env["COMMIT"] = state.Commit
 		env["BUILD_ID"] = buildID
+		manifestParams, err := json.Marshal(build.Params)
+		if err != nil {
+			return "", err
+		}
+		env["MANIFEST_PARAMS"] = string(manifestParams)
 		metadata, err := container.Run(
 			dockerClient,
 			build.Image,

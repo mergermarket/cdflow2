@@ -37,6 +37,8 @@ func main() {
 		"build_id_from_defaults":  os.Getenv("BUILD_ID"),
 		// test environment variable passed through from config
 		"test_from_config": os.Getenv("TEST_VERSION"),
+		// test parameters from manifest
+		"manifest_params": os.Getenv("MANIFEST_PARAMS"),
 	})
 	if err != nil {
 		log.Fatalln("error encoding json:", err)

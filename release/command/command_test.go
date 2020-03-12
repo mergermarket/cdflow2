@@ -34,15 +34,16 @@ func TestRunCommand(t *testing.T) {
 			Manifest: &manifest.Manifest{
 				Version: 2,
 				Team:    "test-team",
-				Builds: map[string]manifest.Build{
+				Builds: map[string]manifest.ImageWithParams{
 					"release": {
-						Image: test.GetConfig("TEST_RELEASE_IMAGE"),
+						Image:  test.GetConfig("TEST_RELEASE_IMAGE"),
+						Params: map[string]interface{}{"a": "b"},
 					},
 				},
 				Terraform: manifest.Terraform{
 					Image: test.GetConfig("TEST_TERRAFORM_IMAGE"),
 				},
-				Config: manifest.Config{
+				Config: manifest.ImageWithParams{
 					Image: test.GetConfig("TEST_CONFIG_IMAGE"),
 					Params: map[string]interface{}{
 						"test-manifest-config-key": "test-manifest-config-value",
@@ -76,6 +77,7 @@ func TestRunCommand(t *testing.T) {
 	if !strings.Contains(errorBuffer.String(), "message to stderr from release\ndocker status: OK\nuploaded test-version\n") {
 		log.Panicln("unexpected output of release:", errorBuffer.String())
 	}
+
 }
 
 func checkConfigureReleaseOutput(debugOutput []byte) {
@@ -144,5 +146,8 @@ func checkUploadReleaseOutput(debugOutput []byte) {
 	}
 	if decoded.ReleaseMetadata["release"]["team"] != "test-team" {
 		log.Panicln("unexpected team from release metadata:", decoded.ReleaseMetadata["release"]["team"])
+	}
+	if decoded.ReleaseMetadata["release"]["manifest_params"] != "{\"a\":\"b\"}" {
+		log.Panicln("unexpected manifest_params:", decoded.ReleaseMetadata["release"]["manifest_params"])
 	}
 }

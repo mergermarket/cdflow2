@@ -29,12 +29,13 @@ func TestRelese(t *testing.T) {
 		&outputBuffer,
 		&errorBuffer,
 		map[string]string{
-			"VERSION":      "test-version",
-			"TEAM":         "test-team",
-			"COMPONENT":    "test_component",
-			"COMMIT":       "test-commit",
-			"BUILD_ID":     "test-build-id",
-			"TEST_VERSION": "test-version",
+			"VERSION":         "test-version",
+			"TEAM":            "test-team",
+			"COMPONENT":       "test_component",
+			"COMMIT":          "test-commit",
+			"BUILD_ID":        "test-build-id",
+			"TEST_VERSION":    "test-version",
+			"MANIFEST_PARAMS": "{}",
 		},
 	)
 	if err != nil {
@@ -54,6 +55,7 @@ func TestRelese(t *testing.T) {
 		"commit_from_defaults":    "test-commit",
 		"build_id_from_defaults":  "test-build-id",
 		"test_from_config":        "test-version",
+		"manifest_params":         "{}",
 	}) {
 		log.Panicf("unexpected release metadata: %v\n", releaseMetadata)
 	}

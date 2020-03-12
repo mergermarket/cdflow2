@@ -35,7 +35,7 @@ func TestRunCommand(t *testing.T) {
 			Terraform: manifest.Terraform{
 				Image: test.GetConfig("TEST_TERRAFORM_IMAGE"),
 			},
-			Config: manifest.Config{
+			Config: manifest.ImageWithParams{
 				Image: test.GetConfig("TEST_CONFIG_IMAGE"),
 				Params: map[string]interface{}{
 					"test-manifest-config-key": "test-manifest-config-value",

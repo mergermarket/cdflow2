@@ -10,22 +10,17 @@ import (
 
 // Manifest represents the data in the cdflow.yaml file before it is canonicalised.
 type Manifest struct {
-	Version   int8             `yaml:"version"`
-	Team      string           `yaml:"team"`
-	Config    Config           `yaml:"config"`
-	Builds    map[string]Build `yaml:"builds"`
-	Terraform Terraform        `yaml:"terraform"`
+	Version   int8                       `yaml:"version"`
+	Team      string                     `yaml:"team"`
+	Config    ImageWithParams            `yaml:"config"`
+	Builds    map[string]ImageWithParams `yaml:"builds"`
+	Terraform Terraform                  `yaml:"terraform"`
 }
 
-// Config represents the data in the config key in cdflow.yaml.
-type Config struct {
+// ImageWithParams represents either the config or a build key in cdflow.yaml.
+type ImageWithParams struct {
 	Image  string                 `yaml:"image"`
 	Params map[string]interface{} `yaml:"params"`
-}
-
-// Build represents one build in the cdflow.yaml file.
-type Build struct {
-	Image string `yaml:"image"`
 }
 
 // Terraform represents the data in the terraform key in cdflow.yaml.

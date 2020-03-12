@@ -31,7 +31,7 @@ func TestRunCommand(t *testing.T) {
 			Manifest: &manifest.Manifest{
 				Version: 2,
 				Team:    "test-team",
-				Builds: map[string]manifest.Build{
+				Builds: map[string]manifest.ImageWithParams{
 					"release": {
 						Image: test.GetConfig("TEST_RELEASE_IMAGE"),
 					},
@@ -39,7 +39,7 @@ func TestRunCommand(t *testing.T) {
 				Terraform: manifest.Terraform{
 					Image: test.GetConfig("TEST_TERRAFORM_IMAGE"),
 				},
-				Config: manifest.Config{
+				Config: manifest.ImageWithParams{
 					Image: test.GetConfig("TEST_CONFIG_IMAGE"),
 					Params: map[string]interface{}{
 						"test-manifest-config-key": "test-manifest-config-value",
