@@ -43,7 +43,7 @@ func Run(dockerClient docker.Iface, image, codeDir, buildVolume string, outputSt
 		OutputStream: outputStream,
 		ErrorStream:  errorStream,
 		WorkingDir:   "/code",
-		Env:          mapToDockerEnv(env),
+		Env:          append(mapToDockerEnv(env), "CDFLOW2_CODE_DIR="+codeDir),
 		Binds: []string{
 			codeDir + ":/code:ro",
 			buildVolume + ":/build",

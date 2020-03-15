@@ -35,6 +35,7 @@ func main() {
 		"component_from_defaults": os.Getenv("COMPONENT"),
 		"commit_from_defaults":    os.Getenv("COMMIT"),
 		"build_id_from_defaults":  os.Getenv("BUILD_ID"),
+		"code_dir": os.Getenv("CDFLOW2_CODE_DIR"),
 		// test environment variable passed through from config
 		"test_from_config": os.Getenv("TEST_VERSION"),
 		// test parameters from manifest

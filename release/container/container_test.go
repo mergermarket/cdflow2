@@ -20,11 +20,13 @@ func TestRelese(t *testing.T) {
 	buildVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, buildVolume)
 
+	codeDir := test.GetConfig("TEST_ROOT")+"/test/release/sample-code"
+
 	// When
 	releaseMetadata, err := container.Run(
 		dockerClient,
 		test.GetConfig("TEST_RELEASE_IMAGE"),
-		test.GetConfig("TEST_ROOT")+"/test/release/sample-code",
+		codeDir,
 		buildVolume,
 		&outputBuffer,
 		&errorBuffer,
@@ -56,6 +58,7 @@ func TestRelese(t *testing.T) {
 		"build_id_from_defaults":  "test-build-id",
 		"test_from_config":        "test-version",
 		"manifest_params":         "{}",
+		"code_dir":                codeDir,
 	}) {
 		log.Panicf("unexpected release metadata: %v\n", releaseMetadata)
 	}
