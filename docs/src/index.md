@@ -1,3 +1,7 @@
+---
+name: Getting Started
+---
+
 # Getting Started
 
 [cdflow2](/) is an open source tool for managing services and infrastructure using
@@ -5,23 +9,23 @@ using [terraform](https://terraform.io), following the principles of *continuous
 
 ## Installation
 
-### Mac with Homebrew
+### OSX with Homebrew
 
 If you're a [Homebrew](https://brew.sh/) user, installation is as simple as:
 
-```sh
+```bash
 brew install mergermarket/tap/cdflow2
 ```
 
 To upgrade:
 
-```sh
+```bash
 brew upgrade mergermarket/tap/cdflow2
 ```
 
 Also available, but not recommended!
 
-```sh
+```bash
 brew remove mergermarket/tap/cdflow2
 ```
 
@@ -39,8 +43,4 @@ cdflow2
 
 You should see a usage message.
 
-## Configure your cloud provider
-
-Before you can start provisioning infrastructure, you need to create some supporting resources in your cloud provider:
-
-* [Setup AWS](aws/)
+## Setup
