@@ -5,7 +5,7 @@ set -e
 docker pull mergermarket/docz-site-builder
 
 function reset_cursor {
-    echo -n -e '\e[?0c'
+    printf '\033[?25h'
 }
 trap reset_cursor EXIT
 
