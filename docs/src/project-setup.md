@@ -5,8 +5,7 @@ route: /project-setup
 
 # Project Setup
 
-This guide covers setting up a project to use [cdflow2](/opensource/cdflow2). It assumes you have
-already [installed cdflow2](installation).
+This guide covers setting up a project to use `cdflow2`. It assumes you have already [installed cdflow2](installation).
 
 ## Git repository
 

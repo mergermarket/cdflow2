@@ -15,4 +15,4 @@ release.
 ## Next Steps
 
 * [Install cdflow2](installation)
-* Read [Getting Started](getting-started) guide
+* [Project Setup](project-setup)
