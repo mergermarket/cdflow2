@@ -1,5 +1,6 @@
 ---
 name: cdflow.yaml Reference
+route: /cdflow-yaml-reference
 ---
 
 # `cdflow.yaml`
@@ -56,7 +57,7 @@ version: 2
 
 The name of the team responsible for the service/infrastructure in
 [kebab case](https://wiki.c2.com/?KebabCase) (i.e
-lower-case-with-hyphens). For example:
+`lower-case-with-hyphens`). For example:
 
 ```yaml
 team: my-team
@@ -83,7 +84,7 @@ The docker image to use for config. Examples include:
   a config image for a simple setup with a single AWS account.
 * [`mergermarket/cdflow2-config-aws-multi:latest`](https://registry.hub.docker.com/r/mergermarket/cdflow2-config-aws-multi) -
   a config image for a setup wtih multiple teams deploying to multiple
-  AWS accounts for larger organisations.
+  AWS accounts, for larger organisations.
 
 #### `config > params` (optional)
 

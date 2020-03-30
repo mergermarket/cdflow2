@@ -20,6 +20,7 @@ docker run \
     mergermarket/docz-site-builder \
     docz build
 
+rm -rf docs/dist
 docker cp $name:/app/.docz/dist docs/dist
 
 echo Wrote docs/dist

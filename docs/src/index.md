@@ -1,46 +1,18 @@
 ---
-name: Getting Started
+name: Overview
+route: /
 ---
 
-# Getting Started
+# Overview
 
-[cdflow2](/) is an open source tool for managing services and infrastructure using
+[cdflow2](/opensource/cdflow2) is an open source tool for managing services and infrastructure using
 using [terraform](https://terraform.io), following the principles of *continuous delivery*.
 
-## Installation
+A typical pipeline consists of a [release step](release) where you build your binary (once), followed
+by one or more [deploy steps](deploy) where you use Terraform to update an environment to use that
+release.
 
-### OSX with Homebrew
+## Next Steps
 
-If you're a [Homebrew](https://brew.sh/) user, installation is as simple as:
-
-```bash
-brew install mergermarket/tap/cdflow2
-```
-
-To upgrade:
-
-```bash
-brew upgrade mergermarket/tap/cdflow2
-```
-
-Also available, but not recommended!
-
-```bash
-brew remove mergermarket/tap/cdflow2
-```
-
-### Other
-
-Download the [latest release from GitHub](https://github.com/mergermarket/cdflow2/releases).
-
-## Running cdflow2
-
-To check your installation, run:
-
-```sh
-cdflow2
-```
-
-You should see a usage message.
-
-## Setup
+* [Install cdflow2](installation)
+* Read [Getting Started](getting-started) guide
