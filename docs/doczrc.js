@@ -7,6 +7,7 @@ export default {
     'Installation',
     'Project Setup',
     { name: 'Commands', menu: [
+      'Usage',
       'Setup',
       'Release',
       'Deploy',

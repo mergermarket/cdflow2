@@ -7,25 +7,7 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/mergermarket/cdflow2)
 ![GitHub](https://img.shields.io/github/license/mergermarket/cdflow2)
 
-## cdflow.yaml
 
-`cdflow.yaml` (or `cdflow.yml`) is a metadata file that is required to be in the top level of a cdflow project. The format of version 2 (i.e. if you run `cdflow2`) is described here.
-
-### `version`
-
-Must be exactly `2`.
-
-### `config_image`
-
-The docker image used to create the config container - described in more detail below. This container image will be pulled each time you invoke `cdflow2` within your component, so it is a good idea to pin the version to be confident you won't have compatibility surprises as your pipeline runs through its stages (i.e. through multiple invocations of `cdflow2`).
-
-### `release_image`
-
-The docker image used to create the release container - described in more detail below. This container image will be pulled and executed only for the `release` subcommand - i.e. just once at the start of your pipeline (i.e. it is common to target a major version tag or `latest` to get automatic updates here).
-
-### `terraform_image`
-
-The docker image used to create the terraform container - described in more detail below. The exact tag for this image is stored with the release, so you can be confident it will not change as that release version is promoted through your pipeline (i.e. you won't pick up a new version of Terraform for the first time when you are deploying your release into production).
 
 ## Containers
 
