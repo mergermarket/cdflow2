@@ -59,28 +59,28 @@ func TestRunCommand(t *testing.T) {
 		"test-version",
 		map[string]string{},
 	); err != nil {
-		log.Fatalln("error running command:", err)
+		log.Fatalln("error running command:", err, errorBuffer.String())
 	}
 
 	// Then
 	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
 	if err != nil {
-		log.Panicln("error getting debug info:", err)
+		t.Fatal("error getting debug info:", err)
 	}
 
 	test.CheckTerraformInitInitialReflectedInput(debugInfo["terraform"])
 
-	checkConfigureReleaseOutput(debugInfo["configure-release.json"])
+	checkConfigureReleaseOutput(t, debugInfo["configure-release.json"])
 
-	checkUploadReleaseOutput(debugInfo["upload-release.json"])
+	checkUploadReleaseOutput(t, debugInfo["upload-release.json"])
 
 	if !strings.Contains(errorBuffer.String(), "message to stderr from release\ndocker status: OK\nuploaded test-version\n") {
-		log.Panicln("unexpected output of release:", errorBuffer.String())
+		t.Fatal("unexpected output of release:", errorBuffer.String())
 	}
 
 }
 
-func checkConfigureReleaseOutput(debugOutput []byte) {
+func checkConfigureReleaseOutput(t *testing.T, debugOutput []byte) {
 	var decoded struct {
 		Action  string
 		Request struct {
@@ -90,23 +90,23 @@ func checkConfigureReleaseOutput(debugOutput []byte) {
 	}
 
 	if err := json.Unmarshal(debugOutput, &decoded); err != nil {
-		log.Panicln("error decoding configure release debug output:", err)
+		t.Fatal("error decoding configure release debug output:", err)
 	}
 
 	if decoded.Action != "configure_release" {
-		log.Panicln("unexpected action for configure releaes:", decoded.Action)
+		t.Fatal("unexpected action for configure releaes:", decoded.Action)
 	}
 
 	if decoded.Request.Version != "test-version" {
-		log.Panicln("unexpected version passed to configure release:", decoded.Request.Version)
+		t.Fatal("unexpected version passed to configure release:", decoded.Request.Version)
 	}
 
 	if decoded.Request.Config["test-manifest-config-key"] != "test-manifest-config-value" {
-		log.Panicln("unexpected config value:", decoded.Request.Config["test-manifest-config-key"])
+		t.Fatal("unexpected config value:", decoded.Request.Config["test-manifest-config-key"])
 	}
 }
 
-func checkUploadReleaseOutput(debugOutput []byte) {
+func checkUploadReleaseOutput(t *testing.T, debugOutput []byte) {
 	var decoded struct {
 		Action  string
 		Request struct {
@@ -115,39 +115,39 @@ func checkUploadReleaseOutput(debugOutput []byte) {
 		ReleaseMetadata map[string]map[string]string
 	}
 	if err := json.Unmarshal(debugOutput, &decoded); err != nil {
-		log.Panicf("error decoding upload release debug output: %v, '%v'", err, string(debugOutput))
+		t.Fatalf("error decoding upload release debug output: %v, '%v'", err, string(debugOutput))
 	}
 
 	if decoded.Action != "upload_release" {
-		log.Panicln("unexpected action for upload releaes:", decoded.Action)
+		t.Fatal("unexpected action for upload releaes:", decoded.Action)
 	}
 
 	expectedTerraformImage := test.GetConfig("TEST_TERRAFORM_REPO_DIGEST")
 	if decoded.Request.TerraformImage != expectedTerraformImage {
-		log.Panicln("expected terraform repo digest: ", expectedTerraformImage, ", got:", decoded.Request.TerraformImage)
+		t.Fatal("expected terraform repo digest: ", expectedTerraformImage, ", got:", decoded.Request.TerraformImage)
 	}
 
 	if decoded.ReleaseMetadata["release"]["component_from_defaults"] != "test-component" {
-		log.Panicln("expected component test-component, got:", decoded.ReleaseMetadata["component_from_defaults"])
+		t.Fatal("expected component test-component, got:", decoded.ReleaseMetadata["component_from_defaults"])
 	}
 
 	if decoded.ReleaseMetadata["release"]["commit_from_defaults"] != "test-commit" {
-		log.Panicln("expected commit test-commit, got:", decoded.ReleaseMetadata["commit_from_defaults"])
+		t.Fatal("expected commit test-commit, got:", decoded.ReleaseMetadata["commit_from_defaults"])
 	}
 
 	if decoded.ReleaseMetadata["release"]["version"] != "test-version" {
-		log.Panicln("unexpected version from release metadata:", decoded.ReleaseMetadata["release"]["version"])
+		t.Fatal("unexpected version from release metadata:", decoded.ReleaseMetadata["release"]["version"])
 	}
 	if decoded.ReleaseMetadata["release"]["commit"] != "test-commit" {
-		log.Panicln("unexpected commit from release metadata:", decoded.ReleaseMetadata["release"]["commit"])
+		t.Fatal("unexpected commit from release metadata:", decoded.ReleaseMetadata["release"]["commit"])
 	}
 	if decoded.ReleaseMetadata["release"]["component"] != "test-component" {
-		log.Panicln("unexpected component from release metadata:", decoded.ReleaseMetadata["release"]["component"])
+		t.Fatal("unexpected component from release metadata:", decoded.ReleaseMetadata["release"]["component"])
 	}
 	if decoded.ReleaseMetadata["release"]["team"] != "test-team" {
-		log.Panicln("unexpected team from release metadata:", decoded.ReleaseMetadata["release"]["team"])
+		t.Fatal("unexpected team from release metadata:", decoded.ReleaseMetadata["release"]["team"])
 	}
 	if decoded.ReleaseMetadata["release"]["manifest_params"] != "{\"a\":\"b\"}" {
-		log.Panicln("unexpected manifest_params:", decoded.ReleaseMetadata["release"]["manifest_params"])
+		t.Fatal("unexpected manifest_params:", decoded.ReleaseMetadata["release"]["manifest_params"])
 	}
 }

@@ -2,7 +2,6 @@ package container_test
 
 import (
 	"bytes"
-	"log"
 	"reflect"
 	"testing"
 
@@ -20,7 +19,7 @@ func TestRelese(t *testing.T) {
 	buildVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, buildVolume)
 
-	codeDir := test.GetConfig("TEST_ROOT")+"/test/release/sample-code"
+	codeDir := test.GetConfig("TEST_ROOT") + "/test/release/sample-code"
 
 	// When
 	releaseMetadata, err := container.Run(
@@ -41,12 +40,12 @@ func TestRelese(t *testing.T) {
 		},
 	)
 	if err != nil {
-		log.Panicln("unexpected error: ", err)
+		t.Fatal("unexpected error: ", err)
 	}
 
 	// Then
 	if errorBuffer.String() != "message to stderr from release\ndocker status: OK\n" {
-		log.Panicf("unexpected stderr output: '%v'", errorBuffer.String())
+		t.Fatalf("unexpected stderr output: '%v'", errorBuffer.String())
 	}
 
 	if !reflect.DeepEqual(releaseMetadata, map[string]string{
@@ -60,6 +59,6 @@ func TestRelese(t *testing.T) {
 		"manifest_params":         "{}",
 		"code_dir":                codeDir,
 	}) {
-		log.Panicf("unexpected release metadata: %v\n", releaseMetadata)
+		t.Fatalf("unexpected release metadata: %v\n", releaseMetadata)
 	}
 }

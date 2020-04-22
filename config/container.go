@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"time"
 
 	"github.com/mergermarket/cdflow2/command"
@@ -54,9 +53,6 @@ func NewContainer(state *command.GlobalState, image, releaseVolume string) (*Con
 			options.Binds = []string{releaseVolume + ":/release"}
 		}
 		err := dockerClient.Run(&options)
-		if err != nil {
-			log.Panicln("error from run:", err)
-		}
 		container.finished = true
 		done <- err
 	}()
@@ -95,6 +91,11 @@ func (configContainer *Container) request(request interface{}, response interfac
 	return nil
 }
 
+// ReleaseRequirements contains a list of needs.
+type ReleaseRequirements struct {
+	Needs []string
+}
+
 type setupConfigRequest struct {
 	Action              string
 	Config              map[string]interface{}
@@ -102,7 +103,7 @@ type setupConfigRequest struct {
 	Component           string
 	Commit              string
 	Team                string
-	ReleaseRequirements map[string]map[string]interface{}
+	ReleaseRequirements map[string]*ReleaseRequirements
 }
 
 type setupConfigResponse struct {
@@ -114,7 +115,7 @@ func (configContainer *Container) Setup(
 	config map[string]interface{},
 	env map[string]string,
 	component, commit, team string,
-	releaseRequirements map[string]map[string]interface{},
+	releaseRequirements map[string]*ReleaseRequirements,
 ) error {
 	var response setupConfigResponse
 	if err := configContainer.request(&setupConfigRequest{
@@ -142,7 +143,7 @@ type configureReleaseConfigRequest struct {
 	Team                string
 	Config              map[string]interface{}
 	Env                 map[string]string
-	ReleaseRequirements map[string]map[string]interface{}
+	ReleaseRequirements map[string]*ReleaseRequirements
 }
 
 // ConfigureReleaseConfigResponse contains the response to the configure release request.
@@ -156,7 +157,7 @@ func (configContainer *Container) ConfigureRelease(
 	version, component, commit, team string,
 	config map[string]interface{},
 	env map[string]string,
-	releaseRequirements map[string]map[string]interface{},
+	releaseRequirements map[string]*ReleaseRequirements,
 ) (*ConfigureReleaseConfigResponse, error) {
 	var response ConfigureReleaseConfigResponse
 	if err := configContainer.request(&configureReleaseConfigRequest{

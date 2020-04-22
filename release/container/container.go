@@ -9,12 +9,12 @@ import (
 	"sort"
 
 	"github.com/mergermarket/cdflow2/command"
+	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/docker"
 )
 
 // GetReleaseRequirements runs the container in order to get requirements.
-func GetReleaseRequirements(state *command.GlobalState, buildID, image string, errorStream io.Writer) (map[string]interface{}, error) {
-	fmt.Fprintf(state.ErrorStream, "\nGetting requirements for build: '%v' (%v)...\n", buildID, image)
+func GetReleaseRequirements(state *command.GlobalState, buildID, image string, errorStream io.Writer) (*config.ReleaseRequirements, error) {
 	var outputBuffer bytes.Buffer
 	if err := state.DockerClient.Run(&docker.RunOptions{
 		Image:        image,
@@ -25,12 +25,11 @@ func GetReleaseRequirements(state *command.GlobalState, buildID, image string, e
 	}); err != nil {
 		return nil, err
 	}
-	var result map[string]interface{}
+	var result config.ReleaseRequirements
 	if err := json.NewDecoder(&outputBuffer).Decode(&result); err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(state.ErrorStream, "Got: %v\n", result)
-	return result, nil
+	return &result, nil
 }
 
 // Run creates and runs the release container, returning a map of release metadata.

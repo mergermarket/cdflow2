@@ -167,8 +167,8 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 }
 
 // GetReleaseRequirements runs the release containers in order to get their requirements.
-func GetReleaseRequirements(state *command.GlobalState) (map[string]map[string]interface{}, error) {
-	result := make(map[string]map[string]interface{})
+func GetReleaseRequirements(state *command.GlobalState) (map[string]*config.ReleaseRequirements, error) {
+	result := make(map[string]*config.ReleaseRequirements)
 	for buildID, build := range state.Manifest.Builds {
 		if !state.GlobalArgs.NoPullRelease {
 			fmt.Fprintf(state.ErrorStream, "\nPulling build image (%v): %v...\n\n", buildID, build.Image)

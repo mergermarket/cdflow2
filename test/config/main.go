@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -20,7 +21,7 @@ func main() {
 	if len(os.Args) == 2 && os.Args[1] == "forward" {
 		common.Forward(os.Stdin, os.Stdout, "")
 	} else {
-		common.Listen(NewHandler(), "", nil)
+		common.Listen(NewHandler(), "", "/release", nil)
 	}
 }
 
@@ -51,7 +52,7 @@ func writeDebug(data interface{}, path string) {
 // Setup handles a setup request in order to pipeline setup.
 func (*handler) Setup(request *common.SetupRequest, response *common.SetupResponse) error {
 	fmt.Println("output to stdout from setup, component: " + request.Component + ", commit: " + request.Commit + ", team: " + request.Team)
-	fmt.Fprintln(os.Stderr, "output to stderr from setup, requirements:", strings.Join(request.ReleaseRequiredEnv["release"], ", "))
+	fmt.Fprintf(os.Stderr, "output to stderr from setup, needs: %v\n", strings.Join(request.ReleaseRequirements["release"].Needs, ", "))
 	return nil
 }
 
@@ -61,7 +62,6 @@ func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, respon
 		"Action":              "configure_release",
 		"Request":             &request,
 		"ReleaseRequirements": request.ReleaseRequirements,
-		"ReleaseRequiredEnv":  request.ReleaseRequiredEnv,
 	}, "/debug/configure-release.json")
 	for buildID := range request.ReleaseRequirements {
 		response.Env[buildID] = map[string]string{
@@ -80,8 +80,8 @@ func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, respon
 func (*handler) UploadRelease(
 	request *common.UploadReleaseRequest,
 	response *common.UploadReleaseResponse,
-	version string,
-	config map[string]interface{},
+	configureReleaseRequest *common.ConfigureReleaseRequest,
+	releaseReader io.ReadSeeker,
 ) error {
 	var releaseMetadata map[string]map[string]string
 	data, err := ioutil.ReadFile("/release/release-metadata.json")
@@ -96,7 +96,7 @@ func (*handler) UploadRelease(
 		"Request":         &request,
 		"ReleaseMetadata": releaseMetadata,
 	}, "/debug/upload-release.json")
-	response.Message = "uploaded " + version
+	response.Message = "uploaded " + configureReleaseRequest.Version
 	return nil
 }
 

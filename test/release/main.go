@@ -18,7 +18,7 @@ func main() {
 		// requirements is a way for the release container to communciate its requirements to the
 		// config container
 		if err := json.NewEncoder(os.Stdout).Encode(map[string]interface{}{
-			"env": []string{"FOO", "BAR"},
+			"needs": []string{"foo", "bar"},
 		}); err != nil {
 			log.Panicln("error encoding requirements:", err)
 		}
@@ -35,7 +35,7 @@ func main() {
 		"component_from_defaults": os.Getenv("COMPONENT"),
 		"commit_from_defaults":    os.Getenv("COMMIT"),
 		"build_id_from_defaults":  os.Getenv("BUILD_ID"),
-		"code_dir": os.Getenv("CDFLOW2_CODE_DIR"),
+		"code_dir":                os.Getenv("CDFLOW2_CODE_DIR"),
 		// test environment variable passed through from config
 		"test_from_config": os.Getenv("TEST_VERSION"),
 		// test parameters from manifest

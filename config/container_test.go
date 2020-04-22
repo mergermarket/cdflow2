@@ -3,7 +3,6 @@ package config_test
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"reflect"
 	"testing"
 
@@ -36,11 +35,11 @@ func TestConfigRelease(t *testing.T) {
 	func() {
 		configContainer, err := config.NewContainer(state, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume)
 		if err != nil {
-			log.Panicln("error creating config container:", err)
+			t.Fatal("error creating config container:", err)
 		}
 		defer func() {
 			if err := configContainer.Done(); err != nil {
-				log.Panicln("error stopping config container:", err)
+				t.Fatal("error stopping config container:", err)
 			}
 		}()
 
@@ -55,14 +54,14 @@ func TestConfigRelease(t *testing.T) {
 			map[string]string{
 				"TEST_ENV_VAR": "env value",
 			},
-			map[string]map[string]interface{}{
+			map[string]*config.ReleaseRequirements{
 				"release": {
-					"key": "value",
+					Needs: []string{"need1"},
 				},
 			},
 		)
 		if err != nil {
-			log.Panicln("error in configureRelease:", err, errorBuffer.String())
+			t.Fatal("error in configureRelease:", err, errorBuffer.String())
 		}
 
 		configContainer.WriteReleaseMetadata(map[string]map[string]string{
@@ -73,7 +72,7 @@ func TestConfigRelease(t *testing.T) {
 
 		uploadReleaseResponse, err = configContainer.UploadRelease("terraform:image")
 		if err != nil {
-			log.Panicln("error in uploadRelease:", err)
+			t.Fatal("error in uploadRelease:", err)
 		}
 	}()
 
@@ -89,39 +88,44 @@ func TestConfigRelease(t *testing.T) {
 			"TEST_RELEASE_VAR_FROM_ENV":    "env value",
 		},
 	}) {
-		log.Panicln("unexpected env in response:", configureReleaseResponse.Env)
+		t.Fatal("unexpected env in response:", configureReleaseResponse.Env)
 	}
 
 	if uploadReleaseResponse.Message != "uploaded test-version" {
-		log.Panicln("unexpected message:", uploadReleaseResponse.Message)
+		t.Fatal("unexpected message:", uploadReleaseResponse.Message)
 	}
 
 	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
 	if err != nil {
-		log.Panicln("error getting debug info:", err)
+		t.Fatal("error getting debug info:", err)
 	}
 
-	var configureReleaseDebugOutput map[string]interface{}
+	var configureReleaseDebugOutput struct {
+		Action              string
+		ReleaseRequirements map[string]struct {
+			Needs []string
+		}
+	}
 	if err := json.Unmarshal(debugInfo["configure-release.json"], &configureReleaseDebugOutput); err != nil {
-		log.Panicln("error decoding configure release debug output:", err)
+		t.Fatal("error decoding configure release debug output:", err)
 	}
 
-	if configureReleaseDebugOutput["Action"] != "configure_release" {
-		log.Panicln("expected configure_release, got ", configureReleaseDebugOutput["Action"])
+	if configureReleaseDebugOutput.Action != "configure_release" {
+		t.Fatal("expected configure_release, got ", configureReleaseDebugOutput.Action)
 	}
 
-	releaseRequirements, _ := configureReleaseDebugOutput["ReleaseRequirements"].(map[string]interface{})
-	if releaseRequirements, ok := releaseRequirements["release"].(map[string]interface{}); !ok || releaseRequirements["key"] != "value" {
-		log.Panicln("unexpected release requirements:", configureReleaseDebugOutput["ReleaseRequirements"])
+	needs := configureReleaseDebugOutput.ReleaseRequirements["release"].Needs
+	if !reflect.DeepEqual(needs, []string{"need1"}) {
+		t.Fatal("unexpected release needs:", configureReleaseDebugOutput.ReleaseRequirements["release"])
 	}
 
 	var uploadReleaseDebugOutput map[string]interface{}
 	if err := json.Unmarshal(debugInfo["upload-release.json"], &uploadReleaseDebugOutput); err != nil {
-		log.Panicln("error decoding upload release debug output:", err)
+		t.Fatal("error decoding upload release debug output:", err)
 	}
 
 	if uploadReleaseDebugOutput["Action"] != "upload_release" {
-		log.Panicln("expected upload_release, got ", uploadReleaseDebugOutput["Action"])
+		t.Fatal("expected upload_release, got ", uploadReleaseDebugOutput["Action"])
 	}
 }
 
@@ -148,11 +152,11 @@ func TestConfigDeploy(t *testing.T) {
 	func() {
 		configContainer, err := config.NewContainer(state, test.GetConfig("TEST_CONFIG_IMAGE"), releaseVolume)
 		if err != nil {
-			log.Panicln("error creating config container:", err)
+			t.Fatal("error creating config container:", err)
 		}
 		defer func() {
 			if err := configContainer.Done(); err != nil {
-				log.Panicln("error stopping config container:", err)
+				t.Fatal("error stopping config container:", err)
 			}
 		}()
 
@@ -168,7 +172,7 @@ func TestConfigDeploy(t *testing.T) {
 			},
 		)
 		if err != nil {
-			log.Panicln(err)
+			t.Fatal(err)
 		}
 	}()
 
@@ -177,33 +181,33 @@ func TestConfigDeploy(t *testing.T) {
 		"TEST_ENV_VAR":    "env value",
 		"TEST_CONFIG_VAR": "config value",
 	}) {
-		log.Panicln("unexpected env:", prepareTerraformResponse.Env)
+		t.Fatal("unexpected env:", prepareTerraformResponse.Env)
 	}
 
 	if prepareTerraformResponse.TerraformImage != "test terraform image digest" {
-		log.Panicln("unexpected terraform image:", prepareTerraformResponse.TerraformImage)
+		t.Fatal("unexpected terraform image:", prepareTerraformResponse.TerraformImage)
 	}
 
 	if prepareTerraformResponse.TerraformBackendType != "a-terraform-backend-type" {
-		log.Panicln("unexpected terraform backend type:", prepareTerraformResponse.TerraformBackendType)
+		t.Fatal("unexpected terraform backend type:", prepareTerraformResponse.TerraformBackendType)
 	}
 
 	if !reflect.DeepEqual(prepareTerraformResponse.TerraformBackendConfig, map[string]string{"backend-config-key": "backend-config-value"}) {
-		log.Panicln("unexpected terraform backend config:", prepareTerraformResponse.TerraformBackendConfig)
+		t.Fatal("unexpected terraform backend config:", prepareTerraformResponse.TerraformBackendConfig)
 	}
 
 	releaseData, err := test.ReadVolume(dockerClient, releaseVolume)
 	if err != nil {
-		log.Panicln("could not read release volume:", err)
+		t.Fatal("could not read release volume:", err)
 	}
 
 	if !reflect.DeepEqual(releaseData, map[string][]byte{"test": []byte("unpacked")}) {
-		log.Panicln("unexpected release data:", releaseData)
+		t.Fatal("unexpected release data:", releaseData)
 	}
 
 	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
 	if err != nil {
-		log.Panicln("error getting debug info:", err)
+		t.Fatal("error getting debug info:", err)
 	}
 
 	var prepareTerraformDebugOutput struct {
@@ -214,14 +218,14 @@ func TestConfigDeploy(t *testing.T) {
 	}
 
 	if err := json.Unmarshal(debugInfo["prepare-terraform.json"], &prepareTerraformDebugOutput); err != nil {
-		log.Panicln("error decoding prepare terraform debug output:", err)
+		t.Fatal("error decoding prepare terraform debug output:", err)
 	}
 
 	if prepareTerraformDebugOutput.Action != "prepare_terraform" {
-		log.Panicln("expected prepare_terraform, got ", prepareTerraformDebugOutput.Action)
+		t.Fatal("expected prepare_terraform, got ", prepareTerraformDebugOutput.Action)
 	}
 
 	if prepareTerraformDebugOutput.Request.EnvName != "test-env" {
-		log.Panicln("expected env name test-env passed to prepare terraform, got:", prepareTerraformDebugOutput.Request.EnvName)
+		t.Fatal("expected env name test-env passed to prepare terraform, got:", prepareTerraformDebugOutput.Request.EnvName)
 	}
 }
