@@ -237,11 +237,14 @@ func (configContainer *Container) UploadRelease(terraformImage string) (*UploadR
 }
 
 type prepareTerraformRequest struct {
-	Action  string
-	Version string
-	Config  map[string]interface{}
-	Env     map[string]string
-	EnvName string
+	Action    string
+	Version   string
+	Component string
+	Commit    string
+	Team      string
+	Config    map[string]interface{}
+	Env       map[string]string
+	EnvName   string
 }
 
 // PrepareTerraformResponse contains the response to the prepare terraform request.
@@ -255,18 +258,21 @@ type PrepareTerraformResponse struct {
 
 // PrepareTerraform requests that the config container prepares for running terraform and returns the response.
 func (configContainer *Container) PrepareTerraform(
-	version, envName string,
+	version, component, commit, team, envName string,
 	config map[string]interface{},
 	env map[string]string,
 ) (*PrepareTerraformResponse, error) {
 
 	var response PrepareTerraformResponse
 	if err := configContainer.request(&prepareTerraformRequest{
-		Action:  "prepare_terraform",
-		Config:  config,
-		Env:     env,
-		EnvName: envName,
-		Version: version,
+		Action:    "prepare_terraform",
+		Config:    config,
+		Env:       env,
+		EnvName:   envName,
+		Version:   version,
+		Component: component,
+		Commit:    commit,
+		Team:      team,
 	}, &response); err != nil {
 		return nil, err
 	}
@@ -306,7 +312,7 @@ func SetupTerraform(state *command.GlobalState, envName, version string, env map
 		}
 	}()
 
-	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, envName, state.Manifest.Config.Params, env)
+	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, state.Component, state.Commit, state.Manifest.Team, envName, state.Manifest.Config.Params, env)
 	if err != nil {
 		return "", "", err
 	}

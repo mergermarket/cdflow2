@@ -162,6 +162,9 @@ func TestConfigDeploy(t *testing.T) {
 
 		prepareTerraformResponse, err = configContainer.PrepareTerraform(
 			"test-version",
+			"test-component",
+			"test-commit",
+			"test-team",
 			"test-env",
 			map[string]interface{}{
 				"TEST_CONFIG_VAR": "config value",
