@@ -117,12 +117,12 @@ func CheckTerraformInitInitialReflectedInput(output []byte) {
 	}
 
 	// interface is that the code is mapped to /code and the terraform is in the infra subfolder
-	if !reflect.DeepEqual(input.Args, []string{"init", "-backend=false", "/code/infra"}) {
+	if !reflect.DeepEqual(input.Args, []string{"init", "-backend=false", "infra/"}) {
 		log.Fatalf("unexpected args: %v", input.Args)
 	}
 
 	// interface is that the mapped in cwd is /build
-	if input.Cwd != "/build" {
+	if input.Cwd != "/code" {
 		log.Fatalf("unexpected cwd: %v", input.Cwd)
 	}
 
@@ -138,7 +138,7 @@ func CheckTerraformWorkspaceList(line []byte) {
 		log.Panicln("error parsing json:", err)
 	}
 
-	if !reflect.DeepEqual(input.Args, []string{"workspace", "list"}) {
+	if !reflect.DeepEqual(input.Args, []string{"workspace", "list", "infra/"}) {
 		log.Panicln("unexpected args for workspace list:", input.Args)
 	}
 }
@@ -150,7 +150,7 @@ func CheckTerraformWorkspaceNew(line []byte, workspaceName string) {
 		log.Panicln("error parsing json:", err)
 	}
 
-	if !reflect.DeepEqual(input.Args, []string{"workspace", "new", workspaceName}) {
+	if !reflect.DeepEqual(input.Args, []string{"workspace", "new", workspaceName, "infra/"}) {
 		log.Panicln("unexpected args for workspace new:", input.Args)
 	}
 }

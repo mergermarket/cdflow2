@@ -2,6 +2,8 @@ package deploy
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
@@ -11,7 +13,7 @@ import (
 
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, envName, version string, env map[string]string) (returnedError error) {
-	terraformImage, buildVolume, err := config.SetupTerraform(state, envName, version, env)
+	prepareTerraformResponse, buildVolume, err := config.SetupTerraform(state, envName, version, env)
 	if err != nil {
 		return err
 	}
@@ -28,7 +30,7 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 
 	terraformContainer, err := terraform.NewContainer(
 		state.DockerClient,
-		terraformImage,
+		prepareTerraformResponse.TerraformImage,
 		state.CodeDir,
 		buildVolume,
 	)
@@ -45,26 +47,49 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 		}
 	}()
 
+	terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse.TerraformBackendConfig)
+
 	if err := terraformContainer.SwitchWorkspace(envName, state.OutputStream, state.ErrorStream); err != nil {
 		return err
 	}
 
-	planFilename := util.RandomName("plan")
+	planFilename := "/build/" + util.RandomName("plan")
 
-	if err := terraformContainer.RunCommand([]string{
+	planCommand := []string{
 		"terraform",
 		"plan",
-		"-input=false",
-		"-var-file=/release/release-metadata.json",
-		"-var-file=config/" + envName + ".json",
-		"-out=" + planFilename,
+		"-var-file=/build/release-metadata.json",
+	}
+
+	envConfigFilename := "config/" + envName + ".json"
+	if _, err := os.Stat(envConfigFilename); !os.IsNotExist(err) {
+		planCommand = append(planCommand, "-var-file="+envConfigFilename)
+	}
+
+	planCommand = append(
+		planCommand,
+		"-out="+planFilename,
 		"infra/",
-	}, state.OutputStream, state.ErrorStream); err != nil {
+	)
+
+	fmt.Fprintf(
+		state.ErrorStream,
+		"\nCreating plan...\n\n$ %s\n",
+		strings.Join(planCommand, " "),
+	)
+
+	if err := terraformContainer.RunCommand(planCommand, state.OutputStream, state.ErrorStream); err != nil {
 		return err
 	}
 
+	fmt.Fprintf(
+		state.ErrorStream,
+		"\nApplying plan...\n\n$ terraform apply %s\n",
+		planFilename,
+	)
+
 	if err := terraformContainer.RunCommand(
-		[]string{"terraform", "apply", "-input=false", planFilename},
+		[]string{"terraform", "apply", planFilename},
 		state.OutputStream, state.ErrorStream,
 	); err != nil {
 		return err

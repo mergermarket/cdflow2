@@ -283,23 +283,23 @@ func (configContainer *Container) PrepareTerraform(
 }
 
 // SetupTerraform creates the config container and prepares terraform in one.
-func SetupTerraform(state *command.GlobalState, envName, version string, env map[string]string) (returnedTerraformImage, returnedBuildVolume string, returnedError error) {
+func SetupTerraform(state *command.GlobalState, envName, version string, env map[string]string) (_ *PrepareTerraformResponse, returnedBuildVolume string, returnedError error) {
 	dockerClient := state.DockerClient
 
 	if !state.GlobalArgs.NoPullConfig {
 		if err := dockerClient.PullImage(state.Manifest.Config.Image, state.ErrorStream); err != nil {
-			return "", "", fmt.Errorf("error pulling config image: %w", err)
+			return nil, "", fmt.Errorf("error pulling config image: %w", err)
 		}
 	}
 
 	buildVolume, err := dockerClient.CreateVolume()
 	if err != nil {
-		return "", "", err
+		return nil, "", err
 	}
 
 	configContainer, err := NewContainer(state, state.Manifest.Config.Image, buildVolume)
 	if err != nil {
-		return "", "", err
+		return nil, "", err
 	}
 	defer func() {
 		if err := configContainer.Done(); err != nil {
@@ -314,15 +314,15 @@ func SetupTerraform(state *command.GlobalState, envName, version string, env map
 
 	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, state.Component, state.Commit, state.Manifest.Team, envName, state.Manifest.Config.Params, env)
 	if err != nil {
-		return "", "", err
+		return nil, "", err
 	}
 
 	if !state.GlobalArgs.NoPullTerraform {
 		if err := dockerClient.EnsureImage(prepareTerraformResponse.TerraformImage, state.ErrorStream); err != nil {
-			return "", "", fmt.Errorf("error pulling terraform image %v: %w", prepareTerraformResponse.TerraformImage, err)
+			return nil, "", fmt.Errorf("error pulling terraform image %v: %w", prepareTerraformResponse.TerraformImage, err)
 		}
 	}
-	return prepareTerraformResponse.TerraformImage, buildVolume, nil
+	return prepareTerraformResponse, buildVolume, nil
 }
 
 // Done stops and removes the config container.

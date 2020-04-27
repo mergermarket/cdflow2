@@ -22,7 +22,7 @@ func getEnv() map[string]string {
 
 func main() {
 
-	if len(os.Args) == 3 && os.Args[1] == "workspace" && os.Args[2] == "list" {
+	if len(os.Args) > 2 && os.Args[1] == "workspace" && os.Args[2] == "list" {
 		fmt.Println("* default")
 		fmt.Println("  existing-workspace")
 	} else {
@@ -59,8 +59,8 @@ func main() {
 		"cwd": dir, "file": string(fileContents),
 	})
 
-	if len(os.Args) == 4 && os.Args[1] == "init" && os.Args[2] == "-backend=false" && os.Args[3] == "/code/infra" {
-		if err := ioutil.WriteFile("build-output-test", []byte("build output"), 0644); err != nil {
+	if len(os.Args) == 4 && os.Args[1] == "init" && os.Args[2] == "-backend=false" && os.Args[3] == "infra/" {
+		if err := ioutil.WriteFile("/build/build-output-test", []byte("build output"), 0644); err != nil {
 			log.Fatalln("could not write file:", err)
 		}
 	}

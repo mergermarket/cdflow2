@@ -3,7 +3,6 @@ package deploy_test
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"reflect"
 	"strings"
 	"testing"
@@ -50,10 +49,10 @@ func TestRunCommand(t *testing.T) {
 
 	repoDigests, err := state.DockerClient.GetImageRepoDigests(test.GetConfig("TEST_TERRAFORM_IMAGE"))
 	if err != nil {
-		log.Panicln("could not get repo digests for terraform container:", err)
+		t.Fatal("could not get repo digests for terraform container:", err)
 	}
 	if len(repoDigests) == 0 {
-		log.Panicln("no repo digests for terraform container", test.GetConfig("TEST_TERRAFORM_IMAGE"))
+		t.Fatal("no repo digests for terraform container", test.GetConfig("TEST_TERRAFORM_IMAGE"))
 	}
 	terraformDigest := repoDigests[0]
 
@@ -61,30 +60,32 @@ func TestRunCommand(t *testing.T) {
 	if err := deploy.RunCommand(state, "test-env", "test-version", map[string]string{
 		"TERRAFORM_DIGEST": terraformDigest,
 	}); err != nil {
-		log.Fatalln("error running deploy command:", err, errorBuffer.String())
+		t.Fatal("error running deploy command:", err, errorBuffer.String())
 	}
 
 	// Then
 	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
 	if err != nil {
-		log.Panicln("error getting debug info:", err)
+		t.Fatal("error getting debug info:", err)
 	}
 
-	checkPrepareTerraformOutput(debugInfo["prepare-terraform.json"])
+	checkPrepareTerraformOutput(t, debugInfo["prepare-terraform.json"])
 
 	lines := bytes.Split(debugInfo["terraform"], []byte{'\n'})
-	if len(lines) != 5 || len(lines[4]) != 0 {
-		log.Panicf("expected four lines with a trailing newline (empty string), got %v lines:\n%v", len(lines), test.DumpLines(lines))
+	if len(lines) != 6 || len(lines[5]) != 0 {
+		t.Fatalf("expected four lines with a trailing newline (empty string), got %v lines:\n%v", len(lines), test.DumpLines(lines))
 	}
 
-	test.CheckTerraformWorkspaceList(lines[0])
-	test.CheckTerraformWorkspaceNew(lines[1], "test-env")
+	// TODO check terraform init
 
-	planFilename := checkTerraformPlanOutput(lines[2])
-	checkTerraformApplyOutput(lines[3], planFilename)
+	test.CheckTerraformWorkspaceList(lines[1])
+	test.CheckTerraformWorkspaceNew(lines[2], "test-env")
+
+	planFilename := checkTerraformPlanOutput(t, lines[3])
+	checkTerraformApplyOutput(t, lines[4], planFilename)
 }
 
-func checkPrepareTerraformOutput(debugOutput []byte) {
+func checkPrepareTerraformOutput(t *testing.T, debugOutput []byte) {
 	var decoded struct {
 		Action  string
 		Request struct {
@@ -97,59 +98,56 @@ func checkPrepareTerraformOutput(debugOutput []byte) {
 	}
 
 	if err := json.Unmarshal(debugOutput, &decoded); err != nil {
-		log.Panicln("error decoding prepare terraform debug output:", err)
+		t.Fatal("error decoding prepare terraform debug output:", err)
 	}
 
 	if decoded.Action != "prepare_terraform" {
-		log.Panicln("expected action prepare_terraform got:", decoded.Action)
+		t.Fatal("expected action prepare_terraform got:", decoded.Action)
 	}
 	if decoded.Request.Version != "test-version" {
-		log.Panicln("expected version test-version got:", decoded.Request.Version)
+		t.Fatal("expected version test-version got:", decoded.Request.Version)
 	}
 	if decoded.Request.EnvName != "test-env" {
-		log.Panicln("expected env test-env got:", decoded.Request.EnvName)
+		t.Fatal("expected env test-env got:", decoded.Request.EnvName)
 	}
 	if decoded.Request.Config["test-manifest-config-key"] != "test-manifest-config-value" {
-		log.Panicln("expected config from manifest got:", decoded.Request.Config)
+		t.Fatal("expected config from manifest got:", decoded.Request.Config)
 	}
 	if decoded.PWD != "/release" {
-		log.Panicln("expected prepare_terraform to run in /release got:", decoded.PWD)
+		t.Fatal("expected prepare_terraform to run in /release got:", decoded.PWD)
 	}
 
 }
 
-func checkTerraformPlanOutput(output []byte) string {
+func checkTerraformPlanOutput(t *testing.T, output []byte) string {
 	var input test.ReflectedInput
 	if err := json.Unmarshal(output, &input); err != nil {
-		log.Panicln("error parsing json:", err)
+		t.Fatal("error parsing json:", err)
 	}
 
-	planFilename := strings.TrimPrefix(input.Args[4], "-out=")
+	planFilename := strings.TrimPrefix(input.Args[2], "-out=")
 
 	if !reflect.DeepEqual(input.Args, []string{
 		"plan",
-		"-input=false",
-		"-var-file=/release/release-metadata.json",
-		"-var-file=config/test-env.json",
+		"-var-file=/build/release-metadata.json",
 		"-out=" + planFilename,
 		"infra/",
 	}) {
-		log.Panicln("unexpected terraform plan args:", input.Args)
+		t.Fatal("unexpected terraform plan args:", input.Args)
 	}
 	return planFilename
 }
 
-func checkTerraformApplyOutput(output []byte, planFilename string) {
+func checkTerraformApplyOutput(t *testing.T, output []byte, planFilename string) {
 	var input test.ReflectedInput
 	if err := json.Unmarshal(output, &input); err != nil {
-		log.Panicln("error parsing json:", err)
+		t.Fatal("error parsing json:", err)
 	}
 
 	if !reflect.DeepEqual(input.Args, []string{
 		"apply",
-		"-input=false",
 		planFilename,
 	}) {
-		log.Panicln("unexpected terraform apply args:", input.Args)
+		t.Fatal("unexpected terraform apply args:", input.Args)
 	}
 }

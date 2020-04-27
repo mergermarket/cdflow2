@@ -41,18 +41,18 @@ func TestTerraformInitInitial(t *testing.T) {
 
 	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
 	if err != nil {
-		log.Panicln("error getting debug info:", err)
+		t.Fatal("error getting debug info:", err)
 	}
 
 	test.CheckTerraformInitInitialReflectedInput(debugInfo["terraform"])
 
 	buildOutput, err := test.ReadVolume(dockerClient, buildVolume)
 	if err != nil {
-		log.Panicln("could not read build volume:", err)
+		t.Fatal("could not read build volume:", err)
 	}
 
 	if !reflect.DeepEqual(buildOutput, map[string][]byte{"build-output-test": []byte("build output")}) {
-		log.Panicln("unexpected build output:", buildOutput)
+		t.Fatal("unexpected build output:", buildOutput)
 	}
 }
 
@@ -76,39 +76,39 @@ func TestTerraformConfigureBackend(t *testing.T) {
 			releaseVolume,
 		)
 		if err != nil {
-			log.Fatalln("error creating terraform container:", err)
+			t.Fatal("error creating terraform container:", err)
 		}
 		defer func() {
 			if err := terraformContainer.Done(); err != nil {
-				log.Panicln("error cleaning up terraform container:", err)
+				t.Fatal("error cleaning up terraform container:", err)
 			}
 		}()
 
 		if err := terraformContainer.ConfigureBackend(
 			&outputBuffer,
 			&errorBuffer,
-			[]terraform.BackendConfigParameter{
-				{"key1", "value1"},
-				{"key2", "value2"},
+			map[string]string{
+				"key1": "value1",
+				"key2": "value2",
 			},
 		); err != nil {
-			log.Panicln("unexpected error: ", err)
+			t.Fatal("unexpected error: ", err, errorBuffer.String())
 		}
 	}()
 
 	// Then
 	if outputBuffer.String() != "message to stdout\n" {
-		log.Panicf("unexpected stdout output: '%v'", outputBuffer.String())
+		t.Fatalf("unexpected stdout output: '%v'", outputBuffer.String())
 	}
 
 	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
 	if err != nil {
-		log.Panicln("error getting debug info:", err)
+		t.Fatal("error getting debug info:", err)
 	}
 
 	var input test.ReflectedInput
 	if err := json.Unmarshal(debugInfo["terraform"], &input); err != nil {
-		log.Panicln("error parsing json:", err)
+		t.Fatal("error parsing json:", err)
 	}
 	if !reflect.DeepEqual(input.Args, []string{
 		"init",
@@ -116,8 +116,9 @@ func TestTerraformConfigureBackend(t *testing.T) {
 		"-get-plugins=false",
 		"-backend-config=key1=value1",
 		"-backend-config=key2=value2",
+		"infra/",
 	}) {
-		log.Panicln("unexpected args:", input.Args)
+		t.Fatal("unexpected args:", input.Args)
 	}
 }
 
@@ -148,7 +149,7 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 
 		defer func() {
 			if err := terraformContainer.Done(); err != nil {
-				log.Panicln("error cleaning up terraform container:", err)
+				t.Fatal("error cleaning up terraform container:", err)
 			}
 		}()
 
@@ -157,37 +158,37 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 			&outputBuffer,
 			&errorBuffer,
 		); err != nil {
-			log.Panicln("error switching workspace:", err)
+			t.Fatal("error switching workspace:", err)
 		}
 	}()
 
 	// Then
 	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
 	if err != nil {
-		log.Panicln("error getting debug info:", err)
+		t.Fatal("error getting debug info:", err)
 	}
 
 	lines := bytes.Split(debugInfo["terraform"], []byte{'\n'})
 	if len(lines) != 3 || len(lines[2]) != 0 {
-		log.Panicf("expected two lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
+		t.Fatalf("expected two lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
 	}
 
 	var listInput test.ReflectedInput
 	if err := json.Unmarshal(lines[0], &listInput); err != nil {
-		log.Panicln("error parsing json:", err)
+		t.Fatal("error parsing json:", err)
 	}
 
-	if !reflect.DeepEqual(listInput.Args, []string{"workspace", "list"}) {
-		log.Panicln("unexpected args for workspace list:", listInput.Args)
+	if !reflect.DeepEqual(listInput.Args, []string{"workspace", "list", "infra/"}) {
+		t.Fatal("unexpected args for workspace list (1):", listInput.Args)
 	}
 
 	var selectInput test.ReflectedInput
 	if err := json.Unmarshal(lines[1], &selectInput); err != nil {
-		log.Panicln("error parsing json:", err)
+		t.Fatal("error parsing json:", err)
 	}
 
-	if !reflect.DeepEqual(selectInput.Args, []string{"workspace", "select", workspaceName}) {
-		log.Panicln("unexpected args for workspace select:", selectInput.Args)
+	if !reflect.DeepEqual(selectInput.Args, []string{"workspace", "select", workspaceName, "infra/"}) {
+		t.Fatal("unexpected args for workspace select:", selectInput.Args)
 	}
 }
 
@@ -217,7 +218,7 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 		}
 		defer func() {
 			if err := terraformContainer.Done(); err != nil {
-				log.Panicln("error cleaning up terraform container:", err)
+				t.Fatal("error cleaning up terraform container:", err)
 			}
 		}()
 
@@ -226,19 +227,19 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 			&outputBuffer,
 			&errorBuffer,
 		); err != nil {
-			log.Panicln("error switching workspace:", err)
+			t.Fatal("error switching workspace:", err)
 		}
 	}()
 
 	// Then
 	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
 	if err != nil {
-		log.Panicln("error getting debug info:", err)
+		t.Fatal("error getting debug info:", err)
 	}
 
 	lines := bytes.Split(debugInfo["terraform"], []byte{'\n'})
 	if len(lines) != 3 || len(lines[2]) != 0 {
-		log.Panicf("expected two lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
+		t.Fatalf("expected two lines with a trailing newline (empty string), got lines:\n%v", test.DumpLines(lines))
 	}
 
 	test.CheckTerraformWorkspaceList(lines[0])
