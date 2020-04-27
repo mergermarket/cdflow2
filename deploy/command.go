@@ -74,8 +74,9 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 
 	fmt.Fprintf(
 		state.ErrorStream,
-		"\nCreating plan...\n\n$ %s\n",
-		strings.Join(planCommand, " "),
+		"\n%s\n%s\n\n",
+		util.FormatInfo("creating plan"),
+		util.FormatCommand(strings.Join(planCommand, " ")),
 	)
 
 	if err := terraformContainer.RunCommand(planCommand, state.OutputStream, state.ErrorStream); err != nil {
@@ -84,8 +85,9 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 
 	fmt.Fprintf(
 		state.ErrorStream,
-		"\nApplying plan...\n\n$ terraform apply %s\n",
-		planFilename,
+		"\n%s\n%s\n",
+		util.FormatInfo("applying plan"),
+		util.FormatCommand("terraform apply "+planFilename),
 	)
 
 	if err := terraformContainer.RunCommand(

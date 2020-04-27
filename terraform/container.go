@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mergermarket/cdflow2/docker"
+	"github.com/mergermarket/cdflow2/util"
 )
 
 // InitInitial runs terraform init as part of the release in order to download providers and modules.
@@ -17,8 +18,9 @@ func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume s
 
 	fmt.Fprintf(
 		errorStream,
-		"\nInitialising terraform...\n\n$ %v\n\n",
-		"terraform init -backend=false infra/",
+		"\n%s\n%s\n\n",
+		util.FormatInfo("initialising terraform"),
+		util.FormatCommand("terraform init -backend=false infra/"),
 	)
 
 	return dockerClient.Run(&docker.RunOptions{
@@ -120,9 +122,10 @@ func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream 
 
 	fmt.Fprintf(
 		errorStream,
-		"\nConfiguring terraform backend...\n\n$ %v\n",
+		"\n%s\n%s\n",
+		util.FormatInfo("configuring terraform backend"),
 		//strings.Join(command, " "),
-		"terraform init -get=false -get-plugins=false -backend-config=... -backend-config=... infra/",
+		util.FormatCommand("terraform init -get=false -get-plugins=false -backend-config=... -backend-config=... infra/"),
 	)
 
 	if err := terraformContainer.RunCommand(command, outputStream, errorStream); err != nil {
@@ -146,8 +149,9 @@ func (terraformContainer *Container) SwitchWorkspace(name string, outputStream, 
 
 	fmt.Fprintf(
 		errorStream,
-		"\nSwitching workspace...\n\n$ terraform workspace %s %s\n",
-		command, name,
+		"\n%s\n%s\n\n",
+		util.FormatInfo("switching workspace"),
+		util.FormatCommand("terraform workspace "+command+" "+name),
 	)
 
 	if err := terraformContainer.RunCommand([]string{"terraform", "workspace", command, name, "infra/"}, outputStream, errorStream); err != nil {
@@ -163,7 +167,9 @@ func (terraformContainer *Container) listWorkspaces(errorStream io.Writer) (map[
 
 	fmt.Fprintf(
 		errorStream,
-		"\nListing workspaces...\n\n$ terraform workspace list infra/\n",
+		"\n%s\n%s\n",
+		util.FormatInfo("listing workspaces"),
+		util.FormatCommand("terraform workspace list infra/"),
 	)
 
 	if err := terraformContainer.RunCommand([]string{"terraform", "workspace", "list", "infra/"}, &outputBuffer, errorStream); err != nil {

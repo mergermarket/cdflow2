@@ -7,6 +7,7 @@ import (
 
 	"time"
 
+	"github.com/logrusorgru/aurora"
 	"github.com/rs/xid"
 )
 
@@ -27,4 +28,16 @@ func init() {
 // RandomName creates a random name with a prefix so container names don't clash.
 func RandomName(prefix string) string {
 	return fmt.Sprintf("%s-%s", prefix, xid.New().String())
+}
+
+// FormatInfo colours a info about what cdflow2 is doing so you can pick it out in the output.
+func FormatInfo(info string) string {
+	au := aurora.NewAurora(true)
+	return au.Sprintf("%s", au.Bold("cdflow2: "+info))
+}
+
+// FormatCommand colours a command so you can pick it out in the output.
+func FormatCommand(command string) string {
+	au := aurora.NewAurora(true)
+	return au.Sprintf("%s %s", au.Bold("$"), au.BrightCyan(command))
 }
