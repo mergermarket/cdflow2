@@ -83,4 +83,4 @@ if [ "$VERBOSE" != "" ]; then
     flags=-v
 fi
 
-go test -race $flags $tests
+go test $flags $tests
