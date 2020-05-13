@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -75,21 +74,19 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 		return err
 	}
 
+	statusChannel := dockerClient.waitForContainerExit(response.ID)
+
 	if err := dockerClient.runContainer(response.ID, options.InputStream, options.OutputStream, options.ErrorStream, options.Started); err != nil {
 		return err
 	}
 
-	result, err := dockerClient.client.ContainerInspect(context.Background(), response.ID)
-	if err != nil {
+	status := <-statusChannel
+	if status.err != nil {
 		return err
 	}
 
-	if result.State.Running {
-		log.Panicln("unexpected container still running:", result)
-	}
-
-	if result.State.ExitCode != options.SuccessStatus {
-		return fmt.Errorf("container %s exited with unsuccessful exit code %d", result.ID, result.State.ExitCode)
+	if status.exitCode != options.SuccessStatus {
+		return fmt.Errorf("container %s exited with unsuccessful exit code %d", response.ID, status.exitCode)
 	}
 
 	if options.BeforeRemove != nil {
@@ -98,6 +95,33 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 		}
 	}
 	return dockerClient.client.ContainerRemove(context.Background(), response.ID, types.ContainerRemoveOptions{})
+}
+
+type status struct {
+	exitCode int
+	err      error
+}
+
+func (dockerClient *Client) waitForContainerExit(id string) chan status {
+	resultChannel, errChannel := dockerClient.client.ContainerWait(context.Background(), id, container.WaitConditionNextExit)
+
+	statusChannel := make(chan status)
+	go func() {
+		var status status
+		select {
+		case result := <-resultChannel:
+			if result.Error != nil {
+				status.err = fmt.Errorf("error waiting for container: %s", result.Error.Message)
+			} else {
+				status.exitCode = int(result.StatusCode)
+			}
+		case err := <-errChannel:
+			status.err = err
+		}
+		statusChannel <- status
+	}()
+
+	return statusChannel
 }
 
 func (dockerClient *Client) runContainer(id string, inputStream io.Reader, outputStream, errorStream io.Writer, started chan string) error {
