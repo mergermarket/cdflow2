@@ -74,17 +74,19 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 		return err
 	}
 
+	statusChannel := dockerClient.waitForContainerExit(response.ID)
+
 	if err := dockerClient.runContainer(response.ID, options.InputStream, options.OutputStream, options.ErrorStream, options.Started); err != nil {
 		return err
 	}
 
-	exitCode, err := dockerClient.waitForContainerExit(response.ID)
-	if err != nil {
+	status := <-statusChannel
+	if status.err != nil {
 		return err
 	}
 
-	if exitCode != options.SuccessStatus {
-		return fmt.Errorf("container %s exited with unsuccessful exit code %d", response.ID, exitCode)
+	if status.exitCode != options.SuccessStatus {
+		return fmt.Errorf("container %s exited with unsuccessful exit code %d", response.ID, status.exitCode)
 	}
 
 	if options.BeforeRemove != nil {
@@ -95,29 +97,31 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 	return dockerClient.client.ContainerRemove(context.Background(), response.ID, types.ContainerRemoveOptions{})
 }
 
-type waitResult struct {
-	status int
-	err    error
+type status struct {
+	exitCode int
+	err      error
 }
 
-func (dockerClient *Client) waitForContainerExit(id string) (int, error) {
+func (dockerClient *Client) waitForContainerExit(id string) chan status {
 	resultChannel, errChannel := dockerClient.client.ContainerWait(context.Background(), id, container.WaitConditionNextExit)
 
-	returnChannel := make(chan waitResult)
+	statusChannel := make(chan status)
 	go func() {
+		var status status
 		select {
 		case result := <-resultChannel:
 			if result.Error != nil {
-				returnChannel <- waitResult{err: fmt.Errorf("error waiting for container: %s", result.Error.Message)}
+				status.err = fmt.Errorf("error waiting for container: %s", result.Error.Message)
+			} else {
+				status.exitCode = int(result.StatusCode)
 			}
-			returnChannel <- waitResult{status: int(result.StatusCode)}
 		case err := <-errChannel:
-			returnChannel <- waitResult{err: err}
+			status.err = err
 		}
+		statusChannel <- status
 	}()
 
-	res := <-returnChannel
-	return res.status, res.err
+	return statusChannel
 }
 
 func (dockerClient *Client) runContainer(id string, inputStream io.Reader, outputStream, errorStream io.Writer, started chan string) error {
