@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -79,17 +78,13 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 		return err
 	}
 
-	result, err := dockerClient.client.ContainerInspect(context.Background(), response.ID)
+	exitCode, err := dockerClient.waitForContainerExit(response.ID)
 	if err != nil {
 		return err
 	}
 
-	if result.State.Running {
-		log.Panicln("unexpected container still running:", result)
-	}
-
-	if result.State.ExitCode != options.SuccessStatus {
-		return fmt.Errorf("container %s exited with unsuccessful exit code %d", result.ID, result.State.ExitCode)
+	if exitCode != options.SuccessStatus {
+		return fmt.Errorf("container %s exited with unsuccessful exit code %d", response.ID, exitCode)
 	}
 
 	if options.BeforeRemove != nil {
@@ -98,6 +93,31 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 		}
 	}
 	return dockerClient.client.ContainerRemove(context.Background(), response.ID, types.ContainerRemoveOptions{})
+}
+
+type waitResult struct {
+	status int
+	err    error
+}
+
+func (dockerClient *Client) waitForContainerExit(id string) (int, error) {
+	resultChannel, errChannel := dockerClient.client.ContainerWait(context.Background(), id, container.WaitConditionNextExit)
+
+	returnChannel := make(chan waitResult)
+	go func() {
+		select {
+		case result := <-resultChannel:
+			if result.Error != nil {
+				returnChannel <- waitResult{err: fmt.Errorf("error waiting for container: %s", result.Error.Message)}
+			}
+			returnChannel <- waitResult{status: int(result.StatusCode)}
+		case err := <-errChannel:
+			returnChannel <- waitResult{err: err}
+		}
+	}()
+
+	res := <-returnChannel
+	return res.status, res.err
 }
 
 func (dockerClient *Client) runContainer(id string, inputStream io.Reader, outputStream, errorStream io.Writer, started chan string) error {
