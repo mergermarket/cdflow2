@@ -33,7 +33,7 @@ require_clean_work_tree () {
 require_clean_work_tree release
 
 if [ "$2" == "" ]; then
-    latest_tag="$(git describe --abbrev=0 --tags)"
+    latest_tag="$(git tag --contains HEAD | sort --version-sort | tail -1)"
 else
     latest_tag="$2"
 fi
