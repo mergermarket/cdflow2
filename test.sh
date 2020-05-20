@@ -67,12 +67,6 @@ echo "
     running tests...
 "
 
-goversion="$(go version)"
-if [[ "$(go version)" != *"go1.13."* ]]; then
-    echo "wrong go version - want 1.13, got $(go version)" >&2
-    exit 1
-fi
-
 tests="$(go list ./... | grep -v 'cdflow2$' | grep -v cdflow2/test | grep -v docker$ | sort)"
 if [[ ! -z "$1" ]]; then
     tests="$(echo "$tests" | grep "$1")"

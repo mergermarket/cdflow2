@@ -73,7 +73,7 @@ func TestRunCommand(t *testing.T) {
 
 	lines := bytes.Split(debugInfo["terraform"], []byte{'\n'})
 	if len(lines) != 6 || len(lines[5]) != 0 {
-		t.Fatalf("expected four lines with a trailing newline (empty string), got %v lines:\n%v", len(lines), test.DumpLines(lines))
+		t.Fatalf("expected five lines with a trailing newline (empty string), got %v lines:\n%v", len(lines), test.DumpLines(lines))
 	}
 
 	// TODO check terraform init
