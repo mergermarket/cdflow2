@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/docker"
 	"github.com/mergermarket/cdflow2/util"
 )
@@ -107,14 +110,25 @@ func DictToSortedPairs(input map[string]string) []Pair {
 }
 
 // ConfigureBackend runs terraform init as part of the release in order to download providers and modules.
-func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream io.Writer, backendConfig map[string]string) error {
+func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream io.Writer, terraformResponse *config.PrepareTerraformResponse) error {
+	newpath := filepath.Join(".", "infra")
+	os.MkdirAll(newpath, os.ModePerm)
+	f, err := os.Create("infra/backend.tf")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := fmt.Fprintf(f, "terraform {\n  backend \"%s\" {\n  }\n}\n", terraformResponse.TerraformBackendType); err != nil {
+		return err
+	}
+
 	command := make([]string, 0)
 	command = append(command, "terraform")
 	command = append(command, "init")
 	command = append(command, "-get=false")
 	command = append(command, "-get-plugins=false")
 
-	for _, pair := range DictToSortedPairs(backendConfig) {
+	for _, pair := range DictToSortedPairs(terraformResponse.TerraformBackendConfig) {
 		command = append(command, "-backend-config="+pair.Key+"="+pair.Value)
 	}
 

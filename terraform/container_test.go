@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"os"
 	"reflect"
 	"testing"
 
+	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/terraform"
 	"github.com/mergermarket/cdflow2/test"
 )
@@ -87,9 +89,12 @@ func TestTerraformConfigureBackend(t *testing.T) {
 		if err := terraformContainer.ConfigureBackend(
 			&outputBuffer,
 			&errorBuffer,
-			map[string]string{
-				"key1": "value1",
-				"key2": "value2",
+			&config.PrepareTerraformResponse{
+				TerraformBackendType: "foo",
+				TerraformBackendConfig: map[string]string{
+					"key1": "value1",
+					"key2": "value2",
+				},
 			},
 		); err != nil {
 			t.Fatal("unexpected error: ", err, errorBuffer.String())
@@ -99,6 +104,10 @@ func TestTerraformConfigureBackend(t *testing.T) {
 	// Then
 	if outputBuffer.String() != "message to stdout\n" {
 		t.Fatalf("unexpected stdout output: '%v'", outputBuffer.String())
+	}
+
+	if _, err := os.Stat("infra/backend.tf"); err != nil {
+		t.Fatal("backend file not created:", err)
 	}
 
 	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
