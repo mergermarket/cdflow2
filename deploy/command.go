@@ -79,7 +79,10 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 		util.FormatCommand(strings.Join(planCommand, " ")),
 	)
 
-	if err := terraformContainer.RunCommand(planCommand, state.OutputStream, state.ErrorStream); err != nil {
+	if err := terraformContainer.RunCommand(
+		planCommand, prepareTerraformResponse.Env, 
+		state.OutputStream, state.ErrorStream,
+	); err != nil {
 		return err
 	}
 
@@ -91,7 +94,7 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 	)
 
 	if err := terraformContainer.RunCommand(
-		[]string{"terraform", "apply", planFilename},
+		[]string{"terraform", "apply", planFilename}, prepareTerraformResponse.Env,
 		state.OutputStream, state.ErrorStream,
 	); err != nil {
 		return err
