@@ -128,7 +128,7 @@ func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream 
 		util.FormatCommand("terraform init -get=false -get-plugins=false -backend-config=... -backend-config=... infra/"),
 	)
 
-	if err := terraformContainer.RunCommand(command, outputStream, errorStream); err != nil {
+	if err := terraformContainer.RunCommand(command, map[string]string{}, outputStream, errorStream); err != nil {
 		return err
 	}
 
@@ -154,7 +154,7 @@ func (terraformContainer *Container) SwitchWorkspace(name string, outputStream, 
 		util.FormatCommand("terraform workspace "+command+" "+name),
 	)
 
-	if err := terraformContainer.RunCommand([]string{"terraform", "workspace", command, name, "infra/"}, outputStream, errorStream); err != nil {
+	if err := terraformContainer.RunCommand([]string{"terraform", "workspace", command, name, "infra/"}, map[string]string{}, outputStream, errorStream); err != nil {
 		return err
 	}
 
@@ -172,7 +172,7 @@ func (terraformContainer *Container) listWorkspaces(errorStream io.Writer) (map[
 		util.FormatCommand("terraform workspace list infra/"),
 	)
 
-	if err := terraformContainer.RunCommand([]string{"terraform", "workspace", "list", "infra/"}, &outputBuffer, errorStream); err != nil {
+	if err := terraformContainer.RunCommand([]string{"terraform", "workspace", "list", "infra/"}, map[string]string{}, &outputBuffer, errorStream); err != nil {
 		return nil, err
 	}
 
@@ -189,10 +189,11 @@ func (terraformContainer *Container) listWorkspaces(errorStream io.Writer) (map[
 }
 
 // RunCommand execs a command inside the terraform container.
-func (terraformContainer *Container) RunCommand(cmd []string, outputStream, errorStream io.Writer) error {
+func (terraformContainer *Container) RunCommand(cmd []string, env map[string]string, outputStream, errorStream io.Writer) error {
 	return terraformContainer.dockerClient.Exec(&docker.ExecOptions{
 		ID:           terraformContainer.id,
 		Cmd:          cmd,
+		Env:          env,
 		OutputStream: outputStream,
 		ErrorStream:  errorStream,
 	})

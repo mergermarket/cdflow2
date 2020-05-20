@@ -50,6 +50,7 @@ type CreateContainerOptions struct {
 type ExecOptions struct {
 	ID           string
 	Cmd          []string
+	Env          map[string]string
 	InputStream  io.Reader
 	OutputStream io.Writer
 	ErrorStream  io.Writer

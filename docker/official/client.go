@@ -230,6 +230,10 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	if options.InputStream != nil {
 		stdin = true
 	}
+	var env []string 
+	for key, value := range options.Env {
+		env = append(env, fmt.Sprintf("%s=%s", key, value))
+	}
 	exec, err := dockerClient.client.ContainerExecCreate(
 		context.Background(),
 		options.ID,
@@ -238,6 +242,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 			AttachStdout: true,
 			AttachStderr: true,
 			Cmd:          options.Cmd,
+			Env:          env,
 		},
 	)
 	if err != nil {
