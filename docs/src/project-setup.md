@@ -116,6 +116,18 @@ This is where you put your terraform code. In addition to the variables you've d
 
 Any [outputs](https://www.terraform.io/docs/configuration/outputs.html) you declare here will appear in the build output for your pipeline.
 
+### `infra/backend.tf`
+
+This file contains a [partial backend configuration](https://www.terraform.io/docs/backends/config.html#partial-configuration)
+and will be created for you automatically when you deploy. There's no need to add any additional configuraiton as this is
+provided by the config container you are using. This file can safely be ignored or committed - run the following from the
+project root to ignore it:
+
+```shell
+echo backend.tf >> infra/.gitignore
+git commit -m 'ignore generated backend.tf file' infra/.gitignore
+```
+
 ## Config
 
 To provide the environment specific values of any config variables you have defined (i.e. in

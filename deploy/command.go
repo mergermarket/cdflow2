@@ -47,7 +47,9 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 		}
 	}()
 
-	terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse.TerraformBackendConfig)
+	if err := terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse); err != nil {
+		return err
+	}
 
 	if err := terraformContainer.SwitchWorkspace(envName, state.OutputStream, state.ErrorStream); err != nil {
 		return err

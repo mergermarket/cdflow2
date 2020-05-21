@@ -3,10 +3,15 @@ package terraform_test
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"log"
+	"os"
+	"path"
 	"reflect"
+	"regexp"
 	"testing"
 
+	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/terraform"
 	"github.com/mergermarket/cdflow2/test"
 )
@@ -67,12 +72,18 @@ func TestTerraformConfigureBackend(t *testing.T) {
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 
+	codeDir := test.GetConfig("TEST_ROOT") + "/test/terraform/sample-code"
+	backendConfigFilename := path.Join(codeDir, "infra/backend.tf")
+	if err := os.Remove(backendConfigFilename); err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+
 	// When
 	func() {
 		terraformContainer, err := terraform.NewContainer(
 			dockerClient,
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
-			test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
+			codeDir,
 			releaseVolume,
 		)
 		if err != nil {
@@ -87,9 +98,12 @@ func TestTerraformConfigureBackend(t *testing.T) {
 		if err := terraformContainer.ConfigureBackend(
 			&outputBuffer,
 			&errorBuffer,
-			map[string]string{
-				"key1": "value1",
-				"key2": "value2",
+			&config.PrepareTerraformResponse{
+				TerraformBackendType: "foo",
+				TerraformBackendConfig: map[string]string{
+					"key1": "value1",
+					"key2": "value2",
+				},
 			},
 		); err != nil {
 			t.Fatal("unexpected error: ", err, errorBuffer.String())
@@ -99,6 +113,17 @@ func TestTerraformConfigureBackend(t *testing.T) {
 	// Then
 	if outputBuffer.String() != "message to stdout\n" {
 		t.Fatalf("unexpected stdout output: '%v'", outputBuffer.String())
+	}
+
+	if _, err := os.Stat(backendConfigFilename); err != nil {
+		t.Fatal("backend file not created:", err)
+	}
+	backendConfig, err := ioutil.ReadFile(backendConfigFilename)
+	if err != nil {
+		t.Fatal("could not read backend config", backendConfigFilename, err)
+	}
+	if match, err := regexp.MatchString("terraform {\\s+backend \"foo\" {}\\s+}", string(backendConfig)); err != nil || !match {
+		t.Fatal("backend config does not match", match, err)
 	}
 
 	debugInfo, err := test.ReadVolume(dockerClient, debugVolume)
