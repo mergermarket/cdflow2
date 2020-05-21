@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -43,6 +43,7 @@ type Container struct {
 	dockerClient docker.Iface
 	id           string
 	done         chan error
+	codeDir      string
 }
 
 // NewContainer creates and returns a terraformContainer for running terraform commands in.
@@ -82,6 +83,7 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 			dockerClient: dockerClient,
 			id:           id,
 			done:         done,
+			codeDir:      codeDir,
 		}, nil
 	case err := <-done:
 		return nil, fmt.Errorf("could not start terraform container: %w\nOutput: %v", err, outputBuffer.String())
@@ -109,16 +111,51 @@ func DictToSortedPairs(input map[string]string) []Pair {
 	return result
 }
 
-// ConfigureBackend runs terraform init as part of the release in order to download providers and modules.
-func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream io.Writer, terraformResponse *config.PrepareTerraformResponse) error {
-	newpath := filepath.Join(".", "infra")
-	os.MkdirAll(newpath, os.ModePerm)
-	f, err := os.Create("infra/backend.tf")
+const backendTemplate = `
+/*
+This is a partial backend configuration - see:
+
+  https://www.terraform.io/docs/backends/config.html#partial-configuration
+
+There's no need to add any additional configuraiton as this is provided by the
+config container you are using. This file can safely be ignored or committed - run
+the following from the project root to ignore it:
+
+  echo backend.tf >> infra/.gitignore
+  git commit -m 'ignore generated backend.tf file' infra/.gitignore
+
+*/
+terraform {
+	backend "%s" {}
+}
+`
+
+func (terraformContainer *Container) createPartialBackendConfig(codeDir, backendType string) error {
+	infraDir := path.Join(codeDir, "infra")
+	backendConfigFilepath := path.Join(infraDir, "backend.tf")
+	_, err := os.Stat(backendConfigFilepath)
+	if err == nil {
+		return nil
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	if err := os.MkdirAll(infraDir, os.ModePerm); err != nil {
+		return err
+	}
+	f, err := os.Create(backendConfigFilepath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	if _, err := fmt.Fprintf(f, "terraform {\n  backend \"%s\" {\n  }\n}\n", terraformResponse.TerraformBackendType); err != nil {
+	if _, err := fmt.Fprintf(f, backendTemplate, backendType); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ConfigureBackend runs terraform init as part of the release in order to download providers and modules.
+func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream io.Writer, terraformResponse *config.PrepareTerraformResponse) error {
+	if err := terraformContainer.createPartialBackendConfig(terraformContainer.codeDir, terraformResponse.TerraformBackendType); err != nil {
 		return err
 	}
 
