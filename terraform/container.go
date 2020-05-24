@@ -90,6 +90,27 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 	}
 }
 
+// NamedTerrafromBackendConfigParameter is a terraform backend config parameter with a name.
+type NamedTerrafromBackendConfigParameter struct {
+	Name      string
+	Parameter *config.TerrafromBackendConfigParameter
+}
+
+// SortTerraformBackendConfigParameters sorts a map of terraform backend config parameters.
+func SortTerraformBackendConfigParameters(input map[string]*config.TerrafromBackendConfigParameter) []NamedTerrafromBackendConfigParameter {
+	var names []string
+	for name := range input {
+		names = append(names, name)
+	}
+	result := make([]NamedTerrafromBackendConfigParameter, len(input))
+	sort.Strings(names)
+	for i, name := range names {
+		result[i].Name = name
+		result[i].Parameter = input[name]
+	}
+	return result
+}
+
 // Pair is item in a map.
 type Pair struct {
 	Key   string
@@ -165,18 +186,33 @@ func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream 
 	command = append(command, "-get=false")
 	command = append(command, "-get-plugins=false")
 
+	displayCommand := make([]string, len(command))
+	copy(displayCommand, command)
+
+	// the old style, to be removed
 	for _, pair := range DictToSortedPairs(terraformResponse.TerraformBackendConfig) {
 		command = append(command, "-backend-config="+pair.Key+"="+pair.Value)
+		displayCommand = append(displayCommand, "-backend-config="+pair.Key+"=...")
+	}
+
+	for _, namedParameter := range SortTerraformBackendConfigParameters(terraformResponse.TerraformBackendConfigParameters) {
+		format := "-backend-config=" + namedParameter.Name + "=%s"
+		command = append(command, fmt.Sprintf(format, namedParameter.Parameter.Value))
+		displayValue := namedParameter.Parameter.Value
+		if namedParameter.Parameter.DisplayValue != "" {
+			displayValue = "[" + namedParameter.Parameter.DisplayValue + "]"
+		}
+		displayCommand = append(displayCommand, fmt.Sprintf(format, displayValue))
 	}
 
 	command = append(command, "infra/")
+	displayCommand = append(displayCommand, "infra/")
 
 	fmt.Fprintf(
 		errorStream,
 		"\n%s\n%s\n",
 		util.FormatInfo("configuring terraform backend"),
-		//strings.Join(command, " "),
-		util.FormatCommand("terraform init -get=false -get-plugins=false -backend-config=... -backend-config=... infra/"),
+		strings.Join(displayCommand, " "),
 	)
 
 	if err := terraformContainer.RunCommand(command, map[string]string{}, outputStream, errorStream); err != nil {

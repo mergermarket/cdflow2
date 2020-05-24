@@ -247,13 +247,20 @@ type prepareTerraformRequest struct {
 	EnvName   string
 }
 
+// TerraformBackendConfigParameter
+type TerrafromBackendConfigParameter struct {
+	Value        string
+	DisplayValue string
+}
+
 // PrepareTerraformResponse contains the response to the prepare terraform request.
 type PrepareTerraformResponse struct {
-	TerraformImage         string
-	Env                    map[string]string
-	TerraformBackendType   string
-	TerraformBackendConfig map[string]string
-	Success                bool
+	TerraformImage                   string
+	Env                              map[string]string
+	TerraformBackendType             string
+	TerraformBackendConfig           map[string]string
+	TerraformBackendConfigParameters map[string]*TerrafromBackendConfigParameter
+	Success                          bool
 }
 
 // PrepareTerraform requests that the config container prepares for running terraform and returns the response.

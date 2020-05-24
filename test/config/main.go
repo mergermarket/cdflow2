@@ -3,10 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"strings"
 
 	common "github.com/mergermarket/cdflow2-config-common"
@@ -81,15 +81,16 @@ func (*handler) UploadRelease(
 	request *common.UploadReleaseRequest,
 	response *common.UploadReleaseResponse,
 	configureReleaseRequest *common.ConfigureReleaseRequest,
-	releaseReader io.ReadSeeker,
+	releaseDir string,
 ) error {
+	releaseMetadataFilename := path.Join(releaseDir, "release-metadata.json")
 	var releaseMetadata map[string]map[string]string
-	data, err := ioutil.ReadFile("/release/release-metadata.json")
+	data, err := ioutil.ReadFile(releaseMetadataFilename)
 	if err != nil {
-		log.Panicln("could not read /release/release-metadata.json:", err)
+		log.Panicf("could not read %s: %s", releaseMetadataFilename, err)
 	}
 	if err := json.Unmarshal(data, &releaseMetadata); err != nil {
-		log.Panicln("could not decode /release/release-metadata.json:", err)
+		log.Panicf("could not decode %s: %s", releaseMetadataFilename, err)
 	}
 	writeDebug(map[string]interface{}{
 		"Action":          "upload_release",
@@ -101,16 +102,17 @@ func (*handler) UploadRelease(
 }
 
 // PrepareTerraform handles a prepare terraform request in order to provide configuration for terraform during a deploy, destroy, etc.
-func (*handler) PrepareTerraform(request *common.PrepareTerraformRequest, response *common.PrepareTerraformResponse) error {
+func (*handler) PrepareTerraform(request *common.PrepareTerraformRequest, response *common.PrepareTerraformResponse, releaseDir string) error {
 	dir, err := os.Getwd()
 	if err != nil {
 		log.Fatalln("could not get working directory:", err)
 	}
-	if dir != "/release" {
-		log.Fatalln("expected PWD /release, got:", dir)
+	if dir != releaseDir {
+		log.Fatalf("expected PWD %s, got %s:", releaseDir, dir)
 	}
-	if err := ioutil.WriteFile("/release/test", []byte("unpacked"), 0644); err != nil {
-		log.Fatalln("could not write to /release/test:", err)
+	testFilename := path.Join(releaseDir, "test")
+	if err := ioutil.WriteFile(testFilename, []byte("unpacked"), 0644); err != nil {
+		log.Fatalf("could not write to %s: %s", testFilename, err)
 	}
 	writeDebug(map[string]interface{}{
 		"Action":  "prepare_terraform",
@@ -125,6 +127,12 @@ func (*handler) PrepareTerraform(request *common.PrepareTerraformRequest, respon
 	response.TerraformBackendType = "a-terraform-backend-type"
 	response.TerraformBackendConfig = map[string]string{
 		"backend-config-key": "backend-config-value",
+	}
+	response.TerraformBackendConfigParameters = map[string]*common.TerraformBackendConfigParameter{
+		"backend-config-parameter-key": {
+			Value:        "backend-config-parameter-value",
+			DisplayValue: "value-hidden",
+		},
 	}
 	return nil
 }
