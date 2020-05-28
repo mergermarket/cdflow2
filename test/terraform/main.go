@@ -64,8 +64,4 @@ func main() {
 			log.Fatalln("could not write file:", err)
 		}
 	}
-
-	if err := ioutil.WriteFile("/code/source-dir-write-test", []byte("source output"), 0644); err == nil {
-		log.Fatalln("was able to write to file:", err)
-	}
 }
