@@ -31,7 +31,7 @@ func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume s
 		WorkingDir:   "/code",
 		Cmd:          []string{"init", "-backend=false", "infra/"},
 		Env:          []string{"TF_IN_AUTOMATION=true", "TF_INPUT=0", "TF_DATA_DIR=/build/.terraform"},
-		Binds:        []string{codeDir + ":/code:ro", buildVolume + ":/build"},
+		Binds:        []string{codeDir + ":/code", buildVolume + ":/build"},
 		NamePrefix:   "cdflow2-terraform-init",
 		OutputStream: outputStream,
 		ErrorStream:  errorStream,
@@ -70,7 +70,7 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 			Init:         true,
 			NamePrefix:   "cdflow2-terraform",
 			Binds: []string{
-				codeDir + ":/code:ro",
+				codeDir + ":/code",
 				releaseVolume + ":/build",
 			},
 			SuccessStatus: 128 + 15, // sleep will be killed with SIGTERM
