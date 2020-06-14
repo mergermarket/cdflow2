@@ -72,6 +72,7 @@ func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, respon
 			"TEST_RELEASE_VAR_FROM_CONFIG": fmt.Sprintf("%v", request.Config["TEST_CONFIG_VAR"]),
 		}
 	}
+	response.AdditionalMetadata["foo"] = "bar"
 	return nil
 }
 

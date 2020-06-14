@@ -145,8 +145,9 @@ type configureReleaseConfigRequest struct {
 
 // ConfigureReleaseConfigResponse contains the response to the configure release request.
 type ConfigureReleaseConfigResponse struct {
-	Env     map[string]map[string]string
-	Success bool
+	Env                map[string]map[string]string
+	AdditionalMetadata map[string]string
+	Success            bool
 }
 
 // ConfigureRelease requests the container configures the release and returns the response.

@@ -34,7 +34,7 @@ func TestRunCommand(t *testing.T) {
 			Manifest: &manifest.Manifest{
 				Version: 2,
 				Builds: map[string]manifest.ImageWithParams{
-					"release": {
+					"buildid": {
 						Image:  test.GetConfig("TEST_RELEASE_IMAGE"),
 						Params: map[string]interface{}{"a": "b"},
 					},
@@ -126,12 +126,12 @@ func checkUploadReleaseOutput(t *testing.T, debugOutput []byte) {
 		t.Fatal("expected terraform repo digest: ", expectedTerraformImage, ", got:", decoded.Request.TerraformImage)
 	}
 
-	if decoded.ReleaseMetadata["release"]["component_from_defaults"] != "test-component" {
-		t.Fatal("expected component test-component, got:", decoded.ReleaseMetadata["component_from_defaults"])
+	if decoded.ReleaseMetadata["buildid"]["component_from_defaults"] != "test-component" {
+		t.Fatal("expected component test-component, got:", decoded.ReleaseMetadata["buildid"]["component_from_defaults"])
 	}
 
-	if decoded.ReleaseMetadata["release"]["commit_from_defaults"] != "test-commit" {
-		t.Fatal("expected commit test-commit, got:", decoded.ReleaseMetadata["commit_from_defaults"])
+	if decoded.ReleaseMetadata["buildid"]["commit_from_defaults"] != "test-commit" {
+		t.Fatal("expected commit test-commit, got:", decoded.ReleaseMetadata["buildid"]["commit_from_defaults"])
 	}
 
 	if decoded.ReleaseMetadata["release"]["version"] != "test-version" {
@@ -143,7 +143,11 @@ func checkUploadReleaseOutput(t *testing.T, debugOutput []byte) {
 	if decoded.ReleaseMetadata["release"]["component"] != "test-component" {
 		t.Fatal("unexpected component from release metadata:", decoded.ReleaseMetadata["release"]["component"])
 	}
-	if decoded.ReleaseMetadata["release"]["manifest_params"] != "{\"a\":\"b\"}" {
-		t.Fatal("unexpected manifest_params:", decoded.ReleaseMetadata["release"]["manifest_params"])
+	if decoded.ReleaseMetadata["release"]["foo"] != "bar" {
+		t.Fatal("unexpected config provided release metadata:", decoded.ReleaseMetadata["release"]["foo"])
+	}
+
+	if decoded.ReleaseMetadata["buildid"]["manifest_params"] != "{\"a\":\"b\"}" {
+		t.Fatal("unexpected manifest_params:", decoded.ReleaseMetadata["buildid"]["manifest_params"])
 	}
 }

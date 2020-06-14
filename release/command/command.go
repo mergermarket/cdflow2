@@ -149,6 +149,9 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 	releaseMetadata["release"]["version"] = version
 	releaseMetadata["release"]["commit"] = state.Commit
 	releaseMetadata["release"]["component"] = state.Component
+	for k, v := range configureReleaseResponse.AdditionalMetadata {
+		releaseMetadata["release"][k] = v
+	}
 
 	if err := configContainer.WriteReleaseMetadata(releaseMetadata); err != nil {
 		return "", err

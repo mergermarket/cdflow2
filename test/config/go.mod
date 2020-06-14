@@ -3,5 +3,5 @@ module github.com/mergermarket/cdflow2/test/config
 go 1.13
 
 require (
-    github.com/mergermarket/cdflow2-config-common v0.37.0
+    github.com/mergermarket/cdflow2-config-common v0.40.0
 )
