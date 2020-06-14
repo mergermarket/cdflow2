@@ -31,7 +31,6 @@ func main() {
 		"release_var_from_env": "release value from env",
 		// test environment variables passed by default
 		"version_from_defaults":   os.Getenv("VERSION"),
-		"team_from_defaults":      os.Getenv("TEAM"),
 		"component_from_defaults": os.Getenv("COMPONENT"),
 		"commit_from_defaults":    os.Getenv("COMMIT"),
 		"build_id_from_defaults":  os.Getenv("BUILD_ID"),

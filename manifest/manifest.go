@@ -11,7 +11,6 @@ import (
 // Manifest represents the data in the cdflow.yaml file before it is canonicalised.
 type Manifest struct {
 	Version   int8                       `yaml:"version"`
-	Team      string                     `yaml:"team"`
 	Config    ImageWithParams            `yaml:"config"`
 	Builds    map[string]ImageWithParams `yaml:"builds"`
 	Terraform Terraform                  `yaml:"terraform"`

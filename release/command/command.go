@@ -106,7 +106,6 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 		version,
 		state.Component,
 		state.Commit,
-		state.Manifest.Team,
 		state.Manifest.Config.Params,
 		env,
 		releaseRequirements,
@@ -122,7 +121,6 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 		env := releaseEnv[buildID]
 		// these are built in and cannot be overridden by the config container (since choosing the clashing name would likely be an accident)
 		env["VERSION"] = version
-		env["TEAM"] = state.Manifest.Team
 		env["COMPONENT"] = state.Component
 		env["COMMIT"] = state.Commit
 		env["BUILD_ID"] = buildID
@@ -151,7 +149,6 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 	releaseMetadata["release"]["version"] = version
 	releaseMetadata["release"]["commit"] = state.Commit
 	releaseMetadata["release"]["component"] = state.Component
-	releaseMetadata["release"]["team"] = state.Manifest.Team
 
 	if err := configContainer.WriteReleaseMetadata(releaseMetadata); err != nil {
 		return "", err

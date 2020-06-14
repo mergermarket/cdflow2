@@ -51,7 +51,7 @@ func writeDebug(data interface{}, path string) {
 
 // Setup handles a setup request in order to pipeline setup.
 func (*handler) Setup(request *common.SetupRequest, response *common.SetupResponse) error {
-	fmt.Println("output to stdout from setup, component: " + request.Component + ", commit: " + request.Commit + ", team: " + request.Team)
+	fmt.Println("output to stdout from setup, component: " + request.Component + ", commit: " + request.Commit)
 	fmt.Fprintf(os.Stderr, "output to stderr from setup, needs: %v\n", strings.Join(request.ReleaseRequirements["release"].Needs, ", "))
 	return nil
 }
@@ -68,7 +68,6 @@ func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, respon
 			"TEST_VERSION":                 request.Version,
 			"TEST_COMPONENT":               request.Component,
 			"TEST_COMMIT":                  request.Commit,
-			"TEST_TEAM":                    request.Team,
 			"TEST_RELEASE_VAR_FROM_ENV":    request.Env["TEST_ENV_VAR"],
 			"TEST_RELEASE_VAR_FROM_CONFIG": fmt.Sprintf("%v", request.Config["TEST_CONFIG_VAR"]),
 		}

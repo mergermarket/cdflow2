@@ -59,7 +59,6 @@ The following keys will always be present in `ReleaseMetadata`:
 
 * `commit` - the git commit cloned for the release.
 * `version` - the version string passed on the command line to release.
-* `team` - the value of the `team` key in `cdflow.yaml` (useful for tagging resources).
 * `component` - the name of the component, derived from the git repository name.
 
 In addition any keys and values returned from the release container will be present (typically used to add details of the release artefact - e.g. docker image).
@@ -75,7 +74,6 @@ Request:
     "ReleaseMetadata": {
         "commit": "3eaf7bcf155b7cd354083ab551ceb15d4290bebb",        
         "version": "101-3eaf7bcf",
-        "team": "my-team",
         "component": "my-component",
         "image_id": "someco/my-component:101-3eaf7bcf"
     }

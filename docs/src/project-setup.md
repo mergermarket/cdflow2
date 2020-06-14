@@ -23,7 +23,6 @@ Copy the following into a file in the root called `cdflow.yaml`:
 
 ```yaml
 version: 2
-team: TODO
 config:
   image: TODO
   params:
@@ -31,9 +30,6 @@ builds:
 terraform:
   image: hashicorp/terraform:0.12.23
 ```
-
-Replace the value for `team` with the name of your team in [kebab case](https://wiki.c2.com/?KebabCase)
-(i.e `lower-case-with-hyphens`).
 
 See [cdflow.yaml reference](cdflow-yaml-reference).
 
@@ -92,7 +88,7 @@ The following [variables](https://www.terraform.io/docs/configuration/variables.
 ```terraform
 variable "release" {
   type        = "map"
-  description = "release metadata: version, commit, component & team"
+  description = "release metadata: version, commit, component, plus any config container supplied data"
 }
 ```
 

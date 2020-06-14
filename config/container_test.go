@@ -47,7 +47,6 @@ func TestConfigRelease(t *testing.T) {
 			"test-version",
 			"test-component",
 			"test-commit",
-			"test-team",
 			map[string]interface{}{
 				"TEST_CONFIG_VAR": "config value",
 			},
@@ -83,7 +82,6 @@ func TestConfigRelease(t *testing.T) {
 			"TEST_VERSION":                 "test-version",
 			"TEST_COMPONENT":               "test-component",
 			"TEST_COMMIT":                  "test-commit",
-			"TEST_TEAM":                    "test-team",
 			"TEST_RELEASE_VAR_FROM_CONFIG": "config value",
 			"TEST_RELEASE_VAR_FROM_ENV":    "env value",
 		},
@@ -164,7 +162,6 @@ func TestConfigDeploy(t *testing.T) {
 			"test-version",
 			"test-component",
 			"test-commit",
-			"test-team",
 			"test-env",
 			map[string]interface{}{
 				"TEST_CONFIG_VAR": "config value",

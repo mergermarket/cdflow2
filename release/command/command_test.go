@@ -33,7 +33,6 @@ func TestRunCommand(t *testing.T) {
 			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
 			Manifest: &manifest.Manifest{
 				Version: 2,
-				Team:    "test-team",
 				Builds: map[string]manifest.ImageWithParams{
 					"release": {
 						Image:  test.GetConfig("TEST_RELEASE_IMAGE"),
@@ -143,9 +142,6 @@ func checkUploadReleaseOutput(t *testing.T, debugOutput []byte) {
 	}
 	if decoded.ReleaseMetadata["release"]["component"] != "test-component" {
 		t.Fatal("unexpected component from release metadata:", decoded.ReleaseMetadata["release"]["component"])
-	}
-	if decoded.ReleaseMetadata["release"]["team"] != "test-team" {
-		t.Fatal("unexpected team from release metadata:", decoded.ReleaseMetadata["release"]["team"])
 	}
 	if decoded.ReleaseMetadata["release"]["manifest_params"] != "{\"a\":\"b\"}" {
 		t.Fatal("unexpected manifest_params:", decoded.ReleaseMetadata["release"]["manifest_params"])

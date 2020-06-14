@@ -102,7 +102,6 @@ type setupConfigRequest struct {
 	Env                 map[string]string
 	Component           string
 	Commit              string
-	Team                string
 	ReleaseRequirements map[string]*ReleaseRequirements
 }
 
@@ -114,7 +113,7 @@ type setupConfigResponse struct {
 func (configContainer *Container) Setup(
 	config map[string]interface{},
 	env map[string]string,
-	component, commit, team string,
+	component, commit string,
 	releaseRequirements map[string]*ReleaseRequirements,
 ) error {
 	var response setupConfigResponse
@@ -124,7 +123,6 @@ func (configContainer *Container) Setup(
 		Env:                 env,
 		Component:           component,
 		Commit:              commit,
-		Team:                team,
 		ReleaseRequirements: releaseRequirements,
 	}, &response); err != nil {
 		return err
@@ -140,7 +138,6 @@ type configureReleaseConfigRequest struct {
 	Version             string
 	Component           string
 	Commit              string
-	Team                string
 	Config              map[string]interface{}
 	Env                 map[string]string
 	ReleaseRequirements map[string]*ReleaseRequirements
@@ -154,7 +151,7 @@ type ConfigureReleaseConfigResponse struct {
 
 // ConfigureRelease requests the container configures the release and returns the response.
 func (configContainer *Container) ConfigureRelease(
-	version, component, commit, team string,
+	version, component, commit string,
 	config map[string]interface{},
 	env map[string]string,
 	releaseRequirements map[string]*ReleaseRequirements,
@@ -165,7 +162,6 @@ func (configContainer *Container) ConfigureRelease(
 		Version:             version,
 		Component:           component,
 		Commit:              commit,
-		Team:                team,
 		Config:              config,
 		Env:                 env,
 		ReleaseRequirements: releaseRequirements,
@@ -241,7 +237,6 @@ type prepareTerraformRequest struct {
 	Version   string
 	Component string
 	Commit    string
-	Team      string
 	Config    map[string]interface{}
 	Env       map[string]string
 	EnvName   string
@@ -265,7 +260,7 @@ type PrepareTerraformResponse struct {
 
 // PrepareTerraform requests that the config container prepares for running terraform and returns the response.
 func (configContainer *Container) PrepareTerraform(
-	version, component, commit, team, envName string,
+	version, component, commit, envName string,
 	config map[string]interface{},
 	env map[string]string,
 ) (*PrepareTerraformResponse, error) {
@@ -279,7 +274,6 @@ func (configContainer *Container) PrepareTerraform(
 		Version:   version,
 		Component: component,
 		Commit:    commit,
-		Team:      team,
 	}, &response); err != nil {
 		return nil, err
 	}
@@ -319,7 +313,7 @@ func SetupTerraform(state *command.GlobalState, envName, version string, env map
 		}
 	}()
 
-	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, state.Component, state.Commit, state.Manifest.Team, envName, state.Manifest.Config.Params, env)
+	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, state.Component, state.Commit, envName, state.Manifest.Config.Params, env)
 	if err != nil {
 		return nil, "", err
 	}

@@ -14,9 +14,6 @@ controlling how cdflow2 builds and deploys your code.
 # required - always "2" for cdflow2
 version: 2
 
-# required - the name of your team (lower-kebab-case)
-team: my-team
-
 # required - descibed below
 config:
   image: mergermarket/cdflow2-config-aws-simple
@@ -53,16 +50,6 @@ prevent you accidentally using the wrong version. For example:
 version: 2
 ```
 
-### `team` (required)
-
-The name of the team responsible for the service/infrastructure in
-[kebab case](https://wiki.c2.com/?KebabCase) (i.e
-`lower-case-with-hyphens`). For example:
-
-```yaml
-team: my-team
-```
-
 ### `config` (required)
 
 Config is used to select and configure the container that sets up the
@@ -82,9 +69,8 @@ The docker image to use for config. Examples include:
 
 * [`mergermarket/cdflow2-config-aws-simple:latest`](https://registry.hub.docker.com/r/mergermarket/cdflow2-config-aws-simple) -
   a config image for a simple setup with a single AWS account.
-* [`mergermarket/cdflow2-config-aws-multi:latest`](https://registry.hub.docker.com/r/mergermarket/cdflow2-config-aws-multi) -
-  a config image for a setup wtih multiple teams deploying to multiple
-  AWS accounts, for larger organisations.
+* [`mergermarket/cdflow2-config-acuris:latest`](https://registry.hub.docker.com/r/mergermarket/cdflow2-config-acuris) -
+  a config image teams deploying with Acuris infrastructure.
 
 #### `config > params` (optional)
 

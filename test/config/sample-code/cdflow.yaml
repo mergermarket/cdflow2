@@ -1,5 +1,4 @@
 version: 2
-team: test-team
 config:
     image: test-config-image
     params:

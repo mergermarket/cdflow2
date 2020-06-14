@@ -28,9 +28,6 @@ func TestLoad(t *testing.T) {
 	if loadedManifest.Terraform.Image != "test-terraform-image" {
 		log.Fatalln("unexpected terraform image from manifest:", loadedManifest.Terraform.Image)
 	}
-	if loadedManifest.Team != "test-team" {
-		log.Fatalln("unexpected team from manifest:", loadedManifest.Team)
-	}
 	if loadedManifest.Config.Params["config-key"] != "config-value" {
 		log.Fatalln("unexpected config params from manifest:", loadedManifest.Config.Params)
 	}

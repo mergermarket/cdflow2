@@ -31,7 +31,6 @@ func TestRelese(t *testing.T) {
 		&errorBuffer,
 		map[string]string{
 			"VERSION":         "test-version",
-			"TEAM":            "test-team",
 			"COMPONENT":       "test_component",
 			"COMMIT":          "test-commit",
 			"BUILD_ID":        "test-build-id",
@@ -51,7 +50,6 @@ func TestRelese(t *testing.T) {
 	if !reflect.DeepEqual(releaseMetadata, map[string]string{
 		"release_var_from_env":    "release value from env",
 		"version_from_defaults":   "test-version",
-		"team_from_defaults":      "test-team",
 		"component_from_defaults": "test_component",
 		"commit_from_defaults":    "test-commit",
 		"build_id_from_defaults":  "test-build-id",

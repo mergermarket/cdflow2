@@ -30,7 +30,6 @@ func TestRunCommand(t *testing.T) {
 			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
 			Manifest: &manifest.Manifest{
 				Version: 2,
-				Team:    "test-team",
 				Builds: map[string]manifest.ImageWithParams{
 					"release": {
 						Image: test.GetConfig("TEST_RELEASE_IMAGE"),
@@ -58,7 +57,7 @@ func TestRunCommand(t *testing.T) {
 	}
 
 	// Then
-	if outputBuffer.String() != "output to stdout from setup, component: test-component, commit: test-commit, team: test-team\n" {
+	if outputBuffer.String() != "output to stdout from setup, component: test-component, commit: test-commit\n" {
 		log.Fatalln("unexpected output to stdout:", outputBuffer.String())
 	}
 	if !strings.Contains(errorBuffer.String(), "output to stderr from setup, needs: foo, bar\n") {
