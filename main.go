@@ -13,7 +13,7 @@ import (
 
 var version = "undefined"
 
-const globalArgs string = `Global args:
+const globalOptions string = `Global options:
 
   --component COMPONENT_NAME   - override component name (inferred from git by default).
   --commit GIT_COMMIT          - override the git commit (inferred from git by default).
@@ -28,7 +28,7 @@ const globalArgs string = `Global args:
 const help string = `
 Usage:
 
-  cdflow2 [ GLOBALARGS ] COMMAND [ ARGS ]
+  cdflow2 [ GLOBALOPTS ] COMMAND [ ARGS ]
 
 Commands:
 
@@ -37,38 +37,42 @@ Commands:
   deploy ENV VERSION    - create & update infrastructure using software artefact
   help [ COMMAND ]      - displayed detailed help and usage information for a command
 
-` + globalArgs
+` + globalOptions
 
 const releaseHelp string = `
 Usage:
 
-  cdflow2 [ GLOBALARGS ] release VERSION
+  cdflow2 [ GLOBALOPTS ] release VERSION
 
 Args:
 
   VERSION     - the version being released. We recommend using evergreen version numbers (i.e. simple incrementing integers,
                 probably from your CI service), combined with something to identify the commit - e.g. "34-a5dbc4a7".
 
-` + globalArgs
+` + globalOptions
 
 const deployHelp string = `
 Usage:
 
-  cdflow2 [ GLOBALARGS ] deploy ENV VERSION
+  cdflow2 [ GLOBALOPTS ] deploy [ OPTS ] ENV VERSION
 
 Args:
 
   ENV         - the environment being deployed to.
   VERSION     - the version being deployed (must match what was released).
 
-` + globalArgs
+Options:
+
+  --plan-only | -p    - create the terraform plan only, don't apply.
+
+` + globalOptions
 
 const setupHelp string = `
 Usage:
 
   cdflow2 [ GLOBALARGS ] setup
 
-` + globalArgs
+` + globalOptions
 
 func usage(subcommand string) {
 	if subcommand == "release" {
@@ -135,10 +139,11 @@ func main() {
 			os.Exit(1)
 		}
 	} else if globalArgs.Command == "deploy" {
-		if len(remainingArgs) != 2 {
+		deployArgs, ok := deploy.ParseArgs(remainingArgs)
+		if !ok {
 			usage("deploy")
 		}
-		if err := deploy.RunCommand(state, remainingArgs[0], remainingArgs[1], env); err != nil {
+		if err := deploy.RunCommand(state, deployArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
 				os.Exit(int(status))
 			}

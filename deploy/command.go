@@ -11,9 +11,36 @@ import (
 	"github.com/mergermarket/cdflow2/util"
 )
 
+// CommandArgs contains specific arguments to the deploy command.
+type CommandArgs struct {
+	EnvName  string
+	Version  string
+	PlanOnly bool
+}
+
+// ParseArgs parses command line arguments to the deploy subcommand.
+func ParseArgs(args []string) (*CommandArgs, bool) {
+	var result CommandArgs
+	for _, arg := range args {
+		if arg == "-p" || arg == "--plan-only" {
+			result.PlanOnly = true
+		} else if result.EnvName == "" {
+			result.EnvName = arg
+		} else if result.Version == "" {
+			result.Version = arg
+		} else {
+			return nil, false
+		}
+	}
+	if result.EnvName == "" || result.Version == "" {
+		return nil, false
+	}
+	return &result, true
+}
+
 // RunCommand runs the release command.
-func RunCommand(state *command.GlobalState, envName, version string, env map[string]string) (returnedError error) {
-	prepareTerraformResponse, buildVolume, err := config.SetupTerraform(state, envName, version, env)
+func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]string) (returnedError error) {
+	prepareTerraformResponse, buildVolume, err := config.SetupTerraform(state, args.EnvName, args.Version, env)
 	if err != nil {
 		return err
 	}
@@ -51,7 +78,7 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 		return err
 	}
 
-	if err := terraformContainer.SwitchWorkspace(envName, state.OutputStream, state.ErrorStream); err != nil {
+	if err := terraformContainer.SwitchWorkspace(args.EnvName, state.OutputStream, state.ErrorStream); err != nil {
 		return err
 	}
 
@@ -63,7 +90,7 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 		"-var-file=/build/release-metadata.json",
 	}
 
-	envConfigFilename := "config/" + envName + ".json"
+	envConfigFilename := "config/" + args.EnvName + ".json"
 	if _, err := os.Stat(envConfigFilename); !os.IsNotExist(err) {
 		planCommand = append(planCommand, "-var-file="+envConfigFilename)
 	}
@@ -82,10 +109,14 @@ func RunCommand(state *command.GlobalState, envName, version string, env map[str
 	)
 
 	if err := terraformContainer.RunCommand(
-		planCommand, prepareTerraformResponse.Env, 
+		planCommand, prepareTerraformResponse.Env,
 		state.OutputStream, state.ErrorStream,
 	); err != nil {
 		return err
+	}
+
+	if args.PlanOnly {
+		return nil
 	}
 
 	fmt.Fprintf(
