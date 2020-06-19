@@ -230,7 +230,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	if options.InputStream != nil {
 		stdin = true
 	}
-	var env []string 
+	var env []string
 	for key, value := range options.Env {
 		env = append(env, fmt.Sprintf("%s=%s", key, value))
 	}
@@ -296,8 +296,10 @@ func (dockerClient *Client) Stop(id string, timeout time.Duration) error {
 }
 
 // CreateVolume creates a docker volume and returns its ID.
-func (dockerClient *Client) CreateVolume() (string, error) {
-	volume, err := dockerClient.client.VolumeCreate(context.Background(), volume.VolumeCreateBody{})
+func (dockerClient *Client) CreateVolume(name string) (string, error) {
+	volume, err := dockerClient.client.VolumeCreate(context.Background(), volume.VolumeCreateBody{
+		Name: name,
+	})
 	if err != nil {
 		return "", err
 	}
@@ -307,6 +309,18 @@ func (dockerClient *Client) CreateVolume() (string, error) {
 // RemoveVolume removes a docker volume given its ID.
 func (dockerClient *Client) RemoveVolume(id string) error {
 	return dockerClient.client.VolumeRemove(context.Background(), id, false)
+}
+
+// VolumeExists checks if a named volume exists.
+func (dockerClient *Client) VolumeExists(name string) (bool, error) {
+	_, err := dockerClient.client.VolumeInspect(context.Background(), name)
+	if err != nil {
+		if client.IsErrNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 // CreateContainer creates a docker container.

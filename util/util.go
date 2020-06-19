@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/logrusorgru/aurora"
+	"github.com/mergermarket/cdflow2/docker"
 	"github.com/rs/xid"
 )
 
@@ -40,4 +41,21 @@ func FormatInfo(info string) string {
 func FormatCommand(command string) string {
 	au := aurora.NewAurora(true)
 	return au.Sprintf("%s %s", au.Bold("$"), au.BrightCyan(command))
+}
+
+const cacheVolumeName = "cdflow2-cache"
+
+// GetCacheVolume returns the volume for cache at /cache (e.g. terraform providers).
+func GetCacheVolume(dockerClient docker.Iface) (string, error) {
+	exists, err := dockerClient.VolumeExists(cacheVolumeName)
+	if err != nil {
+		return "", err
+	}
+	if exists {
+		return cacheVolumeName, nil
+	}
+	if _, err := dockerClient.CreateVolume(cacheVolumeName); err != nil {
+		return "", err
+	}
+	return cacheVolumeName, nil
 }

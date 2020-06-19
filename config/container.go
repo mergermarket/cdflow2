@@ -11,6 +11,7 @@ import (
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/docker"
+	"github.com/mergermarket/cdflow2/util"
 )
 
 // Container represents a config container.
@@ -25,6 +26,11 @@ type Container struct {
 // NewContainer creates and returns a new config container.
 func NewContainer(state *command.GlobalState, image, releaseVolume string) (*Container, error) {
 	dockerClient := state.DockerClient
+
+	cacheVolume, err := util.GetCacheVolume(dockerClient)
+	if err != nil {
+		return nil, err
+	}
 
 	started := make(chan string, 1)
 	defer close(started) // does not error so no named returns
@@ -50,7 +56,10 @@ func NewContainer(state *command.GlobalState, image, releaseVolume string) (*Con
 			options.WorkingDir = "/"
 		} else {
 			options.WorkingDir = "/release"
-			options.Binds = []string{releaseVolume + ":/release"}
+			options.Binds = []string{
+				releaseVolume + ":/release",
+				cacheVolume + ":/cache",
+			}
 		}
 		err := dockerClient.Run(&options)
 		container.finished = true
@@ -288,13 +297,11 @@ func (configContainer *Container) PrepareTerraform(
 func SetupTerraform(state *command.GlobalState, envName, version string, env map[string]string) (_ *PrepareTerraformResponse, returnedBuildVolume string, returnedError error) {
 	dockerClient := state.DockerClient
 
-	if !state.GlobalArgs.NoPullConfig {
-		if err := dockerClient.PullImage(state.Manifest.Config.Image, state.ErrorStream); err != nil {
-			return nil, "", fmt.Errorf("error pulling config image: %w", err)
-		}
+	if err := Pull(state); err != nil {
+		return nil, "", err
 	}
 
-	buildVolume, err := dockerClient.CreateVolume()
+	buildVolume, err := dockerClient.CreateVolume("")
 	if err != nil {
 		return nil, "", err
 	}

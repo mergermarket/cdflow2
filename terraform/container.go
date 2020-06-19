@@ -19,6 +19,11 @@ import (
 // InitInitial runs terraform init as part of the release in order to download providers and modules.
 func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume string, outputStream, errorStream io.Writer) error {
 
+	cacheVolume, err := util.GetCacheVolume(dockerClient)
+	if err != nil {
+		return err
+	}
+
 	fmt.Fprintf(
 		errorStream,
 		"\n%s\n%s\n\n",
@@ -27,11 +32,20 @@ func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume s
 	)
 
 	return dockerClient.Run(&docker.RunOptions{
-		Image:        image,
-		WorkingDir:   "/code",
-		Cmd:          []string{"init", "-backend=false", "infra/"},
-		Env:          []string{"TF_IN_AUTOMATION=true", "TF_INPUT=0", "TF_DATA_DIR=/build/.terraform"},
-		Binds:        []string{codeDir + ":/code", buildVolume + ":/build"},
+		Image:      image,
+		WorkingDir: "/code",
+		Cmd:        []string{"init", "-backend=false", "infra/"},
+		Env: []string{
+			"TF_IN_AUTOMATION=true",
+			"TF_INPUT=0",
+			"TF_DATA_DIR=/build/.terraform",
+			"TF_PLUGIN_CACHE_DIR=/cache/terraform-plugin-cache",
+		},
+		Binds: []string{
+			codeDir + ":/code",
+			buildVolume + ":/build",
+			cacheVolume + ":/cache",
+		},
 		NamePrefix:   "cdflow2-terraform-init",
 		OutputStream: outputStream,
 		ErrorStream:  errorStream,

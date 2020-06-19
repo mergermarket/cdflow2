@@ -13,7 +13,8 @@ type Iface interface {
 	GetImageRepoDigests(image string) ([]string, error)
 	Exec(options *ExecOptions) error
 	Stop(id string, timeout time.Duration) error
-	CreateVolume() (string, error)
+	CreateVolume(name string) (string, error)
+	VolumeExists(name string) (bool, error)
 	RemoveVolume(id string) error
 	CreateContainer(options *CreateContainerOptions) (string, error)
 	RemoveContainer(id string) error

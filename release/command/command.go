@@ -3,6 +3,7 @@ package command
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/mergermarket/cdflow2/command"
@@ -11,24 +12,75 @@ import (
 	"github.com/mergermarket/cdflow2/terraform"
 )
 
-// RunCommand runs the release command.
-func RunCommand(state *command.GlobalState, version string, env map[string]string) (returnedError error) {
+type terraformResult struct {
+	savedTerraformImage string
+	err                 error
+}
 
+type output struct {
+	stdout bool
+	output []byte
+	err    error
+}
+
+func pipeToOutput(stdout bool, reader io.Reader, outputChan chan *output) {
+	for {
+		buffer := make([]byte, 10*1024)
+		n, err := reader.Read(buffer)
+		outputChan <- &output{stdout, buffer[:n], err}
+		if err != nil {
+			break
+		}
+	}
+}
+
+func getOutputCapture() (chan *output, io.WriteCloser, io.WriteCloser) {
+	outputReader, outputWriter := io.Pipe()
+	errorReader, errorWriter := io.Pipe()
+	outputChan := make(chan *output, 10*1024)
+	go pipeToOutput(true, outputReader, outputChan)
+	go pipeToOutput(false, errorReader, outputChan)
+	return outputChan, outputWriter, errorWriter
+}
+
+func streamOutput(terraformOutputChan chan *output, outputStream, errorStream io.Writer) error {
+	eofs := 0
+	for {
+		terraformOutput := <-terraformOutputChan
+		if len(terraformOutput.output) > 0 {
+			if terraformOutput.stdout {
+				outputStream.Write(terraformOutput.output)
+			} else {
+				errorStream.Write(terraformOutput.output)
+			}
+		}
+		if terraformOutput.err == io.EOF {
+			eofs++
+			if eofs == 2 {
+				return nil
+			}
+		} else if terraformOutput.err != nil {
+			return terraformOutput.err
+		}
+	}
+}
+
+func terraformRelease(state *command.GlobalState, buildVolume string, outputStream, errorStream io.Writer) (string, error) {
 	dockerClient := state.DockerClient
 
 	if !state.GlobalArgs.NoPullTerraform {
-		fmt.Fprintf(state.ErrorStream, "\nPulling terraform image %v...\n\n", state.Manifest.Terraform.Image)
-		if err := dockerClient.PullImage(state.Manifest.Terraform.Image, state.ErrorStream); err != nil {
-			return fmt.Errorf("error pulling terraform image: %w", err)
+		fmt.Fprintf(errorStream, "\nPulling terraform image %v...\n\n", state.Manifest.Terraform.Image)
+		if err := dockerClient.PullImage(state.Manifest.Terraform.Image, errorStream); err != nil {
+			return "", fmt.Errorf("error pulling terraform image: %w", err)
 		}
 	}
 
 	repoDigests, err := dockerClient.GetImageRepoDigests(state.Manifest.Terraform.Image)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if len(repoDigests) == 0 {
-		return fmt.Errorf("no docker repo digest(s) available for image %v", state.Manifest.Terraform.Image)
+		return "", fmt.Errorf("no docker repo digest(s) available for image %v", state.Manifest.Terraform.Image)
 	}
 	savedTerraformImage := repoDigests[0]
 
@@ -38,7 +90,22 @@ func RunCommand(state *command.GlobalState, version string, env map[string]strin
 		log.Panicln("no repo digest for ", state.Manifest.Terraform.Image)
 	}
 
-	buildVolume, err := dockerClient.CreateVolume()
+	return savedTerraformImage, terraform.InitInitial(
+		dockerClient,
+		savedTerraformImage,
+		state.CodeDir,
+		buildVolume,
+		outputStream,
+		errorStream,
+	)
+}
+
+// RunCommand runs the release command.
+func RunCommand(state *command.GlobalState, version string, env map[string]string) (returnedError error) {
+
+	dockerClient := state.DockerClient
+
+	buildVolume, err := dockerClient.CreateVolume("")
 	if err != nil {
 		return err
 	}
@@ -53,22 +120,21 @@ func RunCommand(state *command.GlobalState, version string, env map[string]strin
 		}
 	}()
 
-	if err := terraform.InitInitial(
-		dockerClient,
-		savedTerraformImage,
-		state.CodeDir,
-		buildVolume,
-		state.OutputStream,
-		state.ErrorStream,
-	); err != nil {
-		return err
-	}
+	terraformOutputChan, terraformOutputStream, terraformErrorStream := getOutputCapture()
+
+	terraformResultChan := make(chan *terraformResult, 1)
+	go func() {
+		savedTerraformImage, err := terraformRelease(state, buildVolume, terraformOutputStream, terraformErrorStream)
+		terraformOutputStream.Close()
+		terraformErrorStream.Close()
+		terraformResultChan <- &terraformResult{savedTerraformImage, err}
+	}()
 
 	if err := config.Pull(state); err != nil {
 		return err
 	}
 
-	message, err := buildAndUploadRelease(state, buildVolume, version, savedTerraformImage, env)
+	message, err := buildAndUploadRelease(state, buildVolume, version, terraformResultChan, terraformOutputChan, env)
 	if err != nil {
 		return err
 	}
@@ -79,7 +145,7 @@ func RunCommand(state *command.GlobalState, version string, env map[string]strin
 	return nil
 }
 
-func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, savedTerraformImage string, env map[string]string) (returnedMessage string, returnedError error) {
+func buildAndUploadRelease(state *command.GlobalState, buildVolume, version string, terraformResultChan chan *terraformResult, terraformOutputChan chan *output, env map[string]string) (returnedMessage string, returnedError error) {
 
 	releaseRequirements, err := GetReleaseRequirements(state)
 	if err != nil {
@@ -101,6 +167,8 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 			return
 		}
 	}()
+
+	fmt.Print("\ncdflow2: getting release configuration...\n\n")
 
 	configureReleaseResponse, err := configContainer.ConfigureRelease(
 		version,
@@ -157,12 +225,24 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version, sav
 		return "", err
 	}
 
+	terraformResult := <-terraformResultChan
+	if err := streamOutput(terraformOutputChan, state.OutputStream, state.ErrorStream); err != nil {
+		return "", err
+	}
+
+	if terraformResult.err != nil {
+		return "", terraformResult.err
+	}
+
+	fmt.Print("\ncdflow2: uploading release...\n\n")
+
 	uploadReleaseResponse, err := configContainer.UploadRelease(
-		savedTerraformImage,
+		terraformResult.savedTerraformImage,
 	)
 	if err != nil {
 		return "", fmt.Errorf("error uploading release: %w", err)
 	}
+
 	return uploadReleaseResponse.Message, nil
 }
 

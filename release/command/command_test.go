@@ -73,10 +73,13 @@ func TestRunCommand(t *testing.T) {
 
 	checkUploadReleaseOutput(t, debugInfo["upload-release.json"])
 
-	if !strings.Contains(errorBuffer.String(), "message to stderr from release\ndocker status: OK\nuploaded test-version\n") {
+	if !strings.Contains(errorBuffer.String(), "message to stderr from release\ndocker status: OK\n") {
 		t.Fatal("unexpected output of release:", errorBuffer.String())
 	}
 
+	if !strings.Contains(errorBuffer.String(), "uploaded test-version\n") {
+		t.Fatalf("expected %q to contain %q", errorBuffer.String(), "uploaded test-version\n")
+	}
 }
 
 func checkConfigureReleaseOutput(t *testing.T, debugOutput []byte) {

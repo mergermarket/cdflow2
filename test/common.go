@@ -33,7 +33,7 @@ func GetDockerClientWithDebugVolume() (docker.Iface, string) {
 
 // CreateVolume creates a volume (panics).
 func CreateVolume(dockerCient docker.Iface) string {
-	volume, err := dockerCient.CreateVolume()
+	volume, err := dockerCient.CreateVolume("")
 	if err != nil {
 		log.Panicln("could not create volume:", err)
 	}
