@@ -62,6 +62,7 @@ github.com/konsorten/go-windows-terminal-sequences v1.0.3 h1:CE8S1cTafDpPvMhIxNJ
 github.com/konsorten/go-windows-terminal-sequences v1.0.3/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/logrusorgru/aurora v0.0.0-20200102142835-e9ef32dff381 h1:bqDmpDG49ZRnB5PcgP0RXtQvnMSgIF14M7CBd2shtXs=
 github.com/logrusorgru/aurora v0.0.0-20200102142835-e9ef32dff381/go.mod h1:7rIyQOR62GCctdiQpZ/zOJlFyk6y+94wXzv6RNZgaR4=
+github.com/mergermarket/cdflow v0.0.0-20200619113748-28fb42081cd1 h1:4RjCbURi4eHl46qhvwjGs9rWd/lWVyoYy5qQK6qoidc=
 github.com/mergermarket/cdflow2-config-common v0.33.0 h1:GCQtV4/lTp8KZ89H7DXGxYZ4FMSLcb41n0XB9fk1FIo=
 github.com/mergermarket/cdflow2-config-common v0.33.0/go.mod h1:kNBuyxspdu5cWP5e7VAmrP+5elB2wP5pHlcvLLpiyzI=
 github.com/mergermarket/cdflow2-config-common v0.36.0 h1:G57WWgYMj7Ldkqb7gbAMrsdgSyUL34DTp+Ntw0+N8N8=

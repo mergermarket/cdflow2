@@ -8,6 +8,7 @@ import (
 	"github.com/mergermarket/cdflow2/deploy"
 	release "github.com/mergermarket/cdflow2/release/command"
 	"github.com/mergermarket/cdflow2/setup"
+	"github.com/mergermarket/cdflow2/shell"
 	"github.com/mergermarket/cdflow2/util"
 )
 
@@ -35,6 +36,7 @@ Commands:
   setup                 - configure your pipeline
   release VERSION       - build and publish a new software artefact
   deploy ENV VERSION    - create & update infrastructure using software artefact
+  shell                 - gives access to terraform, helps dbugging and tf state manipulation
   help [ COMMAND ]      - displayed detailed help and usage information for a command
 
 ` + globalOptions
@@ -74,11 +76,17 @@ Usage:
 
 ` + globalOptions
 
+const shellHelp string = `
+	cdflow2 shell
+`
+
 func usage(subcommand string) {
 	if subcommand == "release" {
 		fmt.Println(releaseHelp)
 	} else if subcommand == "deploy" {
 		fmt.Println(deployHelp)
+	} else if subcommand == "shell" {
+		fmt.Println(shellHelp)
 	} else if subcommand == "setup" {
 		fmt.Println(setupHelp)
 	} else {
@@ -150,6 +158,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	} else if globalArgs.Command == "shell" {
+		shellArgs, ok := shell.ParseArgs(remainingArgs)
+		if !ok {
+			usage("shell")
+		}
+		if err := shell.RunCommand(state, shellArgs, env); err != nil {
+			if status, ok := err.(command.Failure); ok {
+				os.Exit(int(status))
+			}
+		}
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+
 	} else if globalArgs.Command == "setup" {
 		if len(remainingArgs) != 0 {
 			usage("setup")

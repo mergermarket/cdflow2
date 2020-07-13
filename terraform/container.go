@@ -300,6 +300,18 @@ func (terraformContainer *Container) RunCommand(cmd []string, env map[string]str
 	})
 }
 
+// RunInteractiveCommand execs a command inside the terraform container.
+func (terraformContainer *Container) RunInteractiveCommand(cmd []string, env map[string]string, inputStream io.Reader, outputStream, errorStream io.Writer) error {
+	return terraformContainer.dockerClient.Exec(&docker.ExecOptions{
+		ID:           terraformContainer.id,
+		Cmd:          cmd,
+		Env:          env,
+		OutputStream: outputStream,
+		ErrorStream:  errorStream,
+		InputStream:  inputStream,
+	})
+}
+
 // Done stops and removes the terraform container.
 func (terraformContainer *Container) Done() error {
 	if err := terraformContainer.dockerClient.Stop(terraformContainer.id, 10*time.Second); err != nil {
