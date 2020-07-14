@@ -3,12 +3,11 @@ package shell
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/terraform"
-	"github.com/mergermarket/cdflow2/util"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // CommandArgs contains specific arguments to the deploy command.
@@ -79,38 +78,11 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		return err
 	}
 
-	planFilename := "/build/" + util.RandomName("plan")
-
-	planCommand := []string{
-		"terraform",
-		"plan",
-		"-var-file=/build/release-metadata.json",
+	oldState, e := terminal.MakeRaw(int(os.Stdin.Fd()))
+	if e != nil {
+		return e
 	}
-
-	envConfigFilename := "config/" + args.EnvName + ".json"
-	if _, err := os.Stat(envConfigFilename); !os.IsNotExist(err) {
-		planCommand = append(planCommand, "-var-file="+envConfigFilename)
-	}
-
-	planCommand = append(
-		planCommand,
-		"-out="+planFilename,
-		"infra/",
-	)
-
-	fmt.Fprintf(
-		state.ErrorStream,
-		"\n%s\n%s\n\n",
-		util.FormatInfo("creating plan"),
-		util.FormatCommand(strings.Join(planCommand, " ")),
-	)
-
-	if err := terraformContainer.RunCommand(
-		planCommand, prepareTerraformResponse.Env,
-		state.OutputStream, state.ErrorStream,
-	); err != nil {
-		return err
-	}
+	defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }()
 
 	shellCommand := []string{
 		"/bin/sh",

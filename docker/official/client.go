@@ -243,6 +243,8 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 			AttachStderr: true,
 			Cmd:          options.Cmd,
 			Env:          env,
+			Tty:          options.Tty,
+			WorkingDir:   options.WorkingDir,
 		},
 	)
 	if err != nil {

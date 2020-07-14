@@ -297,6 +297,7 @@ func (terraformContainer *Container) RunCommand(cmd []string, env map[string]str
 		Env:          env,
 		OutputStream: outputStream,
 		ErrorStream:  errorStream,
+		Tty:          false,
 	})
 }
 
@@ -309,6 +310,8 @@ func (terraformContainer *Container) RunInteractiveCommand(cmd []string, env map
 		OutputStream: outputStream,
 		ErrorStream:  errorStream,
 		InputStream:  inputStream,
+		Tty:          true,
+		WorkingDir:   "/code/infra",
 	})
 }
 

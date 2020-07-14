@@ -55,4 +55,6 @@ type ExecOptions struct {
 	InputStream  io.Reader
 	OutputStream io.Writer
 	ErrorStream  io.Writer
+	Tty          bool
+	WorkingDir   string
 }
