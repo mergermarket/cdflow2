@@ -36,8 +36,8 @@ Commands:
   setup                 - configure your pipeline
   release VERSION       - build and publish a new software artefact
   deploy ENV VERSION    - create & update infrastructure using software artefact
-  shell                 - gives access to terraform, helps dbugging and tf state manipulation
-  help [ COMMAND ]      - displayed detailed help and usage information for a command
+  shell ENV VERSION     - access terraform for debugging and tf state manipulation
+  help [ COMMAND ]      - display detailed help and usage information for a command
 
 ` + globalOptions
 
@@ -77,7 +77,14 @@ Usage:
 ` + globalOptions
 
 const shellHelp string = `
-	cdflow2 shell
+Usage:
+
+  cdflow2 shell ENV VERSION
+
+Args:
+
+  ENV         - the environment containing the deployment.
+  VERSION     - the version to interract with (must match a pre-existing release).
 `
 
 func usage(subcommand string) {
