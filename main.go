@@ -37,6 +37,7 @@ Commands:
   release VERSION       - build and publish a new software artefact
   deploy ENV VERSION    - create & update infrastructure using software artefact
   shell ENV VERSION     - access terraform for debugging and tf state manipulation
+  destroy ENV           - perform terraform destroy to remove infrastructure defined in ENV
   help [ COMMAND ]      - display detailed help and usage information for a command
 
 ` + globalOptions
@@ -87,6 +88,12 @@ Args:
   VERSION     - the version to interract with (must match a pre-existing release).
 `
 
+const destroyHelp string = `
+Usage:
+
+  cdflow2 destroy ENV
+`
+
 func usage(subcommand string) {
 	if subcommand == "release" {
 		fmt.Println(releaseHelp)
@@ -96,6 +103,8 @@ func usage(subcommand string) {
 		fmt.Println(shellHelp)
 	} else if subcommand == "setup" {
 		fmt.Println(setupHelp)
+	} else if subcommand == "destroy" {
+		fmt.Println(destroyHelp)
 	} else {
 		fmt.Println(help)
 	}
@@ -189,6 +198,12 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	} else if globalArgs.Command == "destroy" {
+		if len(remainingArgs) != 1 {
+			usage("destroy")
+		}
+		fmt.Println("implement... destroying things")
+		os.Exit(1)
 	} else {
 		usage("")
 	}
