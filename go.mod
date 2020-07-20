@@ -10,6 +10,7 @@ require (
 	github.com/docker/docker v1.4.2-0.20191101170500-ac7306503d23
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/docker/libnetwork v0.5.6 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/gorilla/mux v1.7.4 // indirect
@@ -21,6 +22,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/xid v1.2.1
 	github.com/sirupsen/logrus v1.6.0 // indirect
+	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.5.1 // indirect
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 	golang.org/x/net v0.0.0-20200520182314-0ba52f642ac2 // indirect

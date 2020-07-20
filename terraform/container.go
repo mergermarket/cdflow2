@@ -189,7 +189,7 @@ func (terraformContainer *Container) createPartialBackendConfig(codeDir, backend
 }
 
 // ConfigureBackend runs terraform init as part of the release in order to download providers and modules.
-func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream io.Writer, terraformResponse *config.PrepareTerraformResponse) error {
+func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream io.Writer, terraformResponse *config.PrepareTerraformResponse, download bool) error {
 	if err := terraformContainer.createPartialBackendConfig(terraformContainer.codeDir, terraformResponse.TerraformBackendType); err != nil {
 		return err
 	}
@@ -197,8 +197,10 @@ func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream 
 	command := make([]string, 0)
 	command = append(command, "terraform")
 	command = append(command, "init")
-	command = append(command, "-get=false")
-	command = append(command, "-get-plugins=false")
+	if !download {
+		command = append(command, "-get=false")
+		command = append(command, "-get-plugins=false")
+	}
 
 	displayCommand := make([]string, len(command))
 	copy(displayCommand, command)

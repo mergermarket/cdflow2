@@ -174,10 +174,9 @@ func main() {
 			if status, ok := err.(command.Failure); ok {
 				os.Exit(int(status))
 			}
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 		}
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-
 	} else if globalArgs.Command == "setup" {
 		if len(remainingArgs) != 0 {
 			usage("setup")

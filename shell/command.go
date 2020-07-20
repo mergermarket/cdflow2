@@ -19,16 +19,17 @@ type CommandArgs struct {
 // ParseArgs parses command line arguments to the shell subcommand.
 func ParseArgs(args []string) (*CommandArgs, bool) {
 	var result CommandArgs
-	for _, arg := range args {
+	for i, arg := range args {
+		if arg == "-v" || arg == "--version" {
+			result.Version = args[i+1]
+		}
 		if result.EnvName == "" {
 			result.EnvName = arg
-		} else if result.Version == "" {
-			result.Version = arg
 		} else {
 			return nil, false
 		}
 	}
-	if result.EnvName == "" || result.Version == "" {
+	if result.EnvName == "" {
 		return nil, false
 	}
 	return &result, true
@@ -53,7 +54,7 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 
 	terraformContainer, err := terraform.NewContainer(
 		state.DockerClient,
-		prepareTerraformResponse.TerraformImage,
+		state.Manifest.Terraform.Image,
 		state.CodeDir,
 		buildVolume,
 	)
@@ -70,7 +71,7 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		}
 	}()
 
-	if err := terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse); err != nil {
+	if err := terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse, true); err != nil {
 		return err
 	}
 
