@@ -1,8 +1,10 @@
 package shell
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
@@ -12,27 +14,59 @@ import (
 
 // CommandArgs contains specific arguments to the deploy command.
 type CommandArgs struct {
-	EnvName string
-	Version string
+	EnvName   string
+	Version   string
+	ShellArgs []string
+}
+
+func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
+	if arg == "--" {
+		return true, nil
+	} else if strings.HasPrefix(arg, "-") {
+		return handleFlag(arg, commandArgs, take)
+	}
+	commandArgs.EnvName = arg
+	return false, nil
+}
+
+func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
+	if arg == "-v" || arg == "--version" {
+		value, err := take()
+		if err != nil {
+			return false, err
+		}
+		commandArgs.Version = value
+	} else if strings.HasPrefix(arg, "--version=") {
+		commandArgs.Version = strings.TrimPrefix(arg, "--version=")
+	}
+	return false, nil
 }
 
 // ParseArgs parses command line arguments to the shell subcommand.
-func ParseArgs(args []string) (*CommandArgs, bool) {
+func ParseArgs(args []string) (*CommandArgs, error) {
 	var result CommandArgs
-	for i, arg := range args {
-		if arg == "-v" || arg == "--version" {
-			result.Version = args[i+1]
+	i := 0
+	take := func() (string, error) {
+		if i > len(args) {
+			return "", errors.New("missing value")
 		}
-		if result.EnvName == "" {
-			result.EnvName = arg
-		} else {
-			return nil, false
+		i++
+		return args[i], nil
+	}
+	for ; i < len(args); i++ {
+		done, err := handleArgs(args[i], &result, take)
+		if err != nil {
+			return nil, err
+		}
+		if done {
+			result.ShellArgs = args[i+1:]
+			break
 		}
 	}
 	if result.EnvName == "" {
-		return nil, false
+		return nil, errors.New("Env missing value")
 	}
-	return &result, true
+	return &result, nil
 }
 
 // RunCommand runs the shell command.
@@ -85,11 +119,11 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 	}
 	defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }()
 
-	shellCommand := []string{
-		"/bin/sh",
-	}
+	shellCommand := []string{"/bin/sh"}
 
-	if err := terraformContainer.RunInteractiveCommand(shellCommand, prepareTerraformResponse.Env, os.Stdin, os.Stdout, os.Stderr); err != nil {
+	shellCommandandArgs := append(shellCommand, args.ShellArgs...)
+
+	if err := terraformContainer.RunInteractiveCommand(shellCommandandArgs, prepareTerraformResponse.Env, os.Stdin, os.Stdout, os.Stderr); err != nil {
 		return err
 	}
 

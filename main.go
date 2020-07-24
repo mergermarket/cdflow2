@@ -167,7 +167,7 @@ func main() {
 		}
 	} else if globalArgs.Command == "shell" {
 		shellArgs, ok := shell.ParseArgs(remainingArgs)
-		if !ok {
+		if ok != nil {
 			usage("shell")
 		}
 		if err := shell.RunCommand(state, shellArgs, env); err != nil {
@@ -177,6 +177,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+
 	} else if globalArgs.Command == "setup" {
 		if len(remainingArgs) != 0 {
 			usage("setup")
