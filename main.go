@@ -6,6 +6,7 @@ import (
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/deploy"
+	"github.com/mergermarket/cdflow2/destroy"
 	release "github.com/mergermarket/cdflow2/release/command"
 	"github.com/mergermarket/cdflow2/setup"
 	"github.com/mergermarket/cdflow2/shell"
@@ -37,7 +38,7 @@ Commands:
   release VERSION       - build and publish a new software artefact
   deploy ENV VERSION    - create & update infrastructure using software artefact
   shell ENV VERSION     - access terraform for debugging and tf state manipulation
-  destroy ENV           - perform terraform destroy to remove infrastructure defined in ENV
+  destroy ENV VERSION   - perform terraform destroy to remove infrastructure defined in ENV
   help [ COMMAND ]      - display detailed help and usage information for a command
 
 ` + globalOptions
@@ -91,8 +92,18 @@ Args:
 const destroyHelp string = `
 Usage:
 
-  cdflow2 destroy ENV
-`
+  cdflow2 [ GLOBALOPTS ] destroy [ OPTS ] ENV VERSION
+
+Args:
+
+  ENV         - the environment containing the infrastructure being destroyed.
+  VERSION     - the version being destroyed (must match what was deployed).
+
+Options:
+
+  --plan-only | -p    - preview the destroy behaviour, plan only doesn't destroy.
+
+` + globalOptions
 
 func usage(subcommand string) {
 	if subcommand == "release" {
@@ -199,11 +210,17 @@ func main() {
 			os.Exit(1)
 		}
 	} else if globalArgs.Command == "destroy" {
-		if len(remainingArgs) != 1 {
+		destroyArgs, ok := destroy.ParseArgs(remainingArgs)
+		if !ok {
 			usage("destroy")
 		}
-		fmt.Println("implement... destroying things")
-		os.Exit(1)
+		if err := destroy.RunCommand(state, destroyArgs, env); err != nil {
+			if status, ok := err.(command.Failure); ok {
+				os.Exit(int(status))
+			}
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	} else {
 		usage("")
 	}
