@@ -38,7 +38,7 @@ Commands:
   release VERSION       - build and publish a new software artefact
   deploy ENV VERSION    - create & update infrastructure using software artefact
   shell ENV VERSION     - access terraform for debugging and tf state manipulation
-  destroy ENV VERSION   - perform terraform destroy to remove infrastructure defined in ENV
+  destroy ENV VERSION   - destroy all Terraform managed infrastructure in ENV
   help [ COMMAND ]      - display detailed help and usage information for a command
 
 ` + globalOptions
@@ -101,7 +101,7 @@ Args:
 
 Options:
 
-  --plan-only | -p    - preview the destroy behaviour, plan only doesn't destroy.
+  --plan-only | -p    - generate an execution plan only, don't destroy.
 
 ` + globalOptions
 

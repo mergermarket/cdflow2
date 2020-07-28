@@ -81,15 +81,18 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		return err
 	}
 
-	// terraform container has been initialized
-	// command specific stuff below
+	varfileAndDir := "-var-file=/build/release-metadata.json infra/"
 
 	planCommand := []string{
-		"terraform",
-		"plan",
+		"terraform plan",
 		"-destroy",
-		"-var-file=/build/release-metadata.json",
-		"infra/",
+		varfileAndDir,
+	}
+
+	destroyCommand := []string{
+		"terraform destroy",
+		"-auto-approve",
+		varfileAndDir,
 	}
 
 	fmt.Fprintf(
@@ -114,11 +117,11 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		state.ErrorStream,
 		"\n%s\n%s\n",
 		util.FormatInfo("applying plan"),
-		util.FormatCommand("terraform destroy -auto-approve"),
+		util.FormatCommand(strings.Join(destroyCommand, " ")),
 	)
 
 	if err := terraformContainer.RunCommand(
-		[]string{"terraform", "destroy", "-auto-approve", "-var-file=/build/release-metadata.json", "infra/"}, prepareTerraformResponse.Env,
+		destroyCommand, prepareTerraformResponse.Env,
 		state.OutputStream, state.ErrorStream,
 	); err != nil {
 		return err
