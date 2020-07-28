@@ -81,18 +81,20 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		return err
 	}
 
-	varfileAndDir := "-var-file=/build/release-metadata.json infra/"
-
 	planCommand := []string{
-		"terraform plan",
+		"terraform",
+		"plan",
 		"-destroy",
-		varfileAndDir,
+		"-var-file=/build/release-metadata.json",
+		"infra/",
 	}
 
 	destroyCommand := []string{
-		"terraform destroy",
+		"terraform",
+		"destroy",
 		"-auto-approve",
-		varfileAndDir,
+		"-var-file=/build/release-metadata.json",
+		"infra/",
 	}
 
 	fmt.Fprintf(
