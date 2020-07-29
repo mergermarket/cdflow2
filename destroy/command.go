@@ -20,18 +20,20 @@ type CommandArgs struct {
 // ParseArgs parses command line arguments to the deploy subcommand.
 func ParseArgs(args []string) (*CommandArgs, bool) {
 	var result CommandArgs
-	for _, arg := range args {
+	for i, arg := range args {
 		if arg == "-p" || arg == "--plan-only" {
 			result.PlanOnly = true
+		} else if arg == "-v" || arg == "--version" {
+			result.Version = args[i+1]
+		} else if i > 1 && args[i-1] == "-v" || i > 1 && args[i-1] == "--version" {
+			continue
 		} else if result.EnvName == "" {
 			result.EnvName = arg
-		} else if result.Version == "" {
-			result.Version = arg
 		} else {
 			return nil, false
 		}
 	}
-	if result.EnvName == "" || result.Version == "" {
+	if result.EnvName == "" {
 		return nil, false
 	}
 	return &result, true
@@ -56,7 +58,7 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 
 	terraformContainer, err := terraform.NewContainer(
 		state.DockerClient,
-		prepareTerraformResponse.TerraformImage,
+		state.Manifest.Terraform.Image,
 		state.CodeDir,
 		buildVolume,
 	)
@@ -73,7 +75,7 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		}
 	}()
 
-	if err := terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse, false); err != nil {
+	if err := terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse, true); err != nil {
 		return err
 	}
 
@@ -85,7 +87,6 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		"terraform",
 		"plan",
 		"-destroy",
-		"-var-file=/build/release-metadata.json",
 		"infra/",
 	}
 
@@ -93,8 +94,20 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		"terraform",
 		"destroy",
 		"-auto-approve",
-		"-var-file=/build/release-metadata.json",
 		"infra/",
+	}
+
+	if args.Version != "" {
+		planCommand = append(
+			planCommand[:len(planCommand)-1],
+			"-var-file=/build/release-metadata.json",
+			"infra/",
+		)
+		destroyCommand = append(
+			destroyCommand[:len(destroyCommand)-1],
+			"-var-file=/build/release-metadata.json",
+			"infra/",
+		)
 	}
 
 	fmt.Fprintf(
