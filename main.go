@@ -34,12 +34,12 @@ Usage:
 
 Commands:
 
-  setup                 - configure your pipeline
-  release VERSION       - build and publish a new software artefact
-  deploy ENV VERSION    - create & update infrastructure using software artefact
-  shell ENV VERSION     - access terraform for debugging and tf state manipulation
-  destroy ENV VERSION   - destroy all Terraform managed infrastructure in ENV
-  help [ COMMAND ]      - display detailed help and usage information for a command
+  setup                   - configure your pipeline
+  release VERSION         - build and publish a new software artefact
+  deploy ENV VERSION      - create & update infrastructure using software artefact
+  shell ENV VERSION       - access terraform for debugging and tf state manipulation
+  destroy ENV [ VERSION ] - destroy all Terraform managed infrastructure in ENV
+  help [ COMMAND ]        - display detailed help and usage information for a command
 
 ` + globalOptions
 
@@ -92,12 +92,12 @@ Args:
 const destroyHelp string = `
 Usage:
 
-  cdflow2 [ GLOBALOPTS ] destroy [ OPTS ] ENV VERSION
+  cdflow2 [ GLOBALOPTS ] destroy [ OPTS ] ENV [ VERSION ]
 
 Args:
 
   ENV         - the environment containing the infrastructure being destroyed.
-  VERSION     - the version being destroyed (must match what was deployed).
+  VERSION     - the version to destroy (must match a pre-existing release).
 
 Options:
 

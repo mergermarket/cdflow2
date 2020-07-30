@@ -20,15 +20,13 @@ type CommandArgs struct {
 // ParseArgs parses command line arguments to the deploy subcommand.
 func ParseArgs(args []string) (*CommandArgs, bool) {
 	var result CommandArgs
-	for i, arg := range args {
+	for _, arg := range args {
 		if arg == "-p" || arg == "--plan-only" {
 			result.PlanOnly = true
-		} else if arg == "-v" || arg == "--version" {
-			result.Version = args[i+1]
-		} else if i > 1 && args[i-1] == "-v" || i > 1 && args[i-1] == "--version" {
-			continue
 		} else if result.EnvName == "" {
 			result.EnvName = arg
+		} else if result.Version == "" {
+			result.Version = arg
 		} else {
 			return nil, false
 		}
