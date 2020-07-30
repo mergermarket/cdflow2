@@ -31,5 +31,5 @@ require (
 	google.golang.org/genproto v0.0.0-20200521103424-e9a78aa275b7 // indirect
 	google.golang.org/grpc v1.29.1 // indirect
 	gopkg.in/yaml.v2 v2.3.0
-	gotest.tools v2.2.0+incompatible // indirect
+	gotest.tools v2.2.0+incompatible
 )
