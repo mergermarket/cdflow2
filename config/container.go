@@ -47,7 +47,6 @@ func NewContainer(state *command.GlobalState, image, releaseVolume string) (*Con
 		options := docker.RunOptions{
 			NamePrefix:   "cdflow2-config",
 			Image:        image,
-			InputStream:  state.InputStream,
 			OutputStream: state.OutputStream,
 			ErrorStream:  state.ErrorStream,
 			Started:      started,
