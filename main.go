@@ -79,7 +79,7 @@ Usage:
 const shellHelp string = `
 Usage:
 
-  cdflow2 [ GLOBALOPTS ] shell ENV [ OPTS ] [-- SHELLARGS]
+  cdflow2 [ GLOBALOPTS ] shell ENV [ OPTS ] [ SHELLARGS ]
 
 Args:
 
@@ -92,8 +92,8 @@ Options:
 Shell Arguments:
 
   The shell arguments are passed to shell 
-  ex: ("cdflow2 shell aslive -- ./script.sh")
-  this will execute script.sh inside /infra folder
+  ex:  (cdflow2 shell aslive test.sh)
+  	   (cdflow2 shell aslive -v v1.0 -- -c "echo test") or
 `
 
 func usage(subcommand string) {
