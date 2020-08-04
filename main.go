@@ -81,12 +81,21 @@ Usage:
 const shellHelp string = `
 Usage:
 
-  cdflow2 shell ENV VERSION
+  cdflow2 [ GLOBALOPTS ] shell ENV [ OPTS ] [ SHELLARGS ]
 
 Args:
 
-  ENV         - the environment containing the deployment.
-  VERSION     - the version to interract with (must match a pre-existing release).
+  ENV         		- the environment containing the deployment.
+
+Options:
+
+  -v, --version     - the version to interract with (must match a pre-existing release).
+
+Shell Arguments:
+
+  The shell arguments are passed to shell 
+  ex:  (cdflow2 shell aslive test.sh)
+  	   (cdflow2 shell aslive -v v1.0 -- -c "echo test") or
 `
 
 const destroyHelp string = `

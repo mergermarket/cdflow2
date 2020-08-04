@@ -19,13 +19,26 @@ type CommandArgs struct {
 	ShellArgs []string
 }
 
+func isTty(stream os.File) bool {
+
+	stat, _ := stream.Stat()
+	if stat.Mode()&os.ModeCharDevice == 0 {
+		return false
+	}
+	return true
+}
+
 func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
 	if arg == "--" {
 		return true, nil
 	} else if strings.HasPrefix(arg, "-") {
 		return handleFlag(arg, commandArgs, take)
+	} else if commandArgs.EnvName == "" {
+		commandArgs.EnvName = arg
+		return false, nil
+	} else {
+		commandArgs.ShellArgs = append(commandArgs.ShellArgs, arg)
 	}
-	commandArgs.EnvName = arg
 	return false, nil
 }
 
@@ -38,6 +51,8 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 		commandArgs.Version = value
 	} else if strings.HasPrefix(arg, "--version=") {
 		commandArgs.Version = strings.TrimPrefix(arg, "--version=")
+	} else {
+		return false, errors.New("Unknown global option: " + arg)
 	}
 	return false, nil
 }
@@ -47,10 +62,11 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 	var result CommandArgs
 	i := 0
 	take := func() (string, error) {
-		if i > len(args) {
+		i++
+		if i >= len(args) {
 			return "", errors.New("missing value")
 		}
-		i++
+
 		return args[i], nil
 	}
 	for ; i < len(args); i++ {
@@ -113,17 +129,28 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		return err
 	}
 
-	oldState, e := terminal.MakeRaw(int(os.Stdin.Fd()))
-	if e != nil {
-		return e
-	}
-	defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }()
-
 	shellCommand := []string{"/bin/sh"}
+	shellCommandandArgs := shellCommand
 
-	shellCommandandArgs := append(shellCommand, args.ShellArgs...)
+	tty := isTty(*os.Stdin)
 
-	if err := terraformContainer.RunInteractiveCommand(shellCommandandArgs, prepareTerraformResponse.Env, os.Stdin, os.Stdout, os.Stderr); err != nil {
+	if tty && len(args.ShellArgs) < 1 {
+		oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
+		if err != nil {
+			return err
+		}
+		defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }()
+	}
+
+	shellCommandandArgs = append(shellCommand, args.ShellArgs...)
+
+	if err := terraformContainer.RunInteractiveCommand(
+		shellCommandandArgs,
+		prepareTerraformResponse.Env,
+		state.InputStream,
+		state.OutputStream,
+		state.ErrorStream,
+		tty); err != nil {
 		return err
 	}
 
