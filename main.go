@@ -6,6 +6,7 @@ import (
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/deploy"
+	"github.com/mergermarket/cdflow2/destroy"
 	release "github.com/mergermarket/cdflow2/release/command"
 	"github.com/mergermarket/cdflow2/setup"
 	"github.com/mergermarket/cdflow2/shell"
@@ -33,11 +34,12 @@ Usage:
 
 Commands:
 
-  setup                 - configure your pipeline
-  release VERSION       - build and publish a new software artefact
-  deploy ENV VERSION    - create & update infrastructure using software artefact
-  shell ENV VERSION     - access terraform for debugging and tf state manipulation
-  help [ COMMAND ]      - display detailed help and usage information for a command
+  setup                   - configure your pipeline
+  release VERSION         - build and publish a new software artefact
+  deploy ENV VERSION      - create & update infrastructure using software artefact
+  shell ENV VERSION       - access terraform for debugging and tf state manipulation
+  destroy ENV [ VERSION ] - destroy all Terraform managed infrastructure in ENV
+  help [ COMMAND ]        - display detailed help and usage information for a command
 
 ` + globalOptions
 
@@ -96,6 +98,22 @@ Shell Arguments:
   	   (cdflow2 shell aslive -v v1.0 -- -c "echo test") or
 `
 
+const destroyHelp string = `
+Usage:
+
+  cdflow2 [ GLOBALOPTS ] destroy [ OPTS ] ENV [ VERSION ]
+
+Args:
+
+  ENV         - the environment containing the infrastructure being destroyed.
+  VERSION     - the version to destroy (must match a pre-existing release).
+
+Options:
+
+  --plan-only | -p    - generate an execution plan only, don't destroy.
+
+` + globalOptions
+
 func usage(subcommand string) {
 	if subcommand == "release" {
 		fmt.Println(releaseHelp)
@@ -105,6 +123,8 @@ func usage(subcommand string) {
 		fmt.Println(shellHelp)
 	} else if subcommand == "setup" {
 		fmt.Println(setupHelp)
+	} else if subcommand == "destroy" {
+		fmt.Println(destroyHelp)
 	} else {
 		fmt.Println(help)
 	}
@@ -192,6 +212,18 @@ func main() {
 			usage("setup")
 		}
 		if err := setup.RunCommand(state, env); err != nil {
+			if status, ok := err.(command.Failure); ok {
+				os.Exit(int(status))
+			}
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	} else if globalArgs.Command == "destroy" {
+		destroyArgs, ok := destroy.ParseArgs(remainingArgs)
+		if !ok {
+			usage("destroy")
+		}
+		if err := destroy.RunCommand(state, destroyArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
 				os.Exit(int(status))
 			}
