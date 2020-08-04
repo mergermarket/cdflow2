@@ -1,8 +1,7 @@
-package deploy
+package destroy
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/mergermarket/cdflow2/command"
@@ -32,7 +31,7 @@ func ParseArgs(args []string) (*CommandArgs, bool) {
 			return nil, false
 		}
 	}
-	if result.EnvName == "" || result.Version == "" {
+	if result.EnvName == "" {
 		return nil, false
 	}
 	return &result, true
@@ -57,7 +56,7 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 
 	terraformContainer, err := terraform.NewContainer(
 		state.DockerClient,
-		prepareTerraformResponse.TerraformImage,
+		state.Manifest.Terraform.Image,
 		state.CodeDir,
 		buildVolume,
 	)
@@ -74,7 +73,7 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		}
 	}()
 
-	if err := terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse, false); err != nil {
+	if err := terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse, true); err != nil {
 		return err
 	}
 
@@ -82,29 +81,37 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		return err
 	}
 
-	planFilename := "/build/" + util.RandomName("plan")
-
 	planCommand := []string{
 		"terraform",
 		"plan",
-		"-var-file=/build/release-metadata.json",
-	}
-
-	envConfigFilename := "config/" + args.EnvName + ".json"
-	if _, err := os.Stat(envConfigFilename); !os.IsNotExist(err) {
-		planCommand = append(planCommand, "-var-file="+envConfigFilename)
-	}
-
-	planCommand = append(
-		planCommand,
-		"-out="+planFilename,
+		"-destroy",
 		"infra/",
-	)
+	}
+
+	destroyCommand := []string{
+		"terraform",
+		"destroy",
+		"-auto-approve",
+		"infra/",
+	}
+
+	if args.Version != "" {
+		planCommand = append(
+			planCommand[:len(planCommand)-1],
+			"-var-file=/build/release-metadata.json",
+			"infra/",
+		)
+		destroyCommand = append(
+			destroyCommand[:len(destroyCommand)-1],
+			"-var-file=/build/release-metadata.json",
+			"infra/",
+		)
+	}
 
 	fmt.Fprintf(
 		state.ErrorStream,
 		"\n%s\n%s\n\n",
-		util.FormatInfo("creating plan"),
+		util.FormatInfo("generating plan"),
 		util.FormatCommand(strings.Join(planCommand, " ")),
 	)
 
@@ -123,11 +130,11 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		state.ErrorStream,
 		"\n%s\n%s\n",
 		util.FormatInfo("applying plan"),
-		util.FormatCommand("terraform apply "+planFilename),
+		util.FormatCommand(strings.Join(destroyCommand, " ")),
 	)
 
 	if err := terraformContainer.RunCommand(
-		[]string{"terraform", "apply", planFilename}, prepareTerraformResponse.Env,
+		destroyCommand, prepareTerraformResponse.Env,
 		state.OutputStream, state.ErrorStream,
 	); err != nil {
 		return err

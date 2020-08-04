@@ -105,6 +105,7 @@ func TestTerraformConfigureBackend(t *testing.T) {
 					"key2": "value2",
 				},
 			},
+			false,
 		); err != nil {
 			t.Fatal("unexpected error: ", err, errorBuffer.String())
 		}

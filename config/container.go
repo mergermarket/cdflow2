@@ -47,7 +47,6 @@ func NewContainer(state *command.GlobalState, image, releaseVolume string) (*Con
 		options := docker.RunOptions{
 			NamePrefix:   "cdflow2-config",
 			Image:        image,
-			InputStream:  state.InputStream,
 			OutputStream: state.OutputStream,
 			ErrorStream:  state.ErrorStream,
 			Started:      started,
@@ -327,8 +326,12 @@ func SetupTerraform(state *command.GlobalState, envName, version string, env map
 	}
 
 	if !state.GlobalArgs.NoPullTerraform {
-		if err := dockerClient.EnsureImage(prepareTerraformResponse.TerraformImage, state.ErrorStream); err != nil {
-			return nil, "", fmt.Errorf("error pulling terraform image %v: %w", prepareTerraformResponse.TerraformImage, err)
+		imageName := prepareTerraformResponse.TerraformImage
+		if version == "" {
+			imageName = state.Manifest.Terraform.Image
+		}
+		if err := dockerClient.EnsureImage(imageName, state.ErrorStream); err != nil {
+			return nil, "", fmt.Errorf("error pulling terraform image %v: %w", imageName, err)
 		}
 	}
 	return prepareTerraformResponse, buildVolume, nil

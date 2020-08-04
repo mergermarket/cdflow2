@@ -160,10 +160,11 @@ func ParseArgs(args []string) (*GlobalArgs, []string, error) {
 	remainingArgs := []string{}
 	i := 0
 	take := func() (string, error) {
-		if i > len(args) {
+		i++
+		if i >= len(args) {
 			return "", errors.New("missing value")
 		}
-		i++
+
 		return args[i], nil
 	}
 	for ; i < len(args); i++ {

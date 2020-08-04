@@ -189,7 +189,7 @@ func (terraformContainer *Container) createPartialBackendConfig(codeDir, backend
 }
 
 // ConfigureBackend runs terraform init as part of the release in order to download providers and modules.
-func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream io.Writer, terraformResponse *config.PrepareTerraformResponse) error {
+func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream io.Writer, terraformResponse *config.PrepareTerraformResponse, download bool) error {
 	if err := terraformContainer.createPartialBackendConfig(terraformContainer.codeDir, terraformResponse.TerraformBackendType); err != nil {
 		return err
 	}
@@ -197,8 +197,10 @@ func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream 
 	command := make([]string, 0)
 	command = append(command, "terraform")
 	command = append(command, "init")
-	command = append(command, "-get=false")
-	command = append(command, "-get-plugins=false")
+	if !download {
+		command = append(command, "-get=false")
+		command = append(command, "-get-plugins=false")
+	}
 
 	displayCommand := make([]string, len(command))
 	copy(displayCommand, command)
@@ -297,6 +299,26 @@ func (terraformContainer *Container) RunCommand(cmd []string, env map[string]str
 		Env:          env,
 		OutputStream: outputStream,
 		ErrorStream:  errorStream,
+		Tty:          false,
+	})
+}
+
+// RunInteractiveCommand execs a command inside the terraform container.
+func (terraformContainer *Container) RunInteractiveCommand(
+	cmd []string,
+	env map[string]string,
+	inputStream io.Reader,
+	outputStream,
+	errorStream io.Writer,
+	tty bool) error {
+	return terraformContainer.dockerClient.Exec(&docker.ExecOptions{
+		ID:           terraformContainer.id,
+		Cmd:          cmd,
+		Env:          env,
+		InputStream:  inputStream,
+		OutputStream: outputStream,
+		ErrorStream:  errorStream,
+		Tty:          tty,
 	})
 }
 
