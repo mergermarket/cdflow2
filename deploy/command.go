@@ -90,6 +90,11 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		"-var-file=/build/release-metadata.json",
 	}
 
+	commonConfigFile := "config/common.json"
+	if _, err := os.Stat(commonConfigFile); !os.IsNotExist(err) {
+		planCommand = append(planCommand, "-var-file="+commonConfigFile)
+	}
+
 	envConfigFilename := "config/" + args.EnvName + ".json"
 	if _, err := os.Stat(envConfigFilename); !os.IsNotExist(err) {
 		planCommand = append(planCommand, "-var-file="+envConfigFilename)
