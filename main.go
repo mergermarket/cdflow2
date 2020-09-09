@@ -171,11 +171,11 @@ func main() {
 	env := util.GetEnv(os.Environ())
 
 	if globalArgs.Command == "release" {
-		if len(remainingArgs) != 1 {
-			fmt.Println(releaseHelp)
-			os.Exit(1)
+		releaseArgs, ok := release.ParseArgs(remainingArgs)
+		if ok != nil {
+			usage("release")
 		}
-		if err := release.RunCommand(state, remainingArgs[0], env); err != nil {
+		if err := release.RunCommand(state, *releaseArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
 				os.Exit(int(status))
 			}

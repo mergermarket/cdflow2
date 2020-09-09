@@ -2,9 +2,11 @@ package command
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
@@ -21,6 +23,62 @@ type output struct {
 	stdout bool
 	output []byte
 	err    error
+}
+
+// CommandArgs contains specific arguments to the deploy command.
+type CommandArgs struct {
+	ReleaseData string
+	EnvName     string
+	Version     string
+}
+
+func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
+	if commandArgs.EnvName == "" {
+		commandArgs.EnvName = arg
+		return false, nil
+	} else if strings.HasPrefix(arg, "-") {
+		return handleFlag(arg, commandArgs, take)
+	}
+	return false, nil
+}
+
+func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
+	if arg == "-r" || arg == "--release-data" {
+		value, err := take()
+		if err != nil {
+			return false, err
+		}
+		commandArgs.ReleaseData = value
+	} else if commandArgs.Version == "" {
+		commandArgs.Version = arg
+	} else {
+		return false, errors.New("Unknown release option: " + arg)
+	}
+	return false, nil
+}
+
+// ParseArgs parses command line arguments to the shell subcommand.
+func ParseArgs(args []string) (*CommandArgs, error) {
+	var result CommandArgs
+	i := 0
+	take := func() (string, error) {
+		i++
+		if i >= len(args) {
+			return "", errors.New("missing value")
+		}
+
+		return args[i], nil
+	}
+	for ; i < len(args); i++ {
+		_, err := handleArgs(args[i], &result, take)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if result.EnvName == "" {
+		return nil, errors.New("Env missing value")
+	}
+	return &result, nil
 }
 
 func pipeToOutput(stdout bool, reader io.Reader, outputChan chan *output) {
@@ -101,7 +159,7 @@ func terraformRelease(state *command.GlobalState, buildVolume string, outputStre
 }
 
 // RunCommand runs the release command.
-func RunCommand(state *command.GlobalState, version string, env map[string]string) (returnedError error) {
+func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[string]string) (returnedError error) {
 
 	dockerClient := state.DockerClient
 
@@ -134,7 +192,7 @@ func RunCommand(state *command.GlobalState, version string, env map[string]strin
 		return err
 	}
 
-	message, err := buildAndUploadRelease(state, buildVolume, version, terraformResultChan, terraformOutputChan, env)
+	message, err := buildAndUploadRelease(state, buildVolume, releaseArgs.Version, terraformResultChan, terraformOutputChan, env)
 	if err != nil {
 		return err
 	}
