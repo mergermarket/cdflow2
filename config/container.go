@@ -293,21 +293,21 @@ func (configContainer *Container) PrepareTerraform(
 }
 
 // SetupTerraform creates the config container and prepares terraform in one.
-func SetupTerraform(state *command.GlobalState, envName, version string, env map[string]string) (_ *PrepareTerraformResponse, returnedBuildVolume string, returnedError error) {
+func SetupTerraform(state *command.GlobalState, envName, version string, env map[string]string) (_ *PrepareTerraformResponse, returnedBuildVolume string, terraformImage string, returnedError error) {
 	dockerClient := state.DockerClient
 
 	if err := Pull(state); err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 
 	buildVolume, err := dockerClient.CreateVolume("")
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 
 	configContainer, err := NewContainer(state, state.Manifest.Config.Image, buildVolume)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 	defer func() {
 		if err := configContainer.Done(); err != nil {
@@ -322,19 +322,19 @@ func SetupTerraform(state *command.GlobalState, envName, version string, env map
 
 	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, state.Component, state.Commit, envName, state.Manifest.Config.Params, env)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 
+	imageName := prepareTerraformResponse.TerraformImage
+	if version == "" {
+		imageName = state.Manifest.Terraform.Image
+	}
 	if !state.GlobalArgs.NoPullTerraform {
-		imageName := prepareTerraformResponse.TerraformImage
-		if version == "" {
-			imageName = state.Manifest.Terraform.Image
-		}
 		if err := dockerClient.EnsureImage(imageName, state.ErrorStream); err != nil {
-			return nil, "", fmt.Errorf("error pulling terraform image %v: %w", imageName, err)
+			return nil, "", "", fmt.Errorf("error pulling terraform image %v: %w", imageName, err)
 		}
 	}
-	return prepareTerraformResponse, buildVolume, nil
+	return prepareTerraformResponse, buildVolume, imageName, nil
 }
 
 // Done stops and removes the config container.
