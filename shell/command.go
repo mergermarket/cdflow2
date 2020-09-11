@@ -87,7 +87,7 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 
 // RunCommand runs the shell command.
 func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]string) (returnedError error) {
-	prepareTerraformResponse, buildVolume, err := config.SetupTerraform(state, args.EnvName, args.Version, env)
+	prepareTerraformResponse, buildVolume, terraformImage, err := config.SetupTerraform(state, args.EnvName, args.Version, env)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 
 	terraformContainer, err := terraform.NewContainer(
 		state.DockerClient,
-		state.Manifest.Terraform.Image,
+		terraformImage,
 		state.CodeDir,
 		buildVolume,
 	)
