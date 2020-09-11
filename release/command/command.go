@@ -27,28 +27,29 @@ type output struct {
 
 // CommandArgs contains specific arguments to the deploy command.
 type CommandArgs struct {
-	ReleaseData string
-	EnvName     string
+	ReleaseData map[string]string
 	Version     string
 }
 
-func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
-	if commandArgs.EnvName == "" {
-		commandArgs.EnvName = arg
-		return false, nil
-	} else if strings.HasPrefix(arg, "-") {
-		return handleFlag(arg, commandArgs, take)
+func parseReleaseData(value string) (map[string]string, error) {
+	dataStrings := strings.Split(value, "=")
+	if len(dataStrings) == 2 {
+		return map[string]string{dataStrings[0]: dataStrings[1]}, nil
+	} else {
+		return nil, errors.New("Release data not in the correct format")
 	}
-	return false, nil
 }
 
-func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
+func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
 	if arg == "-r" || arg == "--release-data" {
 		value, err := take()
 		if err != nil {
 			return false, err
 		}
-		commandArgs.ReleaseData = value
+		commandArgs.ReleaseData, err = parseReleaseData(value)
+		if err != nil {
+			return false, err
+		}
 	} else if commandArgs.Version == "" {
 		commandArgs.Version = arg
 	} else {
@@ -74,9 +75,6 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 		if err != nil {
 			return nil, err
 		}
-	}
-	if result.EnvName == "" {
-		return nil, errors.New("Env missing value")
 	}
 	return &result, nil
 }
@@ -192,7 +190,7 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		return err
 	}
 
-	message, err := buildAndUploadRelease(state, buildVolume, releaseArgs.Version, terraformResultChan, terraformOutputChan, env)
+	message, err := buildAndUploadRelease(state, buildVolume, releaseArgs.Version, releaseArgs.ReleaseData, terraformResultChan, terraformOutputChan, env)
 	if err != nil {
 		return err
 	}
@@ -203,7 +201,7 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 	return nil
 }
 
-func buildAndUploadRelease(state *command.GlobalState, buildVolume, version string, terraformResultChan chan *terraformResult, terraformOutputChan chan *output, env map[string]string) (returnedMessage string, returnedError error) {
+func buildAndUploadRelease(state *command.GlobalState, buildVolume, version string, releaseData map[string]string, terraformResultChan chan *terraformResult, terraformOutputChan chan *output, env map[string]string) (returnedMessage string, returnedError error) {
 
 	releaseRequirements, err := GetReleaseRequirements(state)
 	if err != nil {
@@ -275,6 +273,9 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 	releaseMetadata["release"]["version"] = version
 	releaseMetadata["release"]["commit"] = state.Commit
 	releaseMetadata["release"]["component"] = state.Component
+	for k, v := range releaseData {
+		releaseMetadata["release"][k] = v
+	}
 	for k, v := range configureReleaseResponse.AdditionalMetadata {
 		releaseMetadata["release"][k] = v
 	}

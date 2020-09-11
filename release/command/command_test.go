@@ -3,7 +3,9 @@ package command_test
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"log"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -12,6 +14,91 @@ import (
 	release "github.com/mergermarket/cdflow2/release/command"
 	"github.com/mergermarket/cdflow2/test"
 )
+
+func TestParseArgsWhenEnv(t *testing.T) {
+
+	assertMatchArgs := func(t *testing.T, gotArgs, wantArgs *release.CommandArgs) {
+		t.Helper()
+		if gotArgs.Version != wantArgs.Version {
+			t.Errorf("Version: got %s wnat %s", gotArgs.Version, wantArgs.Version)
+		}
+		if !reflect.DeepEqual(gotArgs.ReleaseData, wantArgs.ReleaseData) {
+			t.Errorf("ReleaseData: got %s want %s", gotArgs.ReleaseData, wantArgs.ReleaseData)
+		}
+	}
+
+	assertError := func(t *testing.T, got, want error) {
+		t.Helper()
+		if got != nil && got.Error() != want.Error() {
+			t.Errorf("Error: got %s want %s", got, want)
+		}
+	}
+
+	t.Run("version", func(t *testing.T) {
+		args := []string{"beta"}
+
+		gotArgs, gotError := release.ParseArgs(args)
+
+		var wantArgs release.CommandArgs
+		wantArgs.Version = "beta"
+
+		var wantError error = nil
+
+		assertMatchArgs(t, gotArgs, &wantArgs)
+		assertError(t, gotError, wantError)
+
+	})
+
+	t.Run("--release-data and version", func(t *testing.T) {
+		args := []string{"--release-data", "foo=bar", "version1"}
+
+		gotArgs, gotError := release.ParseArgs(args)
+
+		var wantArgs release.CommandArgs
+		wantArgs.ReleaseData = map[string]string{"foo": "bar"}
+		wantArgs.Version = "version1"
+
+		var wantError error = nil
+
+		assertMatchArgs(t, gotArgs, &wantArgs)
+		assertError(t, gotError, wantError)
+
+	})
+
+	t.Run("--release-data in wrong format", func(t *testing.T) {
+		args := []string{"--release-data", "foo:bar", "version1"}
+
+		_, gotError := release.ParseArgs(args)
+
+		var wantError error = errors.New("Release data not in the correct format")
+
+		assertError(t, gotError, wantError)
+
+	})
+
+	t.Run("empty args", func(t *testing.T) {
+		args := []string{}
+
+		_, gotError := release.ParseArgs(args)
+
+		var wantError error = errors.New("Env missing value")
+
+		assertError(t, gotError, wantError)
+
+	})
+
+	t.Run("missing version", func(t *testing.T) {
+		args := []string{"--release-data", "foo=bar"}
+
+		_, gotError := release.ParseArgs(args)
+
+		var wantError error = errors.New("missing value")
+
+		assertError(t, gotError, wantError)
+
+	})
+
+}
 
 func TestRunCommand(t *testing.T) {
 
@@ -55,7 +142,9 @@ func TestRunCommand(t *testing.T) {
 				NoPullTerraform: true,
 			},
 		},
-		"test-version",
+		release.CommandArgs{
+			Version: "test-version",
+		},
 		map[string]string{},
 	); err != nil {
 		log.Fatalln("error running command:", err, errorBuffer.String())
