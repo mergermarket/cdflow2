@@ -32,7 +32,7 @@ type CommandArgs struct {
 }
 
 func parseReleaseData(value string) (map[string]string, error) {
-	dataStrings := strings.Split(value, "=")
+	dataStrings := strings.SplitN(value, "=", 2)
 	if len(dataStrings) == 2 {
 		return map[string]string{dataStrings[0]: dataStrings[1]}, nil
 	} else {
@@ -46,9 +46,12 @@ func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error
 		if err != nil {
 			return false, err
 		}
-		commandArgs.ReleaseData, err = parseReleaseData(value)
+		releaseData, err := parseReleaseData(value)
 		if err != nil {
 			return false, err
+		}
+		for k, v := range releaseData {
+			commandArgs.ReleaseData[k] = v
 		}
 	} else if commandArgs.Version == "" {
 		commandArgs.Version = arg
@@ -61,6 +64,7 @@ func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error
 // ParseArgs parses command line arguments to the shell subcommand.
 func ParseArgs(args []string) (*CommandArgs, error) {
 	var result CommandArgs
+	result.ReleaseData = make(map[string]string)
 	i := 0
 	take := func() (string, error) {
 		i++

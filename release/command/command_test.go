@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -15,6 +14,18 @@ import (
 	"github.com/mergermarket/cdflow2/test"
 )
 
+func Equals(a, b map[string]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func TestParseArgsWhenEnv(t *testing.T) {
 
 	assertMatchArgs := func(t *testing.T, gotArgs, wantArgs *release.CommandArgs) {
@@ -22,7 +33,7 @@ func TestParseArgsWhenEnv(t *testing.T) {
 		if gotArgs.Version != wantArgs.Version {
 			t.Errorf("Version: got %s wnat %s", gotArgs.Version, wantArgs.Version)
 		}
-		if !reflect.DeepEqual(gotArgs.ReleaseData, wantArgs.ReleaseData) {
+		if !Equals(gotArgs.ReleaseData, wantArgs.ReleaseData) {
 			t.Errorf("ReleaseData: got %s want %s", gotArgs.ReleaseData, wantArgs.ReleaseData)
 		}
 	}
@@ -56,6 +67,22 @@ func TestParseArgsWhenEnv(t *testing.T) {
 
 		var wantArgs release.CommandArgs
 		wantArgs.ReleaseData = map[string]string{"foo": "bar"}
+		wantArgs.Version = "version1"
+
+		var wantError error = nil
+
+		assertMatchArgs(t, gotArgs, &wantArgs)
+		assertError(t, gotError, wantError)
+
+	})
+
+	t.Run("multiple --release-data flags", func(t *testing.T) {
+		args := []string{"--release-data", "foo=bar", "--release-data", "more=data", "version1"}
+
+		gotArgs, gotError := release.ParseArgs(args)
+
+		var wantArgs release.CommandArgs
+		wantArgs.ReleaseData = map[string]string{"foo": "bar", "more": "data"}
 		wantArgs.Version = "version1"
 
 		var wantError error = nil
