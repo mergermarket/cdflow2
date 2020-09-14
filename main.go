@@ -46,12 +46,16 @@ Commands:
 const releaseHelp string = `
 Usage:
 
-  cdflow2 [ GLOBALOPTS ] release VERSION
+  cdflow2 [ GLOBALOPTS ] release [ OPTS ] VERSION
 
 Args:
 
-  VERSION     - the version being released. We recommend using evergreen version numbers (i.e. simple incrementing integers,
-                probably from your CI service), combined with something to identify the commit - e.g. "34-a5dbc4a7".
+  VERSION                - the version being released. We recommend using evergreen version numbers (i.e. simple incrementing integers,
+                           probably from your CI service), combined with something to identify the commit - e.g. "34-a5dbc4a7".
+
+Options:
+
+  --release-data | -r    - add key/value to release metadata (i.e. --release-data foo=bar).
 
 ` + globalOptions
 
@@ -171,11 +175,12 @@ func main() {
 	env := util.GetEnv(os.Environ())
 
 	if globalArgs.Command == "release" {
-		if len(remainingArgs) != 1 {
-			fmt.Println(releaseHelp)
-			os.Exit(1)
+		releaseArgs, ok := release.ParseArgs(remainingArgs)
+		if ok != nil {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("Error: %s", ok))
+			usage("release")
 		}
-		if err := release.RunCommand(state, remainingArgs[0], env); err != nil {
+		if err := release.RunCommand(state, *releaseArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
 				os.Exit(int(status))
 			}
