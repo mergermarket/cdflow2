@@ -256,10 +256,10 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 		return fmt.Errorf("error creating docker exec: %w", err)
 	}
 	if os.Getenv("CDFLOW2_DEBUG") != "" {
-		fmt.Fprintln(os.Stderr, "DEBUG: created container exec:", exec.ID)
+		fmt.Fprintf(os.Stderr, "DEBUG: created container exec: %s %+v\n", exec.ID, exec)
 	}
 	if os.Getenv("CDFLOW2_DEBUG") != "" {
-		fmt.Fprintln(os.Stderr, "DEBUG: attaching to container exec")
+		fmt.Fprintf(os.Stderr, "DEBUG: attaching to container exec %s\n", exec.ID)
 	}
 	attachResponse, err := dockerClient.client.ContainerExecAttach(
 		ctx,
@@ -272,7 +272,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	defer attachResponse.Close() // does not return error
 
 	if os.Getenv("CDFLOW2_DEBUG") != "" {
-		fmt.Fprintln(os.Stderr, "DEBUG: attached to container exec")
+		fmt.Fprintf(os.Stderr, "DEBUG: attached to container exec: %s %+v\n", exec.ID, attachResponse)
 	}
 
 	if err := dockerClient.streamHijackedResponse(
@@ -282,7 +282,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 		options.ErrorStream,
 		func() error {
 			if os.Getenv("CDFLOW2_DEBUG") != "" {
-				fmt.Println("DEBUG: starting container exec...")
+				fmt.Fprintf(os.Stderr, "DEBUG: starting container exec %s\n", exec.ID)
 			}
 			err := dockerClient.client.ContainerExecStart(
 				ctx,
@@ -290,7 +290,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 				types.ExecStartCheck{},
 			)
 			if os.Getenv("CDFLOW2_DEBUG") != "" {
-				fmt.Println("DEBUG: started container exec", err)
+				fmt.Fprintf(os.Stderr, "DEBUG: started container exec: %s %+v\n", exec.ID, err)
 			}
 			return err
 		},
@@ -299,7 +299,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	}
 
 	if os.Getenv("CDFLOW2_DEBUG") != "" {
-		fmt.Fprintln(os.Stderr, "DEBUG: inspecting container exec...")
+		fmt.Fprintf(os.Stderr, "DEBUG: inspecting container exec %s", exec.ID)
 	}
 	details, err := dockerClient.client.ContainerExecInspect(
 		ctx,
@@ -309,7 +309,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 		return fmt.Errorf("error inspecting exec: %w", err)
 	}
 	if os.Getenv("CDFLOW2_DEBUG") != "" {
-		fmt.Fprintln(os.Stderr, "DEBUG: inspected container exec")
+		fmt.Fprintf(os.Stderr, "DEBUG: inspected container exec %s %+v\n", exec.ID, details)
 	}
 
 	if details.ExitCode != 0 {
