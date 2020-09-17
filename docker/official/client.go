@@ -234,6 +234,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	for key, value := range options.Env {
 		env = append(env, fmt.Sprintf("%s=%s", key, value))
 	}
+
 	exec, err := dockerClient.client.ContainerExecCreate(
 		context.Background(),
 		options.ID,
@@ -267,11 +268,7 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 		options.OutputStream,
 		options.ErrorStream,
 		func() error {
-			return dockerClient.client.ContainerExecStart(
-				context.Background(),
-				exec.ID,
-				types.ExecStartCheck{},
-			)
+			return nil
 		},
 	); err != nil {
 		return fmt.Errorf("error streaming data from exec: %w", err)
