@@ -59,13 +59,13 @@ add to the `builds` section of cdflow.yaml. For example, to do a [docker](https:
 ```yaml
 builds:
   docker:
-    image: mergermarket/cdflow-release-docker-ecr
+    image: mergermarket/cdflow-build-docker-ecr
 ```
 
 Available build images include:
 
-* [`mergermarket/cdflow2-release-docker-ecr`](https://registry.hub.docker.com/r/mergermarket/cdflow2-release-docker-ecr).
-* [`mergermarket/cdflow2-release-lambda`](https://registry.hub.docker.com/r/mergermarket/cdflow2-release-lambda).
+* [`mergermarket/cdflow2-build-docker-ecr`](https://registry.hub.docker.com/r/mergermarket/cdflow2-build-docker-ecr).
+* [`mergermarket/cdflow2-build-lambda`](https://registry.hub.docker.com/r/mergermarket/cdflow2-build-lambda).
 
 ## Setup
 
