@@ -3,9 +3,12 @@ package official
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -13,6 +16,7 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/docker/registry"
 	"github.com/mergermarket/cdflow2/docker"
 	"github.com/mergermarket/cdflow2/util"
 )
@@ -201,12 +205,47 @@ func writePullProgress(reader io.ReadCloser, outputStream io.Writer) error {
 	return reader.Close()
 }
 
+func getRegistryAuthToLoginToRegistryOfImage(image string) (string, error) {
+	imageRegistry := registry.IndexHostname
+	if strings.Count(image, "/") > 1 {
+		imageRegistry = strings.Split(image, "/")[0]
+	}
+
+	registryVarName := strings.ToUpper(
+		strings.NewReplacer(
+			".", "_",
+			":", "_",
+			"-", "_",
+		).Replace(imageRegistry),
+	)
+	cdflowDockerAuthPrefix := "CDFLOW2_DOCKER_AUTH_"
+	authBytes, err := json.Marshal(
+		types.AuthConfig{
+			Username: os.Getenv(cdflowDockerAuthPrefix + registryVarName + "_USERNAME"),
+			Password: os.Getenv(cdflowDockerAuthPrefix + registryVarName + "_PASSWORD"),
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(authBytes), nil
+}
+
 // PullImage pulls and image.
 func (dockerClient *Client) PullImage(image string, outputStream io.Writer) error {
+	RegistryAuth, err := getRegistryAuthToLoginToRegistryOfImage(image)
+	imagePullOptions := types.ImagePullOptions{}
+
+	if err == nil {
+		imagePullOptions.RegistryAuth = RegistryAuth
+	}
+
 	reader, err := dockerClient.client.ImagePull(
 		context.Background(),
 		image,
-		types.ImagePullOptions{},
+		imagePullOptions,
 	)
 	if err != nil {
 		return err
