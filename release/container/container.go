@@ -20,7 +20,7 @@ func GetReleaseRequirements(state *command.GlobalState, buildID, image string, e
 		Image:        image,
 		OutputStream: &outputBuffer,
 		ErrorStream:  errorStream,
-		NamePrefix:   "cdflow2-release-reqirements",
+		NamePrefix:   "cdflow2-release-requirements",
 		Cmd:          []string{"requirements"},
 	}); err != nil {
 		return nil, err

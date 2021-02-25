@@ -267,7 +267,7 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 			env,
 		)
 		if err != nil {
-			return "", fmt.Errorf("error running release '%v': %w", buildID, err)
+			return "", fmt.Errorf("cdflow2: error running build '%v' - %w", buildID, err)
 		}
 		releaseMetadata[buildID] = metadata
 	}

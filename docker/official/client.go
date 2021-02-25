@@ -90,7 +90,11 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 	}
 
 	if status.exitCode != options.SuccessStatus {
-		return fmt.Errorf("container %s exited with unsuccessful exit code %d", response.ID, status.exitCode)
+		extra := ""
+		if err := dockerClient.client.ContainerRemove(context.Background(), response.ID, types.ContainerRemoveOptions{}); err != nil {
+			extra = "\nerror removing container: " + err.Error()
+		}
+		return fmt.Errorf("container exited with unsuccessful exit code %d%s", status.exitCode, extra)
 	}
 
 	if options.BeforeRemove != nil {

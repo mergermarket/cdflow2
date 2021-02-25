@@ -184,7 +184,7 @@ func main() {
 			if status, ok := err.(command.Failure); ok {
 				os.Exit(int(status))
 			}
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, "\n"+err.Error())
 			os.Exit(1)
 		}
 	} else if globalArgs.Command == "deploy" {
