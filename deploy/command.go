@@ -13,17 +13,24 @@ import (
 
 // CommandArgs contains specific arguments to the deploy command.
 type CommandArgs struct {
-	EnvName  string
-	Version  string
-	PlanOnly bool
+	EnvName          string
+	Version          string
+	PlanOnly         bool
+	StateShouldExist *bool
 }
 
 // ParseArgs parses command line arguments to the deploy subcommand.
 func ParseArgs(args []string) (*CommandArgs, bool) {
 	var result CommandArgs
+	var T = true
+	var F = false
+	result.StateShouldExist = &T // set default to true
+
 	for _, arg := range args {
 		if arg == "-p" || arg == "--plan-only" {
 			result.PlanOnly = true
+		} else if arg == "-n" || arg == "--new-state" {
+			result.StateShouldExist = &F
 		} else if result.EnvName == "" {
 			result.EnvName = arg
 		} else if result.Version == "" {
@@ -40,7 +47,7 @@ func ParseArgs(args []string) (*CommandArgs, bool) {
 
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]string) (returnedError error) {
-	prepareTerraformResponse, buildVolume, terraformImage, err := config.SetupTerraform(state, args.EnvName, args.Version, env)
+	prepareTerraformResponse, buildVolume, terraformImage, err := config.SetupTerraform(state, args.StateShouldExist, args.EnvName, args.Version, env)
 	if err != nil {
 		return err
 	}

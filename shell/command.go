@@ -14,9 +14,10 @@ import (
 
 // CommandArgs contains specific arguments to the deploy command.
 type CommandArgs struct {
-	EnvName   string
-	Version   string
-	ShellArgs []string
+	EnvName          string
+	Version          string
+	ShellArgs        []string
+	StateShouldExist *bool
 }
 
 func isTty(stream os.File) bool {
@@ -60,6 +61,8 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 // ParseArgs parses command line arguments to the shell subcommand.
 func ParseArgs(args []string) (*CommandArgs, error) {
 	var result CommandArgs
+	var T = true
+	result.StateShouldExist = &T // set default to true
 	i := 0
 	take := func() (string, error) {
 		i++
@@ -87,7 +90,7 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 
 // RunCommand runs the shell command.
 func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]string) (returnedError error) {
-	prepareTerraformResponse, buildVolume, terraformImage, err := config.SetupTerraform(state, args.EnvName, args.Version, env)
+	prepareTerraformResponse, buildVolume, terraformImage, err := config.SetupTerraform(state, args.StateShouldExist, args.EnvName, args.Version, env)
 	if err != nil {
 		return err
 	}

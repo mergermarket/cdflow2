@@ -34,12 +34,12 @@ Usage:
 
 Commands:
 
-  setup                   - configure your pipeline
-  release VERSION         - build and publish a new software artefact
-  deploy ENV VERSION      - create & update infrastructure using software artefact
-  shell ENV VERSION       - access terraform for debugging and tf state manipulation
-  destroy ENV [ VERSION ] - destroy all Terraform managed infrastructure in ENV
-  help [ COMMAND ]        - display detailed help and usage information for a command
+  setup                                   - configure your pipeline
+  release [ OPTS ] VERSION                - build and publish a new software artefact
+  deploy  [ OPTS ] ENV VERSION            - create & update infrastructure using software artefact
+  destroy [ OPTS ] ENV [ VERSION ]        - destroy all Terraform managed infrastructure in ENV
+  shell   ENV [ OPTS ] [ SHELLARGS ]      - access terraform for debugging and tf state manipulation
+  help    [ COMMAND ]                     - display detailed help and usage information for a command
 
 ` + globalOptions
 
@@ -66,12 +66,13 @@ Usage:
 
 Args:
 
-  ENV         - the environment being deployed to.
-  VERSION     - the version being deployed (must match what was released).
+  ENV                 - the environment being deployed to.
+  VERSION             - the version being deployed (must match what was released).
 
 Options:
 
   --plan-only | -p    - create the terraform plan only, don't apply.
+  --new-state | -n    - run without a pre-existing tfstate file.
 
 ` + globalOptions
 
@@ -89,17 +90,17 @@ Usage:
 
 Args:
 
-  ENV         		- the environment containing the deployment.
+  ENV               - the environment containing the deployment.
 
 Options:
 
-  -v, --version     - the version to interract with (must match a pre-existing release).
+  -v, --version     - followed by the name of which version to interract with (must match a pre-existing release).
 
 Shell Arguments:
 
   The shell arguments are passed to shell 
-  ex:  (cdflow2 shell aslive test.sh)
-  	   (cdflow2 shell aslive -v v1.0 -- -c "echo test") or
+  ex:  (cdflow2 shell demo test.sh)
+  	   (cdflow2 shell demo -v v1.0 -- -c "echo test")
 `
 
 const destroyHelp string = `
@@ -109,8 +110,8 @@ Usage:
 
 Args:
 
-  ENV         - the environment containing the infrastructure being destroyed.
-  VERSION     - the version to destroy (must match a pre-existing release).
+  ENV                 - the environment containing the infrastructure being destroyed.
+  VERSION             - the version to destroy (must match a pre-existing release).
 
 Options:
 

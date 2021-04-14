@@ -137,6 +137,7 @@ func TestConfigDeploy(t *testing.T) {
 
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
+	var stateShouldExist = true
 
 	state := &command.GlobalState{
 		DockerClient: dockerClient,
@@ -163,6 +164,7 @@ func TestConfigDeploy(t *testing.T) {
 			"test-component",
 			"test-commit",
 			"test-env",
+			&stateShouldExist,
 			map[string]interface{}{
 				"TEST_CONFIG_VAR": "config value",
 			},

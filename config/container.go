@@ -242,13 +242,14 @@ func (configContainer *Container) UploadRelease(terraformImage string) (*UploadR
 }
 
 type prepareTerraformRequest struct {
-	Action    string
-	Version   string
-	Component string
-	Commit    string
-	Config    map[string]interface{}
-	Env       map[string]string
-	EnvName   string
+	Action           string
+	Version          string
+	Component        string
+	Commit           string
+	Config           map[string]interface{}
+	Env              map[string]string
+	EnvName          string
+	StateShouldExist *bool
 }
 
 // TerraformBackendConfigParameter
@@ -270,19 +271,21 @@ type PrepareTerraformResponse struct {
 // PrepareTerraform requests that the config container prepares for running terraform and returns the response.
 func (configContainer *Container) PrepareTerraform(
 	version, component, commit, envName string,
+	stateShouldExist *bool,
 	config map[string]interface{},
 	env map[string]string,
 ) (*PrepareTerraformResponse, error) {
 
 	var response PrepareTerraformResponse
 	if err := configContainer.request(&prepareTerraformRequest{
-		Action:    "prepare_terraform",
-		Config:    config,
-		Env:       env,
-		EnvName:   envName,
-		Version:   version,
-		Component: component,
-		Commit:    commit,
+		Action:           "prepare_terraform",
+		Config:           config,
+		Env:              env,
+		EnvName:          envName,
+		Version:          version,
+		Component:        component,
+		Commit:           commit,
+		StateShouldExist: stateShouldExist,
 	}, &response); err != nil {
 		return nil, err
 	}
@@ -293,7 +296,7 @@ func (configContainer *Container) PrepareTerraform(
 }
 
 // SetupTerraform creates the config container and prepares terraform in one.
-func SetupTerraform(state *command.GlobalState, envName, version string, env map[string]string) (_ *PrepareTerraformResponse, returnedBuildVolume string, terraformImage string, returnedError error) {
+func SetupTerraform(state *command.GlobalState, stateShouldExist *bool, envName, version string, env map[string]string) (_ *PrepareTerraformResponse, returnedBuildVolume string, terraformImage string, returnedError error) {
 	dockerClient := state.DockerClient
 
 	if err := Pull(state); err != nil {
@@ -320,7 +323,7 @@ func SetupTerraform(state *command.GlobalState, envName, version string, env map
 		}
 	}()
 
-	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, state.Component, state.Commit, envName, state.Manifest.Config.Params, env)
+	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, state.Component, state.Commit, envName, stateShouldExist, state.Manifest.Config.Params, env)
 	if err != nil {
 		return nil, "", "", err
 	}
