@@ -72,7 +72,7 @@ Args:
 Options:
 
   --plan-only | -p    - create the terraform plan only, don't apply.
-  --new-state | -n    - run without a pre-existing tfstate file.
+  --new-state | -n    - allow run without a pre-existing tfstate file.
 
 ` + globalOptions
 

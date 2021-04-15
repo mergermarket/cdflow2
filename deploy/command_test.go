@@ -236,6 +236,15 @@ func TestParseArgs(t *testing.T) {
 			t.Errorf("PlanOnly: got %t want %t", gotArgs.PlanOnly, wantArgs.PlanOnly)
 		}
 	}
+	assertMatchState := func(t *testing.T, gotArgs, wantArgs *deploy.CommandArgs) {
+		t.Helper()
+		if wantArgs.StateShouldExist == nil {
+			t.Fatalf("wantArgs.StateShouldExist == nil, expected this value to be set")
+		}
+		if *gotArgs.StateShouldExist != *wantArgs.StateShouldExist {
+			t.Errorf("StateShouldExist: got %t want %t", *gotArgs.StateShouldExist, *wantArgs.StateShouldExist)
+		}
+	}
 	assertMatchBool := func(t *testing.T, got, want bool) {
 		t.Helper()
 		if got != want {
@@ -298,7 +307,24 @@ func TestParseArgs(t *testing.T) {
 		wantArgs, wantBool := &result, true
 
 		assertMatchArgs(t, gotArgs, wantArgs)
+		assertMatchState(t, gotArgs, wantArgs)
 		assertMatchBool(t, gotBool, wantBool)
 	})
 
+	t.Run("set plan-only + env + version + stateShouldNotExist", func(t *testing.T) {
+		args := []string{"-p", "-n", "foo", "bar"}
+		gotArgs, gotBool := deploy.ParseArgs(args)
+
+		var F = false
+		var result deploy.CommandArgs
+		result.EnvName = "foo"
+		result.Version = "bar"
+		result.PlanOnly = true
+		result.StateShouldExist = &F
+		wantArgs, wantBool := &result, true
+
+		assertMatchArgs(t, gotArgs, wantArgs)
+		assertMatchState(t, gotArgs, wantArgs)
+		assertMatchBool(t, gotBool, wantBool)
+	})
 }
