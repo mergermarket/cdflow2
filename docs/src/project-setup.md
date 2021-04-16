@@ -48,7 +48,7 @@ Available config images include:
 * [`mergermarket/cdflow2-config-aws-simple`](https://registry.hub.docker.com/r/mergermarket/cdflow2-config-aws-simple) -
   a config image for a simple setup with a single AWS account.
 * [`mergermarket/cdflow2-config-aws-multi`](https://registry.hub.docker.com/r/mergermarket/cdflow2-config-aws-multi) -
-  a config image for a setup wtih multiple teams deploying to multiple
+  a config image for a setup with multiple teams deploying to multiple
   AWS accounts, for larger organisations.
 
 ## Configure Builds
