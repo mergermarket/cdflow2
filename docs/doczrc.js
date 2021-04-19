@@ -11,6 +11,7 @@ export default {
       'Setup',
       'Release',
       'Deploy',
+      'Destroy',
       'Common Terraform Setup'
     ] },
     'cdflow.yaml Reference',

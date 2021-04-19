@@ -34,7 +34,7 @@ terraform destroy -auto-approve \
     infra/
 ```
 
-or if a version is provided:
+when version provided:
 ```shell
 terraform plan -destroy \
     -var-file=/build/release-metadata.json \

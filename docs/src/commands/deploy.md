@@ -47,15 +47,6 @@ terraform apply \
 Perform the terraform plan command only. The terraform apply command is skipped.
 
 --new-state :
-Toggles a parameter sent to the config container. It is received before terraform commands are performed and used to trigger state existance validations.
+Toggles a parameter sent to the config container. 
+It is received before terraform commands are performed and used to trigger state existance validations.
 ```
-
-"terraform",
-		"plan",
-		"-var-file=/build/release-metadata.json"
-
-    "-var-file="+"config/common.json"
-    "-var-file="+"config/" + args.EnvName + ".json"
-
-    "-out="+"/build/" + util.RandomName("plan")
-		"infra/",
