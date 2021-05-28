@@ -1,5 +1,5 @@
 ![Unit tests](https://github.com/mergermarket/cdflow2/workflows/Unit%20tests/badge.svg)
-[![Travis Build Status](https://www.travis-ci.org/mergermarket/cdflow2.svg?branch=master)](https://www.travis-ci.org/mergermarket/cdflow2)
+[![Travis Build Status](https://www.travis-ci.com/mergermarket/cdflow2.svg?branch=master)](https://www.travis-ci.com/mergermarket/cdflow2)
 ![Build and publish release](https://github.com/mergermarket/cdflow2/workflows/Build%20and%20publish%20release/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mergermarket/cdflow2)](https://goreportcard.com/report/github.com/mergermarket/cdflow2)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/mergermarket/cdflow2)
