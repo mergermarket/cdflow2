@@ -78,6 +78,16 @@ jobs:
           asset_path: ./cdflow2-windows-amd64
           asset_name: cdflow2-windows-amd64
           asset_content_type: application/vnd.microsoft.portable-executable
+      - name: Upload linux ARM binary
+        id: upload-release-asset-linuxarm
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./cdflow2-linux-arm64
+          asset_name: cdflow2-linux-arm64
+          asset_content_type: application/x-executable
       - name: Setup SSH Keys and known_hosts
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
