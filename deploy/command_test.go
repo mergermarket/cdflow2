@@ -132,7 +132,6 @@ func checkTerraformPlanOutput(t *testing.T, output []byte) string {
 		"plan",
 		"-var-file=/build/release-metadata.json",
 		"-out=" + planFilename,
-		"infra/",
 	}) {
 		t.Fatal("unexpected terraform plan args:", input.Args)
 	}

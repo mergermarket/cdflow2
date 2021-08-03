@@ -28,13 +28,13 @@ func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume s
 		errorStream,
 		"\n%s\n%s\n\n",
 		util.FormatInfo("initialising terraform"),
-		util.FormatCommand("terraform init -backend=false infra/"),
+		util.FormatCommand("terraform init -backend=false"),
 	)
 
 	return dockerClient.Run(&docker.RunOptions{
 		Image:      image,
-		WorkingDir: "/code",
-		Cmd:        []string{"init", "-backend=false", "infra/"},
+		WorkingDir: "/code/infra",
+		Cmd:        []string{"init", "-backend=false"},
 		Env: []string{
 			"TF_IN_AUTOMATION=true",
 			"TF_INPUT=0",
@@ -76,7 +76,7 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 			// output to user in case there's an error (e.g. terraform container doesn't have /bin/sleep)
 			OutputStream: &outputBuffer,
 			ErrorStream:  &outputBuffer,
-			WorkingDir:   "/code",
+			WorkingDir:   "/code/infra",
 			Entrypoint:   []string{"/bin/sleep"},
 			Cmd:          []string{strconv.Itoa(365 * 24 * 60 * 60)}, // a long time!
 			Env:          []string{"TF_IN_AUTOMATION=true", "TF_INPUT=0", "TF_DATA_DIR=/build/.terraform"},
@@ -221,9 +221,6 @@ func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream 
 		displayCommand = append(displayCommand, fmt.Sprintf(format, displayValue))
 	}
 
-	command = append(command, "infra/")
-	displayCommand = append(displayCommand, "infra/")
-
 	fmt.Fprintf(
 		errorStream,
 		"\n%s\n%s\n",
@@ -257,7 +254,7 @@ func (terraformContainer *Container) SwitchWorkspace(name string, outputStream, 
 		util.FormatCommand("terraform workspace "+command+" "+name),
 	)
 
-	if err := terraformContainer.RunCommand([]string{"terraform", "workspace", command, name, "infra/"}, map[string]string{}, outputStream, errorStream); err != nil {
+	if err := terraformContainer.RunCommand([]string{"terraform", "workspace", command, name}, map[string]string{}, outputStream, errorStream); err != nil {
 		return err
 	}
 
@@ -272,10 +269,10 @@ func (terraformContainer *Container) listWorkspaces(errorStream io.Writer) (map[
 		errorStream,
 		"\n%s\n%s\n",
 		util.FormatInfo("listing workspaces"),
-		util.FormatCommand("terraform workspace list infra/"),
+		util.FormatCommand("terraform workspace list"),
 	)
 
-	if err := terraformContainer.RunCommand([]string{"terraform", "workspace", "list", "infra/"}, map[string]string{}, &outputBuffer, errorStream); err != nil {
+	if err := terraformContainer.RunCommand([]string{"terraform", "workspace", "list"}, map[string]string{}, &outputBuffer, errorStream); err != nil {
 		return nil, err
 	}
 

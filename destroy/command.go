@@ -85,26 +85,22 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		"terraform",
 		"plan",
 		"-destroy",
-		"infra/",
 	}
 
 	destroyCommand := []string{
 		"terraform",
 		"destroy",
 		"-auto-approve",
-		"infra/",
 	}
 
 	if args.Version != "" {
 		planCommand = append(
 			planCommand[:len(planCommand)-1],
 			"-var-file=/build/release-metadata.json",
-			"infra/",
 		)
 		destroyCommand = append(
 			destroyCommand[:len(destroyCommand)-1],
 			"-var-file=/build/release-metadata.json",
-			"infra/",
 		)
 	}
 

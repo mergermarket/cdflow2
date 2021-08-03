@@ -103,7 +103,6 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 	planCommand = append(
 		planCommand,
 		"-out="+planFilename,
-		"infra/",
 	)
 
 	fmt.Fprintf(
