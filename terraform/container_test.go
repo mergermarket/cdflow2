@@ -139,7 +139,7 @@ func TestTerraformConfigureBackend(t *testing.T) {
 	if !reflect.DeepEqual(input.Args, []string{
 		"init",
 		"-get=false",
-		"-get-plugins=false",
+		//"-get-plugins=false",
 		"-backend-config=key1=value1",
 		"-backend-config=key2=value2",
 	}) {

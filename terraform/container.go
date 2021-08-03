@@ -199,7 +199,7 @@ func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream 
 	command = append(command, "init")
 	if !download {
 		command = append(command, "-get=false")
-		command = append(command, "-get-plugins=false")
+		//command = append(command, "-get-plugins=false")
 	}
 
 	displayCommand := make([]string, len(command))
