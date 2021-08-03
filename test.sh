@@ -23,7 +23,7 @@ fi
 
 if [ -z "$registry_id" ]; then
     registry_id=$prefix-registry
-    docker run -d -p 5000 --name $registry_id registry:2 >/dev/null
+    docker run -d -p 5000:5000 --name $registry_id registry:2 >/dev/null
     echo $registry_id > .test-registry-id
 fi
 

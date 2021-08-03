@@ -11,6 +11,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/gorilla/mux v1.7.4 // indirect
@@ -30,5 +31,5 @@ require (
 	google.golang.org/genproto v0.0.0-20200521103424-e9a78aa275b7 // indirect
 	google.golang.org/grpc v1.29.1 // indirect
 	gopkg.in/yaml.v2 v2.3.0
-	gotest.tools v2.2.0+incompatible
+	gotest.tools v2.2.0+incompatible // indirect
 )
