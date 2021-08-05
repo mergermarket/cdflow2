@@ -73,6 +73,8 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		}
 	}()
 
+	terraformContainer.SetTerraformLockIfExists(state.OutputStream, state.ErrorStream)
+
 	if err := terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse, true); err != nil {
 		return err
 	}

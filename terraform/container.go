@@ -288,6 +288,17 @@ func (terraformContainer *Container) listWorkspaces(errorStream io.Writer) (map[
 	return result, nil
 }
 
+func (terraformContainer *Container) SetTerraformLockIfExists(outputStream, errorStream io.Writer) {
+
+	fmt.Fprintf(
+		errorStream,
+		"\n%s\n%s\n",
+		util.FormatInfo("copying .terraform.lock.hcl from relase"),
+		util.FormatCommand(" "),
+	)
+	terraformContainer.RunCommand([]string{"cp", "/build/.terraform.lock.hcl", "/code/infra/"}, map[string]string{}, outputStream, errorStream)
+}
+
 // RunCommand execs a command inside the terraform container.
 func (terraformContainer *Container) RunCommand(cmd []string, env map[string]string, outputStream, errorStream io.Writer) error {
 	return terraformContainer.dockerClient.Exec(&docker.ExecOptions{
