@@ -288,15 +288,51 @@ func (terraformContainer *Container) listWorkspaces(errorStream io.Writer) (map[
 	return result, nil
 }
 
-func (terraformContainer *Container) SetTerraformLockIfExists(outputStream, errorStream io.Writer) {
+func (terraformContainer *Container) CopyTerraformLockIfExists(outputStream, errorStream io.Writer) error {
+	lockExists, err := terraformContainer.CheckFileExists("/build/.terraform.lock.hcl", errorStream)
+	if err != nil {
+		return err
+	}
 
-	fmt.Fprintf(
-		errorStream,
-		"\n%s\n%s\n",
-		util.FormatInfo("copying .terraform.lock.hcl from relase"),
-		util.FormatCommand(" "),
-	)
-	terraformContainer.RunCommand([]string{"cp", "/build/.terraform.lock.hcl", "/code/infra/"}, map[string]string{}, outputStream, errorStream)
+	if lockExists {
+		fmt.Fprintf(
+			errorStream,
+			"\n%s\n%s\n",
+			util.FormatInfo("copying .terraform.lock.hcl from release"),
+			util.FormatCommand("cp /build/.terraform.lock.hcl /code/infra/"),
+		)
+
+		if err := terraformContainer.RunCommand([]string{"cp", "/build/.terraform.lock.hcl", "/code/infra/"}, map[string]string{}, outputStream, errorStream); err != nil {
+			return err
+		}
+	} else {
+		fmt.Fprintf(
+			errorStream,
+			"\n%s\n%s\n",
+			util.FormatInfo(".terraform.lock.hcl not found"),
+			util.FormatCommand("cp /build/.terraform.lock.hcl /code/infra/"),
+		)
+	}
+
+	return nil
+}
+
+func (terraformContainer *Container) CheckFileExists(path string, errorStream io.Writer) (bool, error) {
+	var outputBuffer bytes.Buffer
+	command := fmt.Sprintf("test -f %s && echo exists || echo none", path)
+
+	if err := terraformContainer.RunCommand([]string{"sh", "-c", command}, map[string]string{}, &outputBuffer, errorStream); err != nil {
+		return false, err
+	}
+
+	for _, line := range strings.Split(outputBuffer.String(), "\n") {
+		for _, word := range strings.Fields(line) {
+			if word == "exists" {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
 // RunCommand execs a command inside the terraform container.
