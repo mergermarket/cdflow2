@@ -310,7 +310,7 @@ func (terraformContainer *Container) CopyTerraformLockIfExists(outputStream, err
 			errorStream,
 			"\n%s\n%s\n",
 			util.FormatInfo(".terraform.lock.hcl not found"),
-			util.FormatCommand("cp /build/.terraform.lock.hcl /code/infra/"),
+			util.FormatCommand(""),
 		)
 	}
 

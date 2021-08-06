@@ -190,20 +190,20 @@ func (configContainer *Container) WriteReleaseMetadata(releaseMetadata map[strin
 		return err
 	}
 
-	if err := configContainer.CopyFileToRelease("release/release-metadata.json", encoded); err != nil {
+	if err := configContainer.CopyFileToRelease("release-metadata.json", encoded); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (configContainer *Container) CopyFileToRelease(path string, content []byte) error {
+func (configContainer *Container) CopyFileToRelease(filename string, content []byte) error {
 
 	buffer := new(bytes.Buffer)
 	tarWriter := tar.NewWriter(buffer)
 
 	if err := tarWriter.WriteHeader(&tar.Header{
-		Name: path,
+		Name: "/release/" + filename,
 		Mode: 0644,
 		Size: int64(len(content)),
 	}); err != nil {

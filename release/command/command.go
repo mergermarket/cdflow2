@@ -305,7 +305,7 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 		if err != nil {
 			return "", fmt.Errorf("error on reading .terraform.lock.hcl %w", err)
 		}
-		if err := configContainer.CopyFileToRelease("/release/.terraform.lock.hcl", b); err != nil {
+		if err := configContainer.CopyFileToRelease(".terraform.lock.hcl", b); err != nil {
 			return "", err
 		}
 
