@@ -76,6 +76,10 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		}
 	}()
 
+	if err := terraformContainer.CopyTerraformLockIfExists(state.OutputStream, state.ErrorStream); err != nil {
+		return err
+	}
+
 	if err := terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse, true); err != nil {
 		return err
 	}
@@ -88,26 +92,22 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		"terraform",
 		"plan",
 		"-destroy",
-		"infra/",
 	}
 
 	destroyCommand := []string{
 		"terraform",
 		"destroy",
 		"-auto-approve",
-		"infra/",
 	}
 
 	if args.Version != "" {
 		planCommand = append(
 			planCommand[:len(planCommand)-1],
 			"-var-file=/build/release-metadata.json",
-			"infra/",
 		)
 		destroyCommand = append(
 			destroyCommand[:len(destroyCommand)-1],
 			"-var-file=/build/release-metadata.json",
-			"infra/",
 		)
 	}
 

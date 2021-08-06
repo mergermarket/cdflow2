@@ -139,10 +139,8 @@ func TestTerraformConfigureBackend(t *testing.T) {
 	if !reflect.DeepEqual(input.Args, []string{
 		"init",
 		"-get=false",
-		"-get-plugins=false",
 		"-backend-config=key1=value1",
 		"-backend-config=key2=value2",
-		"infra/",
 	}) {
 		t.Fatal("unexpected args:", input.Args)
 	}
@@ -204,7 +202,7 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 		t.Fatal("error parsing json:", err)
 	}
 
-	if !reflect.DeepEqual(listInput.Args, []string{"workspace", "list", "infra/"}) {
+	if !reflect.DeepEqual(listInput.Args, []string{"workspace", "list"}) {
 		t.Fatal("unexpected args for workspace list (1):", listInput.Args)
 	}
 
@@ -213,7 +211,7 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 		t.Fatal("error parsing json:", err)
 	}
 
-	if !reflect.DeepEqual(selectInput.Args, []string{"workspace", "select", workspaceName, "infra/"}) {
+	if !reflect.DeepEqual(selectInput.Args, []string{"workspace", "select", workspaceName}) {
 		t.Fatal("unexpected args for workspace select:", selectInput.Args)
 	}
 }

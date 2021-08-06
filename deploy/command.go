@@ -81,6 +81,10 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		}
 	}()
 
+	if err := terraformContainer.CopyTerraformLockIfExists(state.OutputStream, state.ErrorStream); err != nil {
+		return err
+	}
+
 	if err := terraformContainer.ConfigureBackend(state.OutputStream, state.ErrorStream, prepareTerraformResponse, false); err != nil {
 		return err
 	}
@@ -99,18 +103,17 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 
 	commonConfigFile := "config/common.json"
 	if _, err := os.Stat(commonConfigFile); !os.IsNotExist(err) {
-		planCommand = append(planCommand, "-var-file="+commonConfigFile)
+		planCommand = append(planCommand, "-var-file=../"+commonConfigFile)
 	}
 
 	envConfigFilename := "config/" + args.EnvName + ".json"
 	if _, err := os.Stat(envConfigFilename); !os.IsNotExist(err) {
-		planCommand = append(planCommand, "-var-file="+envConfigFilename)
+		planCommand = append(planCommand, "-var-file=../"+envConfigFilename)
 	}
 
 	planCommand = append(
 		planCommand,
 		"-out="+planFilename,
-		"infra/",
 	)
 
 	fmt.Fprintf(
