@@ -294,24 +294,25 @@ func (terraformContainer *Container) CopyTerraformLockIfExists(outputStream, err
 		return err
 	}
 
-	if lockExists {
-		fmt.Fprintf(
-			errorStream,
-			"\n%s\n%s\n",
-			util.FormatInfo("copying .terraform.lock.hcl from release"),
-			util.FormatCommand("cp /build/.terraform.lock.hcl /code/infra/"),
-		)
-
-		if err := terraformContainer.RunCommand([]string{"cp", "/build/.terraform.lock.hcl", "/code/infra/"}, map[string]string{}, outputStream, errorStream); err != nil {
-			return err
-		}
-	} else {
+	if !lockExists {
 		fmt.Fprintf(
 			errorStream,
 			"\n%s\n%s\n",
 			util.FormatInfo(".terraform.lock.hcl not found"),
 			util.FormatCommand(""),
 		)
+		return nil
+	}
+
+	fmt.Fprintf(
+		errorStream,
+		"\n%s\n%s\n",
+		util.FormatInfo("copying .terraform.lock.hcl from release"),
+		util.FormatCommand("cp /build/.terraform.lock.hcl /code/infra/"),
+	)
+
+	if err := terraformContainer.RunCommand([]string{"cp", "/build/.terraform.lock.hcl", "/code/infra/"}, map[string]string{}, outputStream, errorStream); err != nil {
+		return err
 	}
 
 	return nil
@@ -325,13 +326,10 @@ func (terraformContainer *Container) CheckFileExists(path string, errorStream io
 		return false, err
 	}
 
-	for _, line := range strings.Split(outputBuffer.String(), "\n") {
-		for _, word := range strings.Fields(line) {
-			if word == "exists" {
-				return true, nil
-			}
-		}
+	if outputBuffer.String() == "exists\n" {
+		return true, nil
 	}
+
 	return false, nil
 }
 
