@@ -301,7 +301,7 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 	fmt.Fprintf(state.OutputStream, "Checking for .terraform.lock.hcl \n")
 	if _, err := os.Stat("./infra/.terraform.lock.hcl"); err == nil {
 		fmt.Fprintf(state.OutputStream, "	Adding .terraform.lock.hcl to release \n")
-		b, err := ioutil.ReadFile("./infra/.terraform.lock.hcl") // just pass the file name
+		b, err := ioutil.ReadFile("./infra/.terraform.lock.hcl")
 		if err != nil {
 			return "", fmt.Errorf("error on reading .terraform.lock.hcl %w", err)
 		}
