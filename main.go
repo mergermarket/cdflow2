@@ -37,7 +37,7 @@ Commands:
   setup                                   - configure your pipeline
   release [ OPTS ] VERSION                - build and publish a new software artefact
   deploy  [ OPTS ] ENV VERSION            - create & update infrastructure using software artefact
-  destroy [ OPTS ] ENV [ VERSION ]        - destroy all Terraform managed infrastructure in ENV
+  destroy [ OPTS ] ENV VERSION            - destroy all Terraform managed infrastructure in ENV
   shell   ENV [ OPTS ] [ SHELLARGS ]      - access terraform for debugging and tf state manipulation
   help    [ COMMAND ]                     - display detailed help and usage information for a command
 
@@ -106,7 +106,7 @@ Shell Arguments:
 const destroyHelp string = `
 Usage:
 
-  cdflow2 [ GLOBALOPTS ] destroy [ OPTS ] ENV [ VERSION ]
+  cdflow2 [ GLOBALOPTS ] destroy [ OPTS ] ENV VERSION
 
 Args:
 

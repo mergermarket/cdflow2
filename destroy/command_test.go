@@ -44,15 +44,14 @@ func TestParseArgs(t *testing.T) {
 		assertMatchBool(t, gotBool, wantBool)
 	})
 
-	t.Run("set env", func(t *testing.T) {
+	t.Run("sad path set env", func(t *testing.T) {
 		args := []string{"foo"}
-		gotArgs, gotBool := destroy.ParseArgs(args)
+		_, gotBool := destroy.ParseArgs(args)
 
 		var result destroy.CommandArgs
 		result.EnvName = "foo"
-		wantArgs, wantBool := &result, true
+		wantBool := false
 
-		assertMatchArgs(t, gotArgs, wantArgs)
 		assertMatchBool(t, gotBool, wantBool)
 	})
 
@@ -69,22 +68,19 @@ func TestParseArgs(t *testing.T) {
 		assertMatchBool(t, gotBool, wantBool)
 	})
 
-	t.Run("set plan-only + env", func(t *testing.T) {
+	t.Run("sad path set plan-only + env", func(t *testing.T) {
 		args := []string{"-p", "foo"}
-		gotArgs, gotBool := destroy.ParseArgs(args)
+		_, gotBool := destroy.ParseArgs(args)
 
 		var result destroy.CommandArgs
 		result.EnvName = "foo"
 		result.PlanOnly = true
-		wantArgs, wantBool := &result, true
+		wantBool := false
 
-		assertMatchArgs(t, gotArgs, wantArgs)
 		assertMatchBool(t, gotBool, wantBool)
 
 		// alternate flag
 		args = []string{"--plan-only", "foo"}
-		gotArgs, gotBool = destroy.ParseArgs(args)
-		assertMatchArgs(t, gotArgs, wantArgs)
 		assertMatchBool(t, gotBool, wantBool)
 	})
 
