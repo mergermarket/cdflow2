@@ -2,6 +2,7 @@ package destroy
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/mergermarket/cdflow2/command"
@@ -35,6 +36,9 @@ func ParseArgs(args []string) (*CommandArgs, bool) {
 		}
 	}
 	if result.EnvName == "" {
+		return nil, false
+	}
+	if result.Version == "" {
 		return nil, false
 	}
 	return &result, true
@@ -102,13 +106,23 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 
 	if args.Version != "" {
 		planCommand = append(
-			planCommand[:len(planCommand)-1],
-			"-var-file=/build/release-metadata.json",
+			planCommand, "-var-file=/build/release-metadata.json",
 		)
 		destroyCommand = append(
-			destroyCommand[:len(destroyCommand)-1],
-			"-var-file=/build/release-metadata.json",
+			destroyCommand, "-var-file=/build/release-metadata.json",
 		)
+	}
+
+	commonConfigFile := "config/common.json"
+	if _, err := os.Stat(commonConfigFile); !os.IsNotExist(err) {
+		planCommand = append(planCommand, "-var-file=../"+commonConfigFile)
+		destroyCommand = append(destroyCommand, "-var-file=../"+commonConfigFile)
+	}
+
+	envConfigFilename := "config/" + args.EnvName + ".json"
+	if _, err := os.Stat(envConfigFilename); !os.IsNotExist(err) {
+		planCommand = append(planCommand, "-var-file=../"+envConfigFilename)
+		destroyCommand = append(destroyCommand, "-var-file=../"+envConfigFilename)
 	}
 
 	fmt.Fprintf(
