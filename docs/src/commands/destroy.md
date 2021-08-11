@@ -9,7 +9,7 @@ route: /commands/destroy
 ## Usage
 
 ```
-cdflow2 [ GLOBALOPTS ] destroy [ OPTS ] ENV [ VERSION ]
+cdflow2 [ GLOBALOPTS ] destroy [ OPTS ] ENV VERSION
 
 Args:
 
@@ -26,15 +26,6 @@ Options:
 Terraform is configured as described in [common terraform setup](common-terraform-setup), followed by commands
 equivalent to:
 
-```shell
-terraform plan -destroy \
-    infra/
-
-terraform destroy -auto-approve \
-    infra/
-```
-
-when version provided:
 ```shell
 terraform plan -destroy \
     -var-file=/build/release-metadata.json \
