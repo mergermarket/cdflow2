@@ -42,7 +42,7 @@ terraform apply \
     plan-TIMESTAMP
 ```
 
-### First deployment to an environment
+## First Deployment to an Environment
 
 The `--new-state` or `-n` flag is required for the first deployment into a particular
 environment, but then must be removed for subsequent deployments. This is a safety
