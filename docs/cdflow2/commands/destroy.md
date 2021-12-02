@@ -1,9 +1,3 @@
----
-name: Destroy
-menu: Commands
-route: /commands/destroy
----
-
 # Destroy
 
 ## Usage
@@ -27,13 +21,13 @@ Terraform is configured as described in [common terraform setup](common-terrafor
 equivalent to:
 
 ```shell
+cd infra
+
 terraform plan -destroy \
-    -var-file=/build/release-metadata.json \
-    infra/
+    -var-file=/build/release-metadata.json
 
 terraform destroy -auto-approve \
-    -var-file=/build/release-metadata.json \
-    infra/
+    -var-file=/build/release-metadata.json
 ```
 
 ## Options

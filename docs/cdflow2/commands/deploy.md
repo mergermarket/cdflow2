@@ -9,18 +9,18 @@ See [usage](./usage) for global options.
 ### Arguments:
 
 <dl>
-  <dt>ENV</dt>
+  <dt><code>ENV</code></dt>
   <dd>The environment being deployed to.</dd>
-  <dt>VERSION</dt>
+  <dt><code>VERSION</code></dt>
   <dd>The version being deployed (must match what was released).</dd>
 </dl>
 
 ### Options:
 
 <dl>
-  <dt>--plan-only | -p</dt>
+  <dt><code>--plan-only</code> | <code>-p</code></dt>
   <dd>Create the terraform plan only, don't apply.</dd>
-  <dt>--new-state | -n</dt>
+  <dt><code>--new-state</code> | <code>-n</code></dt>
   <dd>Allow run without a pre-existing tfstate file.</dd>
 </dl>
 
@@ -30,12 +30,13 @@ Terraform is configured as described in [common terraform setup](common-terrafor
 equivalent to:
 
 ```shell
+cd infra
+
 terraform plan \
     -input=false \
     -var-file release-metadata-VERSION.json \
     -var-file config/ENV.json \
-    -out=plan-TIMESTAMP \
-    infra/
+    -out=plan-TIMESTAMP
 
 terraform apply \
     -input=false \

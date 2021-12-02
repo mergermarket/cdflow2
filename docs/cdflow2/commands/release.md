@@ -21,5 +21,6 @@ to another.
 The terraform command performed is equivalent to:
 
 ```shell
-terraform init -backend=false infra
+cd infra
+terraform init -backend=false
 ```
