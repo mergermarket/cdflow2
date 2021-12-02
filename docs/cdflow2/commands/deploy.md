@@ -4,6 +4,8 @@
 
 <code>cdflow2 [ GLOBALOPTS ] deploy [ OPTS ] ENV VERSION</code>
 
+See [usage](./usage) for global options.
+
 ### Arguments:
 
 <dl>
@@ -40,13 +42,9 @@ terraform apply \
     plan-TIMESTAMP
 ```
 
-## Options
+### First deployment to an environment
 
-```
---plan-only : 
-Perform the terraform plan command only. The terraform apply command is skipped.
-
---new-state :
-Toggles a parameter sent to the config container. 
-It is received before terraform commands are performed and used to trigger state existance validations.
-```
+The `--new-state` or `-n` flag is required for the first deployment into a particular
+environment, but then must be removed for subsequent deployments. This is a safety
+feature that ensures you do not lose track of your tfstate (e.g. if the component name
+changes but you haven't moved the statefile accordingly).
