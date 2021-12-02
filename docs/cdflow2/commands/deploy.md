@@ -1,26 +1,26 @@
----
-name: Deploy
-menu: Commands
-route: /commands/deploy
----
-
 # Deploy
 
 ## Usage
 
-```
-cdflow2 [ GLOBALOPTS ] deploy [ OPTS ] ENV VERSION
+<code>cdflow2 [ GLOBALOPTS ] deploy [ OPTS ] ENV VERSION</code>
 
-Args:
+### Arguments:
 
-  ENV                 - the environment being deployed to.
-  VERSION             - the version being deployed (must match what was released).
+<dl>
+  <dt>ENV</dt>
+  <dd>The environment being deployed to.</dd>
+  <dt>VERSION</dt>
+  <dd>The version being deployed (must match what was released).</dd>
+</dl>
 
-Options:
+### Options:
 
-  --plan-only | -p    - create the terraform plan only, don't apply.
-  --new-state | -n    - allow run without a pre-existing tfstate file.
-```
+<dl>
+  <dt>--plan-only | -p</dt>
+  <dd>Create the terraform plan only, don't apply.</dd>
+  <dt>--new-state | -n</dt>
+  <dd>Allow run without a pre-existing tfstate file.</dd>
+</dl>
 
 ## Description
 

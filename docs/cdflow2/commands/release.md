@@ -1,9 +1,3 @@
----
-name: Release
-menu: Commands
-route: /commands/release
----
-
 # Release
 
 ## Usage
