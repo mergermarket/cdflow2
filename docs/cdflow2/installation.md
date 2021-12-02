@@ -33,7 +33,7 @@ Download the [latest release from GitHub](https://github.com/mergermarket/cdflow
 
 To check your installation, run:
 
-```sh
+```bash
 cdflow2
 ```
 

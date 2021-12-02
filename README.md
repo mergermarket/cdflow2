@@ -146,7 +146,7 @@ When a non-release command is exected the config container is invoked to prepare
 
 If it doesn't already exist then an empty backend [partial configuration](https://www.terraform.io/docs/backends/config.html#partial-configuration) is written to `infra/terraform.tf` with the backend type returned from the config container:
 
-```terraform
+```hcl
 terraform {
   backend "RETURNED_BACKEND_TYPE" {}
 }

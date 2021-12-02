@@ -8,15 +8,14 @@ route: /commands/release
 
 ## Usage
 
-```
-cdflow2 [ GLOBALARGS ] release VERSION
+<code>cdflow2 [ GLOBALARGS ] release VERSION</code>
 
-Args:
+### Arguments:
 
-  VERSION     - the version being released. We recommend using evergreen version numbers (i.e. simple
-                incrementing integers, probably from your CI service), combined with something to identify 
-                the commit - e.g. "34-a5dbc4a7".
-```
+<dl>
+  <dt><code>VERSION</code></dt>
+  <dd>The version being released. We recommend using evergreen version numbers (i.e. simple incrementing integers, probably from your CI service), combined with something to identify the commit - e.g. "34-a5dbc4a7".</dd>
+</dl>
 
 ## Description
 

@@ -85,7 +85,7 @@ Terraform code should be placed in an `infra/` folder - by convention in the fol
 
 The following [variables](https://www.terraform.io/docs/configuration/variables.html) should be defined:
 
-```terraform
+```hcl
 variable "release" {
   type        = "map"
   description = "release metadata: version, commit, component, plus any config container supplied data"
@@ -95,7 +95,7 @@ variable "release" {
 In addition each build will result in additional map being provided - e.g. if you have have a
 [`mergermarket/cdflow2-release-docker-ecr`](https://registry.hub.docker.com/r/mergermarket/cdflow2-release-docker-ecr) build under a "docker" key:
 
-```terraform
+```hcl
 variable "docker" {
   type        = "map"
   description = "release data from cdflow2-release-docker-ecr: image_id"
