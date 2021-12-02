@@ -22,20 +22,20 @@ cdflow2 [ GLOBALARGS ] COMMAND [ ARGS ]
 ## Global Options
 
 <dl>
-  <dt>`--component COMPONENT_NAME`</dt>
+  <dt><code>--component COMPONENT_NAME</code></dt>
   <dd>Override component name (inferred from git by default).</dd>
-  <dt>`--commit GIT_COMMIT`</dt>
+  <dt><code>--commit GIT_COMMIT</code></dt>
   <dd>Override the git commit (inferred from git by default).</dd>
-  <dt>`--no-pull-config`</dt>
+  <dt><code>--no-pull-config</code></dt>
   <dd>Don't pull the config container (must exist).</dd>
-  <dt>`--no-pull-release`</dt>
+  <dt><code>--no-pull-release</code></dt>
   <dd>Don't pull the release container (must exist).</dd>
-  <dt>`--no-pull-terraform`</dt>
+  <dt><code>--no-pull-terraform</code></dt>
   <dd>Don't pull the terraform container (must exist).</dd>
-  <dt>`--quiet` \| `-q`</dt>
+  <dt><code>--quiet</code> | <code>-q</code></dt>
   <dd>Hide verbose description of what's going on.</dd>
-  <dt>`--version`</dt>
+  <dt><code>--version</code></dt>
   <dd>Print the version number and exit.</dd>
-  <dt>`--help`</dt>
+  <dt><code>--help</code></dt>
   <dd>Print the help message and exit.</dd>
 </dl>
