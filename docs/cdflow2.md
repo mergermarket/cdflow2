@@ -43,3 +43,4 @@ and the build is published somewhere (the software is "released"), followed by o
 
 * [Install cdflow2](cdflow2/installation)
 * [Project Setup](cdflow2/project-setup)
+* [cdflow2 Design](cdflow2/design)
