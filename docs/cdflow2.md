@@ -26,6 +26,9 @@ navigation:
   - name: Destroy Command
     url: commands/destroy
     icon: Delete
+  - name: Design
+    url: design
+    icon: architecture
 ---
 
 # Overview

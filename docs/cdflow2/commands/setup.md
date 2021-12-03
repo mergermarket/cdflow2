@@ -8,9 +8,9 @@ route: /commands/setup
 
 ## Usage
 
-```
-cdflow2 [ GLOBALARGS ] setup
-```
+`cdflow2 [ GLOBALARGS ] setup`
+
+See [usage](./usage) for global options.
 
 ## Description
 

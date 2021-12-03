@@ -2,7 +2,7 @@
 
 ## Usage
 
-<code>cdflow2 [ GLOBALOPTS ] deploy [ OPTS ] ENV VERSION</code>
+`cdflow2 [ GLOBALOPTS ] deploy [ OPTS ] ENV VERSION`
 
 See [usage](./usage) for global options.
 
@@ -29,7 +29,7 @@ See [usage](./usage) for global options.
 Terraform is configured as described in [common terraform setup](common-terraform-setup), followed by commands
 equivalent to:
 
-```shell
+```none
 cd infra
 
 terraform plan \

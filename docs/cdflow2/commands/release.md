@@ -2,7 +2,9 @@
 
 ## Usage
 
-<code>cdflow2 [ GLOBALARGS ] release VERSION</code>
+`cdflow2 [ GLOBALARGS ] release VERSION`
+
+See [usage](./usage) for global options.
 
 ### Arguments:
 
@@ -20,7 +22,8 @@ to another.
 
 The terraform command performed is equivalent to:
 
-```shell
+```none
 cd infra
+
 terraform init -backend=false
 ```

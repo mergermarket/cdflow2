@@ -2,25 +2,32 @@
 
 ## Usage
 
-```
-cdflow2 [ GLOBALOPTS ] destroy [ OPTS ] ENV VERSION
+`cdflow2 [ GLOBALOPTS ] destroy [ OPTS ] ENV VERSION`
 
-Args:
+See [usage](./usage) for global options.
 
-  ENV                 - the environment containing the infrastructure being destroyed.
-  VERSION             - the version to destroy (must match a pre-existing release).
+### Arguments:
 
-Options:
+<dl>
+  <dt><code>ENV</code></dt>
+  <dd>The environment containing the infrastructure being destroyed.</dd>
+  <dt>VERSION</dt>
+  <dd>The version to destroy (must match a pre-existing release).</dd>
+</dl>
 
-  --plan-only | -p    - generate an execution plan only, don't destroy.
-```
+### Options:
+
+<dl>
+  <dt><code>--plan-only</code> | <code>-p</code></dt>
+  <dd>Generate an execution plan only, don't destroy.</dd>
+</dl>
 
 ## Description
 
 Terraform is configured as described in [common terraform setup](common-terraform-setup), followed by commands
 equivalent to:
 
-```shell
+```none
 cd infra
 
 terraform plan -destroy \
@@ -28,11 +35,4 @@ terraform plan -destroy \
 
 terraform destroy -auto-approve \
     -var-file=/build/release-metadata.json
-```
-
-## Options
-
-```
---plan-only : 
-Perform the terraform plan command only. The terraform destroy command is skipped.
 ```
