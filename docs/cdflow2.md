@@ -28,7 +28,7 @@ navigation:
     icon: Delete
   - name: Design
     url: design
-    icon: architecture
+    icon: Architecture
 ---
 
 # Overview
