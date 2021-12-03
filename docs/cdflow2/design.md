@@ -57,22 +57,22 @@ The Setup RPC is invoked when the user runs the [`setup` command](commands/setup
 
 #### Setup Request
 
-`Action`
+Action
 :   Always "setup".
 
-`Commit`
+Commit
 :   The id of the Git commit.
 
-`Component`
+Component
 :   The name of the component inferred from the Git repo name (or passed explicitly by the user).
 
-`Config`
+Config
 :   Config in [cdflow.yaml](cdflow-yaml-reference) under `config` > `params`.
 
-`Env`
+Env
 :   The environment variables set for the main `cdflow2` process.
 
-`ReleaseRequirements`
+ReleaseRequirements
 :   This is a map of string arrays. The keys are the names of builds and the values are "needs" declared by each build (this is described in more detail in the ConfigureRelease RPC below).
 
 #### Setup Response
