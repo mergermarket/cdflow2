@@ -8,7 +8,9 @@ The core of `cdflow2` is quite small, using plugins running in [Docker](https://
 containers to perform configuration, perform the builds and run terraform. This page describes
 how these plugin containers work.
 
-## Configuration
+## Contents
+
+## Config Plugin
 
 You must choose one config container to use `cdflow2` via the `config` > `image` value in
 [cdflow.yaml](cdflow-yaml-reference). It is responsible for:
@@ -51,102 +53,153 @@ Two eDocker volumes are also mapped into the config container for all commands e
 * `/release` - during the release command this is used to collect the information to save in the release. For the commands that run Terraform this is where the release is retrieved to.
 * `/cache` - available as a place to cache data between runs.
 
-### `Setup` RPC
+### Setup RPC
 
 The Setup RPC is invoked when the user runs the [`setup` command](commands/setup).
 
-#### Setup Request
+#### SetupRequest Properties
 
-Action
-:   Always "setup".
+`Action`
+: Always "setup".
 
-Commit
-:   The id of the Git commit.
+`Commit`
+: The id of the Git commit.
 
-Component
-:   The name of the component inferred from the Git repo name (or passed explicitly by the user).
+`Component`
+: The name of the component inferred from the Git repo name (or passed explicitly by the user).
 
-Config
-:   Config in [cdflow.yaml](cdflow-yaml-reference) under `config` > `params`.
+`Config`
+: Config in [cdflow.yaml](cdflow-yaml-reference) under `config` > `params`.
 
-Env
-:   The environment variables set for the main `cdflow2` process.
+`Env`
+: The environment variables set for the main `cdflow2` process.
 
-ReleaseRequirements
-:   This is a map of string arrays. The keys are the names of builds and the values are "needs" declared by each build (this is described in more detail in the ConfigureRelease RPC below).
+`ReleaseRequirements`
+: This is a map of string arrays. The keys are the names of builds and the values are "needs" declared by each build (this is described in more detail in the ConfigureRelease RPC below).
 
-#### Setup Response
+#### SetupResponse Properties
 
-* `Success` - boolean value indicating success or failure.
+`Success`
+: Boolean value indicating success or failure.
 
-### `ConfigureRelease` RPC
+### ConfigureRelease RPC
 
 The ConfigureRelease RPC is invoked at the almost at start of the [release command](commands/release). There is first
 a call to each build container to collect the "needs" of each build (an array of string identifiers), then this RPC
-is invoked to provide the config for each build in the form of environment variables - for example a build that
+is invoked to provide the config for each build in the form of environment variables\n: for example a build that
 needs to upload a lambda function would indicate a "lambda" need. The config container would then add environment
 variables containing the AWS credentials and the name of the bucket to upload to. The exact details of these interfaces
 are a contract between the build and config containers and are outside the scope of `cdflow2` itself.
 
-#### ConfigureReleaseRequest
+#### ConfigureReleaseRequest Properties
 
-* `Action` - always "configure_release".
-* `Commit` - the id of the Git commit.
-* `Component` - the name of the component inferred from the Git repo name (or passed explicitly by the user).
-* `Config` - config in [cdflow.yaml](cdflow-yaml-reference) under `config` > `params`.
-* `Env` - the environment variables set for the main `cdflow2` process.
-* `ReleaseRequirements` - this is a map of string arrays. The keys are the names of builds and the values are "needs" declared by each build (described above).
-* `Version` - the version string passed to the [release command](commands/release).
+`Action`
+: Always "configure_release".
 
-#### ConfigureReleaseResponse
+`Commit`
+: The id of the Git commit.
 
-* `AdditionalMetadata` - string keys and values that are added to the `release` Terraform variable to make additional infomration available during deployment (e.g. the config container might receive a `team` parameter and want to make this available to the Terraform code).
-* `Env` - a map of environment maps. The keys at the top level are the names of the builds (i.e. the keys user `builds` in [cdflow.yaml](cdflow-yaml-reference)) and the values are maps of environment variable names and values for each build.
-* `Success` - boolean value indicating success or failure.
+`Component`
+: The name of the component inferred from the Git repo name (or passed explicitly by the user).
 
-### `UploadRelease` RPC
+`Config`
+: Config in [cdflow.yaml](cdflow-yaml-reference) under `config` > `params`.
+
+`Env`
+: The environment variables set for the main `cdflow2` process.
+
+`ReleaseRequirements`
+: This is a map of string arrays. The keys are the names of builds and the values are "needs" declared by each build (described above).
+
+`Version`
+: The version string passed to the [release command](commands/release).
+
+#### ConfigureReleaseResponse Properties
+
+`AdditionalMetadata`
+: String keys and values that are added to the `release` Terraform variable to make additional infomration available during deployment (e.g. the config container might receive a `team` parameter and want to make this available to the Terraform code).
+
+`Env`
+: A map of environment maps. The keys at the top level are the names of the builds (i.e. the keys user `builds` in [cdflow.yaml](cdflow-yaml-reference)) and the values are maps of environment variable names and values for each build.
+
+`Success`
+: Boolean value indicating success or failure.
+
+### UploadRelease RPC
 
 The UploadRelease RPC is invoked at the end of the [release command](commands/release) in order to persist the release
 data collected in the `/release` volume. Since the container persists since the preceeding ConfigureRelease RPC the data
 provided is not repeated and the configure container must hold onto what it needs.
 
-#### UploadReleaseRequest
+#### UploadReleaseRequest Properties
 
-* `Action` - always "upload_release"
-* `TerraformImage` - the unique Terraform docker image id to ensure that the same version of Terraform is always used with this release. The config container is responsible for adding this to the persisted release (not sure why this should be the config container rather than `cdflow2` adding it to the release volume directly - could be a future simplification of this interface).
+`Action`
+: Always "upload_release"
 
-#### UploadReleaseResponse
+`TerraformImage`
+: The unique Terraform docker image id to ensure that the same version of Terraform is always used with this release. The config container is responsible for adding this to the persisted release (not sure why this should be the config container rather than `cdflow2` adding it to the release volume directly - could be a future simplification of this interface).
 
-* `Message` - a message to be displayed to the user (not sure why this is here since the config container can interact directly with the user now - could be removed as a future simplification of this interface).
-* `Success` - boolean value indicating success or failure.
+#### UploadReleaseResponse Properties
 
-### `PrepareTerraform` RPC
+`Message`
+: A message to be displayed to the user (not sure why this is here since the config container can interact directly with the user now - could be removed as a future simplification of this interface).
+
+`Success`
+: Boolean value indicating success or failure.
+
+### PrepareTerraform RPC
 
 The PrepareTerraform RPC is invoked at the start of a command that runs Terraform (i.e.
 [deploy](commands/deploy), [destroy](commands/destroy) or [shell](commands/shell)). Its job is to download the saved
 release to the `/release` mapped volume, provide the [Terraform backend configuration](https://www.terraform.io/docs/language/settings/backends/configuration.html), and to provide environment variables passed to terraform (typically credentials used by Terraform providers).
 
-#### PrepareTerraformRequest
+#### PrepareTerraformRequest Properties
 
-* `Action` - always "prepare_terraform".
-* `Commit` - the id of the Git commit.
-* `Component` - the name of the component inferred from the Git repo name (or passed explicitly by the user).
-* `Config` - config in [cdflow.yaml](cdflow-yaml-reference) under `config` > `params`.
-* `Env` - the environment variables set for the main `cdflow2` process.
-* `EnvName` - the name of the environment passed to the command (e.g. [deploy](commands/deploy)).
-* `StateShouldExist` - optional boolean. Where present will cause validation that the statefile either does or doesn't exist (always provided for [deploy](commands/deploy)).
-* `Version` - the version string passed to the command (e.g. [deploy](commands/deploy)).
+`Action`
+: Always "prepare_terraform".
 
-#### PrepareTerraformResponse
+`Commit`
+: The id of the Git commit.
 
-* `Env` - map of environment variable names and values to use for the Terraform container.
-* `Success` - boolean value indicating success or failure.
-* `TerraformImage` - the Terraform image identifier to run.
-* `TerraformBackendType` - the [Terraform backend type](https://www.terraform.io/docs/language/settings/backends/configuration.html#backend-types) - e.g. "s3".
-* `TerraformBackendConfig` - deprecated: old mechanism for passing Terraform backend config that didn't support hiding sensitive values.
-* `TerraformBackendConfigParameters` - map of Terraform backend config parameters. Each value is a futher map containing `Value` and `DisplayValue`. `DisplayValue` should be provided where the value is sensitive (the display value will be displayed instead between square brackets to indicate it is a placeholder for the actual value).
+`Component`
+: The name of the component inferred from the Git repo name (or passed explicitly by the user).
 
-## Builds
+`Config`
+: Config in [cdflow.yaml](cdflow-yaml-reference) under `config` > `params`.
+
+`Env`
+: The environment variables set for the main `cdflow2` process.
+
+`EnvName`
+: The name of the environment passed to the command (e.g. [deploy](commands/deploy)).
+
+`StateShouldExist`
+: Optional boolean. Where present will cause validation that the statefile either does or doesn't exist (always provided for [deploy](commands/deploy)).
+
+`Version`
+: The version string passed to the command (e.g. [deploy](commands/deploy)).
+
+#### PrepareTerraformResponse Properties
+
+`Env`
+: Map of environment variable names and values to use for the Terraform container.
+
+`Success`
+: Boolean value indicating success or failure.
+
+`TerraformImage`
+: The Terraform image identifier to run.
+
+`TerraformBackendType`
+:  The [Terraform backend type](https://www.terraform.io/docs/language/settings/backends/configuration.html#backend-types):  e.g. "s3".
+
+`TerraformBackendConfig`
+:  DEPRECATED: Old mechanism for passing Terraform backend config that didn't support hiding sensitive values.
+
+`TerraformBackendConfigParameters`
+:  Map of Terraform backend config parameters. Each value is a futher map containing `Value` and `DisplayValue`. `DisplayValue` should be provided where the value is sensitive (the display value will be displayed instead between square brackets to indicate it is a placeholder for the actual value).
+
+## Build Plugins
 
 [cdflow.yaml](cdflow-yaml-reference) can container zero or more named builds under the `builds` key. Each build
 must have an `image` property, which is used to create a build container for that build. Build containers are
@@ -172,11 +225,20 @@ Once the config PrepareRelase RPC has been called the build container will be in
 parameters. In addition to the environment variables provided by the config container, the following will also be
 set:
 
-* `VERSION` - the version string passed to the [release command](commands/release).
-* `COMPONENT` - the name of the component inferred from the Git repo name (or passed explicitly by the user).
-* `COMMIT` - the id of the Git commit.
-* `BUILD_ID` - the name of the build in [cdflow.yaml](cdflow-yaml-reference).
-* `MANIFEST_PARAMS` - the `params` key under the build in [cdflow.yaml](cdflow-yaml-reference) encoded in JSON.
+`VERSION`
+: The version string passed to the [release command](commands/release).
+
+`COMPONENT`
+: The name of the component inferred from the Git repo name (or passed explicitly by the user).
+
+`COMMIT`
+: The id of the Git commit.
+
+`BUILD_ID`
+: The name of the build in [cdflow.yaml](cdflow-yaml-reference).
+
+`MANIFEST_PARAMS`
+: The `params` key under the build in [cdflow.yaml](cdflow-yaml-reference) encoded in JSON.
 
 The release volume will also be mapped within the container as `/build` so it can save data within the release. See
 https://github.com/mergermarket/cdflow2-build-files for an example build plugin that makes use of this.
@@ -185,7 +247,7 @@ At the end of the build the container should write a `/release-metadata.json` fi
 keys and values within this JSON document will be provided as a Terraform map variable with the same name as
 the build.
 
-## Terraform
+## Terraform Container
 
 Terraform is run through a container. The image to use is configured in [cdflow.yaml](cdflow-yaml-reference) in
 the `terraform` > `image` key. This might be an official

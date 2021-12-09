@@ -8,42 +8,50 @@ See [usage](./usage) for global options.
 
 ### Arguments:
 
-<dl>
-  <dt><code>ENV</code></dt>
-  <dd>The environment being deployed to.</dd>
-  <dt><code>VERSION</code></dt>
-  <dd>The version being deployed (must match what was released).</dd>
-</dl>
+`ENV`
+: The environment being deployed to.
+
+`VERSION`
+: The version being deployed (must match what was released).
 
 ### Options:
 
-<dl>
-  <dt><code>--plan-only</code> | <code>-p</code></dt>
-  <dd>Create the terraform plan only, don't apply.</dd>
-  <dt><code>--new-state</code> | <code>-n</code></dt>
-  <dd>Allow run without a pre-existing tfstate file.</dd>
-</dl>
+`--plan-only` | `-p`
+: Create the terraform plan only, don't apply.
+
+`--new-state` | `-n`
+: Allow run without a pre-existing tfstate file.
 
 ## Description
 
-Terraform is configured as described in [common terraform setup](common-terraform-setup), followed by commands
+Terraform is configured as described in [common terraform setup](../common-terraform-setup), followed by commands
 equivalent to:
 
-```none
-cd infra
-
-terraform plan \
+```shell-session
+$ cd infra
+$ terraform plan \
     -input=false \
     -var-file release-metadata-VERSION.json \
     -var-file config/ENV.json \
     -out=plan-TIMESTAMP
-
-terraform apply \
+$ 
+$ terraform apply \
     -input=false \
     plan-TIMESTAMP
 ```
 
 ## First Deployment to an Environment
+
+The [Terraform State](https://www.terraform.io/docs/language/state/index.html) is used to track
+resources managed by Terraform. It ensures that Terraform is operating on the same resources between
+runs in a given environment. It is therefore important that the state file exists to avoid losing
+track of resources. Unfortuntely if you change something that is part of the location of the state
+file (e.g. the component name, derived by default from the repo name) then it isn't possible to tell
+this is the case rather than the reason for no state file 
+
+When running `terraform apply` for the first time in an environment
+ the statefile should not exist. On
+subsequent runs the statefile should
 
 The `--new-state` or `-n` flag is required for the first deployment into a particular
 environment, but then must be removed for subsequent deployments. This is a safety

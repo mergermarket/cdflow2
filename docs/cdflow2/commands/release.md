@@ -8,10 +8,8 @@ See [usage](./usage) for global options.
 
 ### Arguments:
 
-<dl>
-  <dt><code>VERSION</code></dt>
-  <dd>The version being released. We recommend using evergreen version numbers (i.e. simple incrementing integers, probably from your CI service), combined with something to identify the commit - e.g. "34-a5dbc4a7".</dd>
-</dl>
+`VERSION`
+: The version being released. We recommend using evergreen version numbers (i.e. simple incrementing integers, probably from your CI service), combined with something to identify the commit - e.g. "34-a5dbc4a7".
 
 ## Description
 
@@ -22,8 +20,7 @@ to another.
 
 The terraform command performed is equivalent to:
 
-```none
-cd infra
-
-terraform init -backend=false
+```shell-session
+$ cd infra
+$ terraform init -backend=false
 ```

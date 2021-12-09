@@ -26,6 +26,12 @@ navigation:
   - name: Destroy Command
     url: commands/destroy
     icon: Delete
+  - name: Shell Command
+    url: commands/shell
+    icon: AttachMoney
+  - name: Common Terraform Setup
+    url: common-terraform-setup
+    icon: Computer
   - name: Design
     url: design
     icon: Architecture

@@ -11,10 +11,10 @@ This guide covers setting up a project to use `cdflow2`. It assumes you have alr
 
 To deploy a project with cdflow2 it needs a git repo. For example use the [GitHub CLI](https://cli.github.com/manual/gh_repo_create) to create a repo:
 
-```shell
-# change "myorg" and "myrepo" to something that makes sense for you
-gh repo create myorg/myrepo
-cd myrepo
+```shell-session
+$ # change "myorg" and "myrepo" to something that makes sense for you
+$ gh repo create myorg/myrepo
+$ cd myrepo
 ```
 
 ## `cdflow.yaml` Boilerplate
@@ -71,8 +71,8 @@ Available build images include:
 
 Now that you've chosen a config image and build images, you can complete your setup interactively with:
 
-```shell
-cdflow2 setup
+```shell-session
+$ cdflow2 setup
 ```
 
 The options will depend on the chosen config container.
@@ -119,9 +119,9 @@ and will be created for you automatically when you deploy. There's no need to ad
 provided by the config container you are using. This file can safely be ignored or committed - run the following from the
 project root to ignore it:
 
-```shell
-echo backend.tf >> infra/.gitignore
-git commit -m 'ignore generated backend.tf file' infra/.gitignore
+```shell-session
+$ echo backend.tf >> infra/.gitignore
+$ git commit -m 'ignore generated backend.tf file' infra/.gitignore
 ```
 
 ## Config
@@ -141,18 +141,18 @@ To provide the environment specific values of any config variables you have defi
 
 Once this one-off setup has been completed, you can build and deploy your software as follows:
 
-```shell
-# choose a version number:
-version=1
-
-# build the software
-cdflow2 release $version
-
-# deploy the software to an "aslive" environment:
-cdflow2 deploy aslive $version
-
-# deploy the software to a "live" environment:
-cdflow2 deploy live $version
+```shell-session
+$ # choose a version number:
+$ version=1
+$ 
+$ # build the software
+$ cdflow2 release $version
+$ 
+$ # deploy the software to an "aslive" environment:
+$ cdflow2 deploy aslive $version
+$ 
+$ # deploy the software to a "live" environment:
+$ cdflow2 deploy live $version
 ```
 
 ### Choosing a Version Number

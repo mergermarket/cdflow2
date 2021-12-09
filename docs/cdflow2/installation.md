@@ -9,20 +9,20 @@ route: /installation
 
 If you're a [Homebrew](https://brew.sh/) user, install with:
 
-```bash
-brew install mergermarket/tap/cdflow2
+```shell-session
+$ brew install mergermarket/tap/cdflow2
 ```
 
 To upgrade:
 
-```bash
-brew upgrade mergermarket/tap/cdflow2
+```shell-session
+$ brew upgrade mergermarket/tap/cdflow2
 ```
 
 Also available, but not recommended!
 
-```bash
-brew remove mergermarket/tap/cdflow2
+```shell-session
+$ brew remove mergermarket/tap/cdflow2
 ```
 
 ## Other Systems
@@ -33,8 +33,8 @@ Download the [latest release from GitHub](https://github.com/mergermarket/cdflow
 
 To check your installation, run:
 
-```bash
-cdflow2
+```shell-session
+$ cdflow2
 ```
 
 You should see a usage message.
