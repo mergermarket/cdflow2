@@ -21,7 +21,6 @@ type CommandArgs struct {
 }
 
 func isTty(stream os.File) bool {
-
 	stat, _ := stream.Stat()
 	if stat.Mode()&os.ModeCharDevice == 0 {
 		return false

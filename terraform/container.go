@@ -152,7 +152,7 @@ This is a partial backend configuration - see:
 
   https://www.terraform.io/docs/backends/config.html#partial-configuration
 
-There's no need to add any additional configuraiton as this is provided by the
+There's no need to add any additional configuration as this is provided by the
 config container you are using. This file can safely be ignored or committed - run
 the following from the project root to ignore it:
 
@@ -199,7 +199,6 @@ func (terraformContainer *Container) ConfigureBackend(outputStream, errorStream 
 	command = append(command, "init")
 	if !download {
 		command = append(command, "-get=false")
-		//command = append(command, "-get-plugins=false")
 	}
 
 	displayCommand := make([]string, len(command))
