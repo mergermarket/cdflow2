@@ -5,7 +5,7 @@ set -e
 if [ "$1" == "live" ]; then
     fastly_site_id=0D4hN8fWNcMnEp6CbAIDup
     bucket=live-developer-frontend-router-static-content
-elif [ "$2" == "aslive" ]; then
+elif [ "$1" == "aslive" ]; then
     fastly_site_id=08pLXpbfh088YBYI1c4Qlk
     bucket=aslive-developer-frontend-router-static-content
 else
