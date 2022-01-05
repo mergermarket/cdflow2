@@ -5,7 +5,7 @@ route: /project-setup
 
 # Project Setup
 
-This guide covers setting up a project to use `cdflow2`. It assumes you have already [installed cdflow2](installation).
+This guide covers setting up a project to use `cdflow2`. It assumes you have already [installed cdflow2](installation.md).
 
 ## Git repository
 
@@ -31,7 +31,7 @@ terraform:
   image: hashicorp/terraform:0.12.23
 ```
 
-See [cdflow.yaml reference](cdflow-yaml-reference).
+See [cdflow.yaml reference](cdflow-yaml-reference.md).
 
 ## Config Image
 

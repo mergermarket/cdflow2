@@ -18,7 +18,7 @@ See [usage](./usage) for global options.
 
 ## Description
 
-Terraform is configured as described in [common terraform setup](../common-terraform-setup), followed by creating a shell.
+Terraform is configured as described in [common terraform setup](common-terraform-setup.md), followed by creating a shell.
 
 The shell may be used interactively:
 

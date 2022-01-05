@@ -12,9 +12,11 @@ export default {
       'Release',
       'Deploy',
       'Destroy',
-      'Common Terraform Setup'
+      'Common Terraform Setup',
+      'Shell'
     ] },
     'cdflow.yaml Reference',
+    'Design'
   ],
   host: '0.0.0.0',
   src: './src'

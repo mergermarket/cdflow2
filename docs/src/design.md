@@ -13,7 +13,7 @@ how these plugin containers work.
 ## Config Plugin
 
 You must choose one config container to use `cdflow2` via the `config` > `image` value in
-[cdflow.yaml](cdflow-yaml-reference). It is responsible for:
+[cdflow.yaml](cdflow-yaml-reference.md). It is responsible for:
 
 * Performing interactive setup with the [setup command](commands/setup).
 * Providing configuration for the build(s) at the start of the [release command](commands/release).
@@ -69,7 +69,7 @@ The Setup RPC is invoked when the user runs the [`setup` command](commands/setup
 : The name of the component inferred from the Git repo name (or passed explicitly by the user).
 
 `Config`
-: Config in [cdflow.yaml](cdflow-yaml-reference) under `config` > `params`.
+: Config in [cdflow.yaml](cdflow-yaml-reference.md) under `config` > `params`.
 
 `Env`
 : The environment variables set for the main `cdflow2` process.
@@ -103,7 +103,7 @@ are a contract between the build and config containers and are outside the scope
 : The name of the component inferred from the Git repo name (or passed explicitly by the user).
 
 `Config`
-: Config in [cdflow.yaml](cdflow-yaml-reference) under `config` > `params`.
+: Config in [cdflow.yaml](cdflow-yaml-reference.md) under `config` > `params`.
 
 `Env`
 : The environment variables set for the main `cdflow2` process.
@@ -120,7 +120,7 @@ are a contract between the build and config containers and are outside the scope
 : String keys and values that are added to the `release` Terraform variable to make additional infomration available during deployment (e.g. the config container might receive a `team` parameter and want to make this available to the Terraform code).
 
 `Env`
-: A map of environment maps. The keys at the top level are the names of the builds (i.e. the keys user `builds` in [cdflow.yaml](cdflow-yaml-reference)) and the values are maps of environment variable names and values for each build.
+: A map of environment maps. The keys at the top level are the names of the builds (i.e. the keys user `builds` in [cdflow.yaml](cdflow-yaml-reference.md)) and the values are maps of environment variable names and values for each build.
 
 `Success`
 : Boolean value indicating success or failure.
@@ -165,7 +165,7 @@ release to the `/release` mapped volume, provide the [Terraform backend configur
 : The name of the component inferred from the Git repo name (or passed explicitly by the user).
 
 `Config`
-: Config in [cdflow.yaml](cdflow-yaml-reference) under `config` > `params`.
+: Config in [cdflow.yaml](cdflow-yaml-reference.md) under `config` > `params`.
 
 `Env`
 : The environment variables set for the main `cdflow2` process.
@@ -201,7 +201,7 @@ release to the `/release` mapped volume, provide the [Terraform backend configur
 
 ## Build Plugins
 
-[cdflow.yaml](cdflow-yaml-reference) can container zero or more named builds under the `builds` key. Each build
+[cdflow.yaml](cdflow-yaml-reference.md) can container zero or more named builds under the `builds` key. Each build
 must have an `image` property, which is used to create a build container for that build. Build containers are
 executed when the [release command](commnads/release) is run. They are often dependent on config
 provided by a config container but are otherwise decoupled from them. The interface is much simpler than a config
@@ -235,10 +235,10 @@ set:
 : The id of the Git commit.
 
 `BUILD_ID`
-: The name of the build in [cdflow.yaml](cdflow-yaml-reference).
+: The name of the build in [cdflow.yaml](cdflow-yaml-reference.md).
 
 `MANIFEST_PARAMS`
-: The `params` key under the build in [cdflow.yaml](cdflow-yaml-reference) encoded in JSON.
+: The `params` key under the build in [cdflow.yaml](cdflow-yaml-reference.md) encoded in JSON.
 
 The release volume will also be mapped within the container as `/build` so it can save data within the release. See
 https://github.com/mergermarket/cdflow2-build-files for an example build plugin that makes use of this.
@@ -249,7 +249,7 @@ the build.
 
 ## Terraform Container
 
-Terraform is run through a container. The image to use is configured in [cdflow.yaml](cdflow-yaml-reference) in
+Terraform is run through a container. The image to use is configured in [cdflow.yaml](cdflow-yaml-reference.md) in
 the `terraform` > `image` key. This might be an official
 [Terraform Image from Hashicorp](https://hub.docker.com/r/hashicorp/terraform/), or might be a custom one
 (e.g. based on an official image but with additional dependencies installed).
