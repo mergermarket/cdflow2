@@ -1,0 +1,18 @@
+on:
+  workflow_dispatch:
+
+name: Build and upload docs
+
+jobs:
+  this:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build docs
+        run: scripts/build-docs.sh
+      - name: Publish docs to aslive
+        run: scripts/publish-docs.sh aslive
+      - name: Publish docs to live
+        run: scripts/publish-docs.sh live
