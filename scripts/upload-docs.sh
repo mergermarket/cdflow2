@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 if [ "$1" == "live" ]; then
     fastly_site_id=0D4hN8fWNcMnEp6CbAIDup
     bucket=live-developer-frontend-router-static-content
@@ -14,6 +16,7 @@ else
 fi
 
 echo ${fromAwsAccountAlias}
+env
 
 docker pull mergermarket/switch-role
 SAVE_XTRACE_STATUS="\$(set +o | grep xtrace)"; set +x
@@ -22,12 +25,10 @@ eval "$( docker run --rm -i \
     mergermarket/switch-role \
         --account "$fromAwsAccountAlias" \
         --role-name admin \
-        --role-session-name "$JOB_NAME-upload" \
+        --role-session-name "upload" \
 )"
 eval "$SAVE_XTRACE_STATUS"; unset SAVE_XTRACE_STATUS
 
-echo "help"
-aws help
 
 echo "call identity"
 aws sts get-caller-identity
