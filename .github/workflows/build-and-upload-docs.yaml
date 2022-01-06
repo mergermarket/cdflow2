@@ -24,6 +24,8 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::733578946173:role/platform-deploy
           aws-region: eu-west-1
+          role-skip-session-tagging: true
+          role-duration-seconds: 900          
       - name: Upload docs to aslive
         run: |
           scripts/upload-docs.sh aslive
@@ -33,6 +35,8 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::371640587010:role/platform-deploy
           aws-region: eu-west-1
+          role-skip-session-tagging: true
+          role-duration-seconds: 900          
       - name: Upload docs to live
         run: |
           scripts/upload-docs.sh live
