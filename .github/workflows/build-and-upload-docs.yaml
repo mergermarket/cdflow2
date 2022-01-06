@@ -11,12 +11,17 @@ jobs:
       FASTLY_API_KEY: ${{ secrets.FASTLY_API_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.PLATFORM_AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.PLATFORM_AWS_SECRET_ACCESS_KEY }}
+      SESSION_NAME: gh-action/${{ github.workflow }}          
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build docs
         run: scripts/build-docs.sh
       - name: Upload docs to aslive
-        run: scripts/upload-docs.sh aslive
+        run: |
+          eval $( docker run --rm -i -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY mergermarket/switch-role --account mmgdev --role-name admin --role-session-name "$SESSION_NAME" )
+          scripts/upload-docs.sh aslive
       - name: Upload docs to live
-        run: scripts/upload-docs.sh live
+        run: |
+          eval $( docker run --rm -i -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY mergermarket/switch-role --account mmgprod --role-name admin --role-session-name "$SESSION_NAME" )
+          scripts/upload-docs.sh live
