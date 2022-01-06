@@ -19,9 +19,7 @@ jobs:
         run: scripts/build-docs.sh
       - name: Upload docs to aslive
         run: |
-          eval $( docker run --rm -i -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY mergermarket/switch-role --account mmgdev --role-name admin --role-session-name "$SESSION_NAME" )
           scripts/upload-docs.sh aslive
       - name: Upload docs to live
         run: |
-          eval $( docker run --rm -i -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY mergermarket/switch-role --account mmgprod --role-name admin --role-session-name "$SESSION_NAME" )
           scripts/upload-docs.sh live
