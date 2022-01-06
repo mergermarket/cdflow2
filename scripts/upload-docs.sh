@@ -13,6 +13,8 @@ else
     exit 1
 fi
 
+aws sts get-caller-identity
+
 aws s3 sync --delete --metadata 'Surrogate-Key=cdflow2' docs/dist/ s3://$bucket/opensource/cdflow2/
 
 if [ "$FASTLY_API_KEY" != "" ]; then
