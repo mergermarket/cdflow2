@@ -1,3 +1,8 @@
+---
+name: Design
+route: /design
+---
+
 # Design
 
 `cdflow2` is a standalone binary program written in [Go](https://go.dev/). It is designed

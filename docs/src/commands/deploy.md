@@ -1,3 +1,9 @@
+---
+name: Deploy
+menu: Commands
+route: /commands/deploy
+---
+
 # Deploy
 
 ## Usage

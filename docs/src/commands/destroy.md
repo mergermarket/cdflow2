@@ -1,3 +1,9 @@
+---
+name: Destroy
+menu: Commands
+route: /commands/destroy
+---
+
 # Destroy
 
 ## Usage

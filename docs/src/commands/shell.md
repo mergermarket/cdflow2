@@ -1,3 +1,9 @@
+---
+name: Shell
+menu: Commands
+route: /commands/shell
+---
+
 # Shell
 
 ## Usage

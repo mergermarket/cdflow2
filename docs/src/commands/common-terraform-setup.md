@@ -1,7 +1,7 @@
 ---
 name: Common Terraform Setup
 menu: Commands
-route: /common-terraform-setup
+route: /commands/common-terraform-setup
 ---
 
 # Common Terraform Setup
