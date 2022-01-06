@@ -1,2 +1,4 @@
 /cdflow2*
 .test-registry-id
+.idea/
+/docs/dist

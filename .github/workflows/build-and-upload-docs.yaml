@@ -1,0 +1,22 @@
+on:
+  workflow_dispatch:
+
+name: Build and upload docs
+
+jobs:
+  this:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    env:
+      FASTLY_API_KEY: ${{ secrets.FASTLY_API_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.PLATFORM_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.PLATFORM_AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build docs
+        run: scripts/build-docs.sh
+      - name: Upload docs to aslive
+        run: scripts/upload-docs.sh aslive
+      - name: Upload docs to live
+        run: scripts/upload-docs.sh live

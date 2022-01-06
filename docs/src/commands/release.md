@@ -1,3 +1,9 @@
+---
+name: Release
+menu: Commands
+route: /commands/release
+---
+
 # Release
 
 ## Usage
@@ -13,7 +19,7 @@ See [usage](./usage) for global options.
 
 ## Description
 
-Release builds each of the `builds` configured in [`cdflow.yaml`](../cdflow-yaml-reference#builds-optional),
+Release builds each of the `builds` configured in [`cdflow.yaml`](../cdflow-yaml-reference.md#builds-optional),
 as well as saving the terraform image and downloaded terraform modules and providrers against the provided
 version number. This ensures that exactly what is deployed to one environment is the same as that promoted
 to another.
