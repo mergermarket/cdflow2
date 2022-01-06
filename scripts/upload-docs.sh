@@ -16,19 +16,6 @@ else
 fi
 
 echo ${fromAwsAccountAlias}
-env
-
-docker pull mergermarket/switch-role
-SAVE_XTRACE_STATUS="\$(set +o | grep xtrace)"; set +x
-eval "$( docker run --rm -i \
-    -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN  \
-    mergermarket/switch-role \
-        --account "$fromAwsAccountAlias" \
-        --role-name admin \
-        --role-session-name "upload" \
-)"
-eval "$SAVE_XTRACE_STATUS"; unset SAVE_XTRACE_STATUS
-
 
 echo "call identity"
 aws sts get-caller-identity

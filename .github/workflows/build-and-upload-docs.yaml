@@ -15,11 +15,24 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        
       - name: Build docs
         run: scripts/build-docs.sh
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::733578946173:role/admin
+          aws-region: eu-west-1
       - name: Upload docs to aslive
         run: |
           scripts/upload-docs.sh aslive
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::371640587010:role/admin
+          aws-region: eu-west-1
       - name: Upload docs to live
         run: |
           scripts/upload-docs.sh live
