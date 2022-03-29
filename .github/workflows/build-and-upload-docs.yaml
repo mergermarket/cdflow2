@@ -9,8 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FASTLY_API_KEY: ${{ secrets.FASTLY_API_KEY }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.PLATFORM_AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.PLATFORM_AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.CAPPLATFORM_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.CAPPLATFORM_AWS_SECRET_ACCESS_KEY }}
       SESSION_NAME: gh-action/${{ github.workflow }}          
     steps:
       - name: Checkout code
@@ -22,8 +22,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.PLATFORM_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.PLATFORM_AWS_SECRET_ACCESS_KEY }}        
+          aws-access-key-id: ${{ secrets.CAPPLATFORM_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CAPPLATFORM_AWS_SECRET_ACCESS_KEY }}        
           role-to-assume: arn:aws:iam::733578946173:role/platform-deploy
           aws-region: eu-west-1
           role-skip-session-tagging: true
@@ -35,8 +35,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.PLATFORM_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.PLATFORM_AWS_SECRET_ACCESS_KEY }}     
+          aws-access-key-id: ${{ secrets.CAPPLATFORM_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CAPPLATFORM_AWS_SECRET_ACCESS_KEY }}     
           role-to-assume: arn:aws:iam::371640587010:role/platform-deploy
           aws-region: eu-west-1
           role-skip-session-tagging: true
