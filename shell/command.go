@@ -132,7 +132,6 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 	}
 
 	shellCommand := []string{"/bin/sh"}
-	shellCommandandArgs := shellCommand
 
 	tty := isTty(*os.Stdin)
 
@@ -144,7 +143,7 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }()
 	}
 
-	shellCommandandArgs = append(shellCommand, args.ShellArgs...)
+	shellCommandandArgs := append(shellCommand, args.ShellArgs...)
 
 	if err := terraformContainer.RunInteractiveCommand(
 		shellCommandandArgs,
