@@ -31,7 +31,7 @@ func TestParseArgsWhenEnv(t *testing.T) {
 	assertMatchArgs := func(t *testing.T, gotArgs, wantArgs *release.CommandArgs) {
 		t.Helper()
 		if gotArgs.Version != wantArgs.Version {
-			t.Errorf("Version: got %s wnat %s", gotArgs.Version, wantArgs.Version)
+			t.Errorf("Version: got %s want %s", gotArgs.Version, wantArgs.Version)
 		}
 		if !Equals(gotArgs.ReleaseData, wantArgs.ReleaseData) {
 			t.Errorf("ReleaseData: got %s want %s", gotArgs.ReleaseData, wantArgs.ReleaseData)

@@ -152,7 +152,7 @@ func TestParseArgsWhenEnv(t *testing.T) {
 			t.Errorf("EnvName: got %s want %s", gotArgs.EnvName, wantArgs.EnvName)
 		}
 		if gotArgs.Version != wantArgs.Version {
-			t.Errorf("Version: got %s wnat %s", gotArgs.Version, wantArgs.Version)
+			t.Errorf("Version: got %s want %s", gotArgs.Version, wantArgs.Version)
 		}
 		if !Equals(gotArgs.ShellArgs, wantArgs.ShellArgs) {
 			t.Errorf("ShellArgs: got %s want %s", gotArgs.ShellArgs, wantArgs.ShellArgs)
