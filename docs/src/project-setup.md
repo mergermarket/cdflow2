@@ -40,7 +40,7 @@ out deploying to AWS is:
 
 ```yaml
 config:
-  image: mergermarket/cdflow-config-aws-simple
+  image: mergermarket/cdflow2-config-aws-simple
 ```
 
 Available config images include:
@@ -59,7 +59,7 @@ add to the `builds` section of cdflow.yaml. For example, to do a [docker](https:
 ```yaml
 builds:
   docker:
-    image: mergermarket/cdflow-build-docker-ecr
+    image: mergermarket/cdflow2-build-docker-ecr
 ```
 
 Available build images include:
