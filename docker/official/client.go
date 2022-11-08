@@ -324,6 +324,8 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 			_, _ = fmt.Fprintf(options.ErrorStream, "\n%s\n", util.FormatInfo(fmt.Sprintf("unable to set tty size: %v", err)))
 		}
 
+		// to print newline 'correctly' after setting raw mode (e.g. with fmt.Fprintf...), use '\r\n' instead of just '\n'
+		// https://github.com/golang/go/issues/50761#issuecomment-1019372593
 		oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
 		if err != nil {
 			return err
