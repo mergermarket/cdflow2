@@ -352,8 +352,7 @@ func (terraformContainer *Container) RunInteractiveCommand(
 	outputStream,
 	errorStream io.Writer,
 	tty bool,
-	ttyWidth int,
-	ttyHeight int) error {
+	interactive bool) error {
 	return terraformContainer.dockerClient.Exec(&docker.ExecOptions{
 		ID:           terraformContainer.id,
 		Cmd:          cmd,
@@ -362,8 +361,7 @@ func (terraformContainer *Container) RunInteractiveCommand(
 		OutputStream: outputStream,
 		ErrorStream:  errorStream,
 		Tty:          tty,
-		TtyWidth:     ttyWidth,
-		TtyHeight:    ttyHeight,
+		Interactive:  interactive,
 	})
 }
 

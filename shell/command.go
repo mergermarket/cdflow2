@@ -6,12 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/crypto/ssh/terminal"
-
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/terraform"
-	"github.com/mergermarket/cdflow2/util"
 )
 
 // CommandArgs contains specific arguments to the deploy command.
@@ -134,37 +131,23 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 	}
 
 	shellCommand := []string{"/bin/sh"}
+	shellCommandWithArgs := append(shellCommand, args.ShellArgs...)
 
-	tty := isTty(*os.Stdin)
-	ttyWidth, ttyHeight := 150, 25
-
-	if tty && len(args.ShellArgs) < 1 {
-		oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
-		if err != nil {
-			return err
-		}
-		defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }()
-
-		w, h, err := terminal.GetSize(int(os.Stdin.Fd()))
-		if err != nil {
-			_, _ = fmt.Fprintf(state.ErrorStream, "\n%s\n", util.FormatInfo(fmt.Sprintf("unable to get terminal size, using default width: %d and height: %d, err: %v\n", ttyWidth, ttyHeight, err)))
-		} else {
-			ttyWidth = w
-			ttyHeight = h
-		}
+	interactive := false
+	if len(args.ShellArgs) < 1 {
+		interactive = true
 	}
 
-	shellCommandandArgs := append(shellCommand, args.ShellArgs...)
+	tty := isTty(*os.Stdin)
 
 	if err := terraformContainer.RunInteractiveCommand(
-		shellCommandandArgs,
+		shellCommandWithArgs,
 		prepareTerraformResponse.Env,
 		state.InputStream,
 		state.OutputStream,
 		state.ErrorStream,
 		tty,
-		ttyWidth,
-		ttyHeight); err != nil {
+		interactive); err != nil {
 		return err
 	}
 

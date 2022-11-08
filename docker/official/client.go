@@ -17,6 +17,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/registry"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/mergermarket/cdflow2/docker"
 	"github.com/mergermarket/cdflow2/util"
@@ -306,14 +307,28 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 	}
 	defer attachResponse.Close() // does not return error
 
-	if options.Tty {
+	if options.Tty && options.Interactive {
+		width, height, err := terminal.GetSize(int(os.Stdin.Fd()))
+		if err != nil {
+			width = 150
+			height = 25
+
+			_, _ = fmt.Fprintf(options.ErrorStream, "\n%s\n", util.FormatInfo(fmt.Sprintf("unable to get terminal size, using default width: %d and height: %d, err: %v", width, height, err)))
+		}
+
 		err = dockerClient.client.ContainerExecResize(context.Background(), exec.ID, types.ResizeOptions{
-			Width:  uint(options.TtyWidth),
-			Height: uint(options.TtyHeight),
+			Width:  uint(width),
+			Height: uint(height),
 		})
 		if err != nil {
-			_, _ = fmt.Fprintf(options.ErrorStream, "\n%s\n\n", util.FormatInfo(fmt.Sprintf("unable to set tty size: %v", err)))
+			_, _ = fmt.Fprintf(options.ErrorStream, "\n%s\n", util.FormatInfo(fmt.Sprintf("unable to set tty size: %v", err)))
 		}
+
+		oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
+		if err != nil {
+			return err
+		}
+		defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }()
 	}
 
 	if err := dockerClient.streamHijackedResponse(
