@@ -17,6 +17,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/registry"
+
 	"github.com/mergermarket/cdflow2/docker"
 	"github.com/mergermarket/cdflow2/util"
 )
@@ -304,6 +305,16 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 		return fmt.Errorf("error attaching to docker exec: %w", err)
 	}
 	defer attachResponse.Close() // does not return error
+
+	if options.Tty {
+		err = dockerClient.client.ContainerExecResize(context.Background(), exec.ID, types.ResizeOptions{
+			Width:  uint(options.TtyWidth),
+			Height: uint(options.TtyHeight),
+		})
+		if err != nil {
+			_, _ = fmt.Fprintf(options.ErrorStream, "\n%s\n\n", util.FormatInfo(fmt.Sprintf("unable to set tty size: %v", err)))
+		}
+	}
 
 	if err := dockerClient.streamHijackedResponse(
 		attachResponse,

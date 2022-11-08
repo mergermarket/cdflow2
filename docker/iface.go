@@ -56,5 +56,7 @@ type ExecOptions struct {
 	OutputStream io.Writer
 	ErrorStream  io.Writer
 	Tty          bool
+	TtyWidth     int
+	TtyHeight    int
 	WorkingDir   string
 }

@@ -6,10 +6,12 @@ import (
 	"os"
 	"strings"
 
+	"golang.org/x/crypto/ssh/terminal"
+
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/terraform"
-	"golang.org/x/crypto/ssh/terminal"
+	"github.com/mergermarket/cdflow2/util"
 )
 
 // CommandArgs contains specific arguments to the deploy command.
@@ -134,6 +136,7 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 	shellCommand := []string{"/bin/sh"}
 
 	tty := isTty(*os.Stdin)
+	ttyWidth, ttyHeight := 150, 25
 
 	if tty && len(args.ShellArgs) < 1 {
 		oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
@@ -141,6 +144,14 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 			return err
 		}
 		defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }()
+
+		w, h, err := terminal.GetSize(int(os.Stdin.Fd()))
+		if err != nil {
+			_, _ = fmt.Fprintf(state.ErrorStream, "\n%s\n", util.FormatInfo(fmt.Sprintf("unable to get terminal size, using default width: %d and height: %d, err: %v\n", ttyWidth, ttyHeight, err)))
+		} else {
+			ttyWidth = w
+			ttyHeight = h
+		}
 	}
 
 	shellCommandandArgs := append(shellCommand, args.ShellArgs...)
@@ -151,7 +162,9 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		state.InputStream,
 		state.OutputStream,
 		state.ErrorStream,
-		tty); err != nil {
+		tty,
+		ttyWidth,
+		ttyHeight); err != nil {
 		return err
 	}
 
