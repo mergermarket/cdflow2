@@ -17,6 +17,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/registry"
+	"golang.org/x/crypto/ssh/terminal"
+
 	"github.com/mergermarket/cdflow2/docker"
 	"github.com/mergermarket/cdflow2/util"
 )
@@ -304,6 +306,32 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 		return fmt.Errorf("error attaching to docker exec: %w", err)
 	}
 	defer attachResponse.Close() // does not return error
+
+	if options.Tty && options.Interactive {
+		width, height, err := terminal.GetSize(int(os.Stdin.Fd()))
+		if err != nil {
+			width = 150
+			height = 25
+
+			_, _ = fmt.Fprintf(options.ErrorStream, "\n%s\n", util.FormatInfo(fmt.Sprintf("unable to get terminal size, using default width: %d and height: %d, err: %v", width, height, err)))
+		}
+
+		err = dockerClient.client.ContainerExecResize(context.Background(), exec.ID, types.ResizeOptions{
+			Width:  uint(width),
+			Height: uint(height),
+		})
+		if err != nil {
+			_, _ = fmt.Fprintf(options.ErrorStream, "\n%s\n", util.FormatInfo(fmt.Sprintf("unable to set tty size: %v", err)))
+		}
+
+		// to print newline 'correctly' after setting raw mode (e.g. with fmt.Fprintf...), use '\r\n' instead of just '\n'
+		// https://github.com/golang/go/issues/50761#issuecomment-1019372593
+		oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
+		if err != nil {
+			return err
+		}
+		defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }()
+	}
 
 	if err := dockerClient.streamHijackedResponse(
 		attachResponse,

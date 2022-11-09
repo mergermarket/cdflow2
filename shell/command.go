@@ -9,7 +9,6 @@ import (
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/terraform"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 // CommandArgs contains specific arguments to the deploy command.
@@ -132,26 +131,23 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 	}
 
 	shellCommand := []string{"/bin/sh"}
+	shellCommandWithArgs := append(shellCommand, args.ShellArgs...)
+
+	interactive := false
+	if len(args.ShellArgs) < 1 {
+		interactive = true
+	}
 
 	tty := isTty(*os.Stdin)
 
-	if tty && len(args.ShellArgs) < 1 {
-		oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
-		if err != nil {
-			return err
-		}
-		defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }()
-	}
-
-	shellCommandandArgs := append(shellCommand, args.ShellArgs...)
-
 	if err := terraformContainer.RunInteractiveCommand(
-		shellCommandandArgs,
+		shellCommandWithArgs,
 		prepareTerraformResponse.Env,
 		state.InputStream,
 		state.OutputStream,
 		state.ErrorStream,
-		tty); err != nil {
+		tty,
+		interactive); err != nil {
 		return err
 	}
 

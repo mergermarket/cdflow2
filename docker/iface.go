@@ -56,5 +56,6 @@ type ExecOptions struct {
 	OutputStream io.Writer
 	ErrorStream  io.Writer
 	Tty          bool
+	Interactive  bool
 	WorkingDir   string
 }
