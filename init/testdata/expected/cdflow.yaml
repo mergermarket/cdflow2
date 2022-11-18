@@ -1,0 +1,7 @@
+version: 2
+config:
+  image: mergermarket/cdflow2-config-acuris
+  params:
+    team: platform
+    org: ION
+terraform: mergermarket/terraform:1.2.1

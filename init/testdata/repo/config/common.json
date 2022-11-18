@@ -1,0 +1,5 @@
+{
+  "env": "%{env}",
+  "location": "%{boilerplate_location}",
+  "percent": "%{PERCENT}{keep}"
+}
