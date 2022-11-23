@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -228,27 +229,20 @@ func TestBoilerplate(t *testing.T) {
 	_ = os.Setenv("GIT_COMMITTER_NAME", "cdflow2")
 	_ = os.Setenv("GIT_COMMITTER_EMAIL", "cdflow2")
 
+	gitRepoPath := t.TempDir()
+	err := createTestRepo(gitRepoPath)
+	if err != nil {
+		t.Fatalf("unable to create test git repository: %v", err)
+	}
+
 	t.Run("missing variable", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		repoPath := filepath.Join("testdata", "repo")
 		name := "boilerplate"
-
-		err := os.Rename(filepath.Join(repoPath, "gitdir"), filepath.Join(repoPath, ".git"))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		t.Cleanup(func() {
-			err = os.Rename(filepath.Join(repoPath, ".git"), filepath.Join(repoPath, "gitdir"))
-			if err != nil {
-				t.Logf("unable to rename gitdir: %v", err)
-			}
-		})
 
 		state := &command.GlobalState{ErrorStream: os.Stderr, CodeDir: tmpDir}
 		commandArgs := &CommandArgs{
 			Name:        name,
-			Boilerplate: repoPath,
+			Boilerplate: gitRepoPath,
 			Variables:   nil,
 		}
 
@@ -265,25 +259,12 @@ func TestBoilerplate(t *testing.T) {
 		}
 
 		tmpDir := t.TempDir()
-		repoPath := filepath.Join("testdata", "repo")
 		name := "boilerplate"
-
-		err = os.Rename(filepath.Join(repoPath, "gitdir"), filepath.Join(repoPath, ".git"))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		t.Cleanup(func() {
-			err = os.Rename(filepath.Join(repoPath, ".git"), filepath.Join(repoPath, "gitdir"))
-			if err != nil {
-				t.Logf("unable to rename gitdir: %v", err)
-			}
-		})
 
 		state := &command.GlobalState{ErrorStream: os.Stderr, CodeDir: tmpDir}
 		commandArgs := &CommandArgs{
 			Name:        name,
-			Boilerplate: repoPath,
+			Boilerplate: gitRepoPath,
 			Variables:   map[string]string{"env": "test", "org": "ION", "team": "platform"},
 		}
 
@@ -328,4 +309,64 @@ func TestBoilerplate(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func createTestRepo(tmpDir string) error {
+	rootPath := filepath.Join("testdata", "repo")
+
+	err := filepath.WalkDir(rootPath, func(path string, dirEntry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(rootPath, path)
+		if err != nil {
+			return err
+		}
+
+		if dirEntry.IsDir() {
+			err := os.MkdirAll(filepath.Join(tmpDir, relPath), 0765)
+			if err != nil {
+				return err
+			}
+		} else {
+			b, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+
+			err = os.WriteFile(filepath.Join(tmpDir, relPath), b, 0644)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command("git", "init")
+	cmd.Dir = tmpDir
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	cmd = exec.Command("git", "add", ".")
+	cmd.Dir = tmpDir
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	cmd = exec.Command("git", "commit", "-m", "Create repo for test")
+	cmd.Dir = tmpDir
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
