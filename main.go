@@ -128,27 +128,20 @@ Usage:
 
 Options:
 
-  --name              - Name of the new project repository
-  --org               - Is the name of github Organization
-  --boilerplate       - git URL of the git repo to copy as boilerplate. To use a specific branch (or any valid git refspec), add "?ref=branch-name" to the end of the URL.
-  --team              - Name of the team (e.g platform, trendy, wasabi etc)(lowercase)
-  --init-var          - One or more variables for the templates files
+  --name                            - Name of the new project repository
+  --boilerplate                     - git URL of the git repo to copy as boilerplate. To use a specific branch (or any valid git refspec), add "?ref=branch-name" to the end of the URL.
+  --{boilerplate arguments}         - Dynamic arguments for the templates files. E.g.: "--domain name --account test"
 
 Boilerplate Templates:
 
     The boilerplate might include variable placeholders in any file in the repo
-    with the format: %{NAME}
+    with the format: %{name}
 
-    There are some predefined variables like:
-        PERCENT: to be able to "escape" %{}: %{PERCENT}{something}
-        name: The name name passed by --name
-        team: The team name passed by --team
-        org: The org name passed by --org
-        boilerplate_location: the --boilerplate location
+	The 'name' variable is predefined, using the value passed by --name.
 
     You can specify additional variables by passing arguments like:
-        --init-var "NAME1=value"
-        --init-var "NAME2=other value"
+        --domain name"
+        --account test"
 
 ` + globalOptions
 

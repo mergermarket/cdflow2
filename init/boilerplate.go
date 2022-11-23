@@ -41,17 +41,7 @@ func initFromBoilerplate(state *command.GlobalState, args *CommandArgs) error {
 		return err
 	}
 
-	err = initRepo(state, projectFolder)
-	if err != nil {
-		return err
-	}
-
 	err = renderTemplate(state, args, projectFolder)
-	if err != nil {
-		return err
-	}
-
-	err = commitChanges(state, projectFolder)
 	if err != nil {
 		return err
 	}
@@ -91,14 +81,10 @@ func renderTemplate(state *command.GlobalState, args *CommandArgs, folder string
 	defer func() { fmt.Fprintf(state.ErrorStream, "Rendering finished.\n") }()
 
 	variables := map[string]string{
-		"name":                 args.Name,
-		"team":                 args.Team,
-		"org":                  args.Org,
-		"boilerplate_location": args.Boilerplate,
-		"PERCENT":              "%",
+		"name": args.Name,
 	}
 
-	for k, v := range args.InitVars {
+	for k, v := range args.Variables {
 		variables[k] = v
 	}
 
@@ -155,9 +141,9 @@ func renderTemplate(state *command.GlobalState, args *CommandArgs, folder string
 
 	if len(missingVariables) != 0 {
 		for variable := range missingVariables {
-			fmt.Fprintf(state.ErrorStream, "\nSetup variable '%s' not defined.\n", variable)
+			fmt.Fprintf(state.ErrorStream, "\nVariable '%s' not defined.\n", variable)
 			fmt.Fprintf(state.ErrorStream, "To add the missing variable:\n\n")
-			fmt.Fprintf(state.ErrorStream, "--init-var %s={value}\n", variable)
+			fmt.Fprintf(state.ErrorStream, "--%s {value}\n", variable)
 		}
 
 		fmt.Fprintf(state.ErrorStream, "\nFor a detailed explanation of the missing variable(s) please see boilerplate README.md\n")
@@ -178,11 +164,6 @@ func validateArgs(state *command.GlobalState, args *CommandArgs) error {
 
 	if args.Boilerplate == "" {
 		fmt.Fprintf(state.ErrorStream, "'boilerplate' argument is empty\n")
-		invalid = true
-	}
-
-	if args.Team == "" {
-		fmt.Fprintf(state.ErrorStream, "'team' argument is empty\n")
 		invalid = true
 	}
 

@@ -34,11 +34,6 @@ func initFromBasicTemplate(state *command.GlobalState, args *CommandArgs) error 
 		}
 	}
 
-	err = initRepo(state, projectFolder)
-	if err != nil {
-		return err
-	}
-
 	templateDir, err := fs.Sub(basicTemplate, "template")
 	if err != nil {
 		return err
@@ -74,9 +69,6 @@ func initFromBasicTemplate(state *command.GlobalState, args *CommandArgs) error 
 
 		return nil
 	})
-	if err != nil {
-		return err
-	}
 
-	return commitChanges(state, projectFolder)
+	return err
 }

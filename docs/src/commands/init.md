@@ -17,17 +17,11 @@ See [usage](./usage) for global options.
 `--name`
 : Name of the new project repository
 
-`--org`
-: The name of GitHub Organization
-
 `--boilerplate`
 : Git URL of the git repo to copy as boilerplate. To use a specific branch (or any valid git refspec), add "?ref=branch-name" to the end of the URL.
 
-`--team`
-: Name of the team (e.g. platform, trendy, wasabi etc)(lowercase)
-
-`--init-var`
-: One or more variables for the templates files
+`--{boilerplate arguments}`
+: Dynamic argument for the templates files. E.g.: `--domain name --account test`
 
 ## Description
 
@@ -75,6 +69,6 @@ Create a new project from a boilerplate repository and replace all the template 
 To quickly get up and running you could use one of the supported boilerplates above, these should all be cdflow2 enabled and ready to deploy through aslive and live. 
 You can also create your own boilerplate for future use.
 
-#### Init-vars
+#### Boilerplate variables
 
-The boilerplates above use templating so that they remain generic and not team, product or project specific. The template variables look like `%{team}` and they are replaced when running init by adding a `--init-var=SOME_VALUE` flag. You can use the `--help` flag for more information on these flags in the boilerplates.
+The boilerplates above use templating so that they remain generic and not team, product or project specific. The template variables look like `%{team}` and they are replaced when running init by adding a `--team SOME_VALUE` flag. You can use the `--help` flag for more information on these flags in the boilerplates.

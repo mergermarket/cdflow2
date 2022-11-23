@@ -12,7 +12,7 @@ import (
 )
 
 func TestParseArgs(t *testing.T) {
-	commandArgs, err := ParseArgs([]string{"--name", "test-name", "--boilerplate", "boilerplate-url", "--org", "test-org", "--team", "test-team", "--init-var", "init-1=value-1", "--init-var", "init-2=value-2"})
+	commandArgs, err := ParseArgs([]string{"--name", "test-name", "--boilerplate", "boilerplate-url", "--init-1", "value-1", "--init-2", "value-2"})
 	if err != nil {
 		t.Fatal("unexpected error from parseArgs:", err)
 	}
@@ -21,24 +21,16 @@ func TestParseArgs(t *testing.T) {
 		t.Error("expecting boilerplate-url name, got: ", commandArgs.Boilerplate)
 	}
 
-	if commandArgs.Org != "test-org" {
-		t.Error("expecting test-org name, got: ", commandArgs.Org)
-	}
-
-	if commandArgs.Team != "test-team" {
-		t.Error("expecting test-team name, got: ", commandArgs.Team)
-	}
-
 	if commandArgs.Name != "test-name" {
 		t.Error("expecting test-name name, got: ", commandArgs.Name)
 	}
 
-	if len(commandArgs.InitVars) != 2 {
-		t.Error("expecting InitVars len 2, got: ", len(commandArgs.InitVars))
+	if len(commandArgs.Variables) != 2 {
+		t.Error("expecting variable len 2, got: ", len(commandArgs.Variables))
 	}
 
-	if commandArgs.InitVars["init-1"] != "value-1" || commandArgs.InitVars["init-2"] != "value-2" {
-		t.Error("expecting InitVars to have 'init-1=value-1' and 'init-2=value-2', got: ", commandArgs.InitVars)
+	if commandArgs.Variables["init-1"] != "value-1" || commandArgs.Variables["init-2"] != "value-2" {
+		t.Error("expecting variables to have 'init-1=value-1' and 'init-2=value-2', got: ", commandArgs.Variables)
 	}
 }
 
@@ -257,8 +249,7 @@ func TestBoilerplate(t *testing.T) {
 		commandArgs := &CommandArgs{
 			Name:        name,
 			Boilerplate: repoPath,
-			Team:        "platform",
-			InitVars:    nil,
+			Variables:   nil,
 		}
 
 		err = RunCommand(state, commandArgs, nil)
@@ -293,9 +284,7 @@ func TestBoilerplate(t *testing.T) {
 		commandArgs := &CommandArgs{
 			Name:        name,
 			Boilerplate: repoPath,
-			Team:        "platform",
-			Org:         "ION",
-			InitVars:    map[string]string{"env": "test"},
+			Variables:   map[string]string{"env": "test", "org": "ION", "team": "platform"},
 		}
 
 		err = RunCommand(state, commandArgs, nil)

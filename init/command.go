@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/mergermarket/cdflow2/command"
@@ -21,9 +20,7 @@ const (
 type CommandArgs struct {
 	Name        string
 	Boilerplate string
-	Team        string
-	Org         string
-	InitVars    map[string]string
+	Variables   map[string]string
 }
 
 // RunCommand runs the init command.
@@ -37,7 +34,11 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 
 // ParseArgs parse command line arguments for init command.
 func ParseArgs(args []string) (*CommandArgs, error) {
-	result := CommandArgs{InitVars: map[string]string{}}
+	if len(args)%2 != 0 {
+		return nil, fmt.Errorf("argument length must be even, boolean arguments are not supported")
+	}
+
+	result := CommandArgs{Variables: map[string]string{}}
 	i := 0
 
 	take := func() (string, error) {
@@ -124,45 +125,6 @@ func checkFolder(state *command.GlobalState, folder string) (bool, error) {
 	return false, nil
 }
 
-func initRepo(state *command.GlobalState, folder string) error {
-	fmt.Fprintf(state.ErrorStream, "Init git repository.\n")
-
-	cmd := exec.Command("git", "init", "-b", "main")
-	cmd.Dir = folder
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Fprintf(state.ErrorStream, string(output))
-		return err
-	}
-
-	return nil
-}
-
-func commitChanges(state *command.GlobalState, folder string) error {
-	fmt.Fprintf(state.ErrorStream, "Commit changes.\n")
-
-	cmd := exec.Command("git", "add", ".")
-	cmd.Dir = folder
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Fprintf(state.ErrorStream, string(output))
-		return err
-	}
-
-	cmd = exec.Command("git", "commit", "-m", "Create initial project.")
-	cmd.Dir = folder
-
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		fmt.Fprintf(state.ErrorStream, string(output))
-		return err
-	}
-
-	return nil
-}
-
 func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
 	switch arg {
 	case "--name":
@@ -177,36 +139,19 @@ func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error
 			return false, err
 		}
 		commandArgs.Boilerplate = value
-	case "--team":
-		value, err := take()
-		if err != nil {
-			return false, err
-		}
-		commandArgs.Team = value
-	case "--org":
-		value, err := take()
-		if err != nil {
-			return false, err
-		}
-		commandArgs.Org = value
-	case "--init-var":
-		value, err := take()
-		if err != nil {
-			return false, err
-		}
-
-		parts := strings.Split(value, "=")
-		if len(parts) != 2 {
-			return false, fmt.Errorf("invalid argument for 'init-var': %s", value)
-		}
-
-		if parts[0] == "" || parts[1] == "" {
-			return false, fmt.Errorf("init-var key and value must not be empty: %s", value)
-		}
-
-		commandArgs.InitVars[parts[0]] = parts[1]
 	default:
-		return false, fmt.Errorf("unknown option: %s", arg)
+		if !strings.HasPrefix(arg, "--") {
+			return false, fmt.Errorf("argument name must start with '--': %s", arg)
+		}
+
+		name := strings.TrimPrefix(arg, "--")
+
+		value, err := take()
+		if err != nil {
+			return false, err
+		}
+
+		commandArgs.Variables[name] = value
 	}
 
 	return false, nil

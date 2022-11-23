@@ -1,2 +1,3 @@
 0000000000000000000000000000000000000000 8c0d59e99cbd42b068636f24c39176625e726ae1 Norbert Csibra <norbert.csibra@lab49.com> 1668770742 +0100	commit (initial): Create testdata
 8c0d59e99cbd42b068636f24c39176625e726ae1 e600b70d5cfe4ebe4825ba5cf7e1e47da9bc74e4 Norbert Csibra <norbert.csibra@lab49.com> 1668771015 +0100	commit: Fix percent
+e600b70d5cfe4ebe4825ba5cf7e1e47da9bc74e4 d2c1b7cf6302c7b236d5eca120d1acb099592505 Norbert Csibra <norbert.csibra@lab49.com> 1669192585 +0100	commit: Update common json
