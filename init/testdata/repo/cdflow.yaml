@@ -1,0 +1,7 @@
+version: 2
+config:
+  image: mergermarket/cdflow2-config-acuris
+  params:
+    team: %{team}
+    org: %{org}
+terraform: mergermarket/terraform:1.2.1

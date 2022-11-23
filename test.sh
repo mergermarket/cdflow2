@@ -72,9 +72,13 @@ if [[ ! -z "$1" ]]; then
     tests="$(echo "$tests" | grep "$1")"
 fi
 
-flags=
+flags=()
 if [ "$VERBOSE" != "" ]; then
-    flags=-v
+    flags+=("-v")
 fi
 
-go test $flags $tests
+if [ "$NO_CACHE" != "" ]; then
+    flags+=("-count=1") 
+fi
+
+go test "${flags[@]}" $tests

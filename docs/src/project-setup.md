@@ -5,7 +5,11 @@ route: /project-setup
 
 # Project Setup
 
-This guide covers setting up a project to use `cdflow2`. It assumes you have already [installed cdflow2](installation.md).
+This guide covers setting up a project to use `cdflow2`. It assumes you have already [installed cdflow2](installation).
+
+## Create repository with init command
+
+See [init command](commands/init) for details.
 
 ## Git repository
 
@@ -31,7 +35,7 @@ terraform:
   image: hashicorp/terraform:0.12.23
 ```
 
-See [cdflow.yaml reference](cdflow-yaml-reference.md).
+See [cdflow.yaml reference](cdflow-yaml-reference).
 
 ## Config Image
 
@@ -40,7 +44,7 @@ out deploying to AWS is:
 
 ```yaml
 config:
-  image: mergermarket/cdflow-config-aws-simple
+  image: mergermarket/cdflow2-config-aws-simple
 ```
 
 Available config images include:
@@ -59,7 +63,7 @@ add to the `builds` section of cdflow.yaml. For example, to do a [docker](https:
 ```yaml
 builds:
   docker:
-    image: mergermarket/cdflow-build-docker-ecr
+    image: mergermarket/cdflow2-build-docker-ecr
 ```
 
 Available build images include:

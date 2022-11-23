@@ -7,6 +7,7 @@ import (
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/deploy"
 	"github.com/mergermarket/cdflow2/destroy"
+	cinit "github.com/mergermarket/cdflow2/init"
 	release "github.com/mergermarket/cdflow2/release/command"
 	"github.com/mergermarket/cdflow2/setup"
 	"github.com/mergermarket/cdflow2/shell"
@@ -15,7 +16,7 @@ import (
 
 var version = "undefined"
 
-const globalOptions string = `Global options:
+const globalOptions = `Global options:
 
   --component COMPONENT_NAME   - override component name (inferred from git by default).
   --commit GIT_COMMIT          - override the git commit (inferred from git by default).
@@ -27,7 +28,7 @@ const globalOptions string = `Global options:
   --help                       - print the help message and exit.
 `
 
-const help string = `
+const help = `
 Usage:
 
   cdflow2 [ GLOBALOPTS ] COMMAND [ ARGS ]
@@ -35,15 +36,16 @@ Usage:
 Commands:
 
   setup                                   - configure your pipeline
-  release [ OPTS ] VERSION                - build and publish a new software artefact
-  deploy  [ OPTS ] ENV VERSION            - create & update infrastructure using software artefact
+  init    [ OPTS ]                        - initialize a new project
+  release [ OPTS ] VERSION                - build and publish a new software artifact
+  deploy  [ OPTS ] ENV VERSION            - create & update infrastructure using software artifact
   destroy [ OPTS ] ENV VERSION            - destroy all Terraform managed infrastructure in ENV
   shell   ENV [ OPTS ] [ SHELLARGS ]      - access terraform for debugging and tf state manipulation
   help    [ COMMAND ]                     - display detailed help and usage information for a command
 
 ` + globalOptions
 
-const releaseHelp string = `
+const releaseHelp = `
 Usage:
 
   cdflow2 [ GLOBALOPTS ] release [ OPTS ] VERSION
@@ -59,7 +61,7 @@ Options:
 
 ` + globalOptions
 
-const deployHelp string = `
+const deployHelp = `
 Usage:
 
   cdflow2 [ GLOBALOPTS ] deploy [ OPTS ] ENV VERSION
@@ -76,14 +78,14 @@ Options:
 
 ` + globalOptions
 
-const setupHelp string = `
+const setupHelp = `
 Usage:
 
   cdflow2 [ GLOBALARGS ] setup
 
 ` + globalOptions
 
-const shellHelp string = `
+const shellHelp = `
 Usage:
 
   cdflow2 [ GLOBALOPTS ] shell ENV [ OPTS ] [ SHELLARGS ]
@@ -101,9 +103,9 @@ Shell Arguments:
   The shell arguments are passed to shell 
   ex:  (cdflow2 shell demo test.sh)
   	   (cdflow2 shell demo -v v1.0 -- -c "echo test")
-`
+` + globalOptions
 
-const destroyHelp string = `
+const destroyHelp = `
 Usage:
 
   cdflow2 [ GLOBALOPTS ] destroy [ OPTS ] ENV VERSION
@@ -119,6 +121,30 @@ Options:
 
 ` + globalOptions
 
+const initHelp = `
+Usage:
+
+  cdflow2 [ GLOBALOPTS ] init [ OPTS ]
+
+Options:
+
+  --name                            - Name of the new project repository
+  --boilerplate                     - git URL of the git repo to copy as boilerplate. To use a specific branch (or any valid git refspec), add "?ref=branch-name" to the end of the URL.
+  --{boilerplate arguments}         - Dynamic arguments for the templates files. E.g.: "--domain name --account test"
+
+Boilerplate Templates:
+
+    The boilerplate might include variable placeholders in any file in the repo
+    with the format: %{name}
+
+	The 'name' variable is predefined, using the value passed by --name.
+
+    You can specify additional variables by passing arguments like:
+        --domain name"
+        --account test"
+
+` + globalOptions
+
 func usage(subcommand string) {
 	if subcommand == "release" {
 		fmt.Println(releaseHelp)
@@ -130,6 +156,8 @@ func usage(subcommand string) {
 		fmt.Println(setupHelp)
 	} else if subcommand == "destroy" {
 		fmt.Println(destroyHelp)
+	} else if subcommand == "init" {
+		fmt.Println(initHelp)
 	} else {
 		fmt.Println(help)
 	}
@@ -230,6 +258,19 @@ func main() {
 			usage("destroy")
 		}
 		if err := destroy.RunCommand(state, destroyArgs, env); err != nil {
+			if status, ok := err.(command.Failure); ok {
+				os.Exit(int(status))
+			}
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	} else if globalArgs.Command == "init" {
+		initArgs, err := cinit.ParseArgs(remainingArgs)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			usage("init")
+		}
+		if err := cinit.RunCommand(state, initArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
 				os.Exit(int(status))
 			}
