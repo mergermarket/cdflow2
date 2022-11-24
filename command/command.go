@@ -46,7 +46,7 @@ type GlobalState struct {
 }
 
 // GetGlobalState collects info common to every command.
-func GetGlobalState(globalArgs *GlobalArgs) (*GlobalState, error) {
+func GetGlobalState(globalArgs *GlobalArgs, repoShouldExist bool) (*GlobalState, error) {
 	var state GlobalState
 
 	state.GlobalArgs = globalArgs
@@ -58,32 +58,6 @@ func GetGlobalState(globalArgs *GlobalArgs) (*GlobalState, error) {
 		return nil, err
 	}
 
-	state.Manifest, err = manifest.Load(state.CodeDir)
-	if err != nil {
-		return nil, err
-	}
-	if state.Manifest.Version != 2 {
-		return nil, errors.New("cdflow.yaml version must be 2 for cdflow2")
-	}
-
-	if globalArgs.Component == "" {
-		state.Component, err = GetComponentFromGit()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		state.Component = globalArgs.Component
-	}
-
-	if globalArgs.Commit == "" {
-		state.Commit, err = GetCommitFromGit()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		state.Commit = globalArgs.Commit
-	}
-
 	state.InputStream = os.Stdin
 	state.OutputStream = os.Stdout
 	state.ErrorStream = os.Stderr
@@ -93,6 +67,34 @@ func GetGlobalState(globalArgs *GlobalArgs) (*GlobalState, error) {
 		return nil, fmt.Errorf("error creating docker client: %w", err)
 	}
 	state.DockerClient = dockerClient
+
+	if repoShouldExist {
+		state.Manifest, err = manifest.Load(state.CodeDir)
+		if err != nil {
+			return nil, err
+		}
+		if state.Manifest.Version != 2 {
+			return nil, errors.New("cdflow.yaml version must be 2 for cdflow2")
+		}
+
+		if globalArgs.Component == "" {
+			state.Component, err = GetComponentFromGit()
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			state.Component = globalArgs.Component
+		}
+
+		if globalArgs.Commit == "" {
+			state.Commit, err = GetCommitFromGit()
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			state.Commit = globalArgs.Commit
+		}
+	}
 
 	return &state, nil
 }
