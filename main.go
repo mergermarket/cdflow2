@@ -195,13 +195,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	var state *command.GlobalState
-	if globalArgs.Command == "init" {
-		state, err = command.GetGlobalState(globalArgs, false)
-	} else {
-		state, err = command.GetGlobalState(globalArgs, true)
-	}
-
+	state, err := command.GetGlobalState(globalArgs, globalArgs.Command != "init")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
