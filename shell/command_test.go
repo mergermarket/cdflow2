@@ -9,6 +9,7 @@ import (
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/manifest"
+	"github.com/mergermarket/cdflow2/monitoring"
 	"github.com/mergermarket/cdflow2/shell"
 	"github.com/mergermarket/cdflow2/test"
 )
@@ -46,6 +47,7 @@ func TestRunCommand(t *testing.T) {
 			NoPullConfig:    true,
 			NoPullTerraform: true,
 		},
+		MonitoringClient: monitoring.NewDatadogClient(),
 	}
 
 	repoDigests, err := state.DockerClient.GetImageRepoDigests(test.GetConfig("TEST_TERRAFORM_IMAGE"))
