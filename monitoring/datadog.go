@@ -11,21 +11,20 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
 )
 
-type Monitoring struct {
-	Account     string
+type DatadogClient struct {
 	Command     string
 	Environment string
+	ConfigData  map[string]string
 	Project     string
 	StatusCode  int
-	Team        string
 	Version     string
 }
 
-func NewMonitoring() *Monitoring {
-	return &Monitoring{}
+func NewDatadogClient() *DatadogClient {
+	return &DatadogClient{}
 }
 
-func (m *Monitoring) SubmitEvent(panicErr any) {
+func (m *DatadogClient) SubmitEvent(panicErr any) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to get hostname: %v", err)
@@ -59,11 +58,11 @@ func (m *Monitoring) SubmitEvent(panicErr any) {
 		fmt.Fprintf(os.Stderr, "Error when calling Datadog `EventsApi.CreateEvent`: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	} else {
-		fmt.Fprintf(os.Stderr, "Datadog event submitted.")
+		fmt.Fprintf(os.Stderr, "Datadog event submitted.\n")
 	}
 }
 
-func (m *Monitoring) collectTags() []string {
+func (m *DatadogClient) collectTags() []string {
 	tags := []string{
 		"command:" + m.Command,
 		"version:" + m.Version,
@@ -80,22 +79,18 @@ func (m *Monitoring) collectTags() []string {
 		tags = append(tags, "project:"+m.Project)
 	}
 
-	if m.Team != "" {
-		tags = append(tags, "team:"+m.Team)
-	}
-
 	if m.Environment != "" {
 		tags = append(tags, "env:"+m.Environment)
 	}
 
-	if m.Account != "" {
-		tags = append(tags, "account:"+m.Account)
+	for k, v := range m.ConfigData {
+		tags = append(tags, fmt.Sprintf("%s:%s", k, v))
 	}
 
 	return tags
 }
 
-func (m *Monitoring) createEventBody(panicErr any) string {
+func (m *DatadogClient) createEventBody(panicErr any) string {
 	status := "was successful"
 	if panicErr != nil {
 		status = "panicked"
