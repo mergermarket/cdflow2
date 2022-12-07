@@ -12,6 +12,7 @@ import (
 )
 
 type DatadogClient struct {
+	APIKey      string
 	Command     string
 	Environment string
 	ConfigData  map[string]string
@@ -24,7 +25,16 @@ func NewDatadogClient() *DatadogClient {
 	return &DatadogClient{}
 }
 
-func (m *DatadogClient) SubmitEvent(panicErr any) {
+func (m *DatadogClient) SubmitEvent() {
+	if m.APIKey == "" {
+		apiKey, ok := os.LookupEnv("DD_CLIENT_API_KEY")
+		if !ok {
+			fmt.Fprintf(os.Stderr, "Datadog API key not provided, skip sending event.")
+			return
+		}
+		m.APIKey = apiKey
+	}
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to get hostname: %v", err)
@@ -32,7 +42,7 @@ func (m *DatadogClient) SubmitEvent(panicErr any) {
 
 	body := datadogV1.EventCreateRequest{
 		Title:          fmt.Sprintf("'%s' command run in '%s' project", m.Command, m.Project),
-		Text:           m.createEventBody(panicErr),
+		Text:           m.createEventBody(),
 		AggregationKey: datadog.PtrString("cdflow2"),
 		DateHappened:   datadog.PtrInt64(time.Now().Unix()),
 		Host:           datadog.PtrString(hostname),
@@ -44,7 +54,7 @@ func (m *DatadogClient) SubmitEvent(panicErr any) {
 		datadog.ContextAPIKeys,
 		map[string]datadog.APIKey{
 			"apiKeyAuth": {
-				Key: os.Getenv("DD_CLIENT_API_KEY"),
+				Key: m.APIKey,
 			},
 		},
 	)
@@ -90,19 +100,11 @@ func (m *DatadogClient) collectTags() []string {
 	return tags
 }
 
-func (m *DatadogClient) createEventBody(panicErr any) string {
+func (m *DatadogClient) createEventBody() string {
 	status := "was successful"
-	if panicErr != nil {
-		status = "panicked"
-	} else if m.StatusCode != 0 {
+	if m.StatusCode != 0 {
 		status = "failed"
 	}
 
-	body := fmt.Sprintf("cdflow2 %s command %s.", m.Command, status)
-
-	if panicErr != nil {
-		body += fmt.Sprintf("\nPanic reason:\n%+v", panicErr)
-	}
-
-	return body
+	return fmt.Sprintf("cdflow2 %s command %s.", m.Command, status)
 }

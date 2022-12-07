@@ -63,6 +63,7 @@ func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, respon
 		"Request":             &request,
 		"ReleaseRequirements": request.ReleaseRequirements,
 	}, "/debug/configure-release.json")
+
 	for buildID := range request.ReleaseRequirements {
 		response.Env[buildID] = map[string]string{
 			"TEST_VERSION":                 request.Version,
@@ -72,7 +73,16 @@ func (*handler) ConfigureRelease(request *common.ConfigureReleaseRequest, respon
 			"TEST_RELEASE_VAR_FROM_CONFIG": fmt.Sprintf("%v", request.Config["TEST_CONFIG_VAR"]),
 		}
 	}
+
 	response.AdditionalMetadata["foo"] = "bar"
+
+	response.Monitoring = &common.Monitoring{
+		APIKey: "apikey",
+		Data: map[string]string{
+			"team": "test",
+		},
+	}
+
 	return nil
 }
 
@@ -107,18 +117,22 @@ func (*handler) PrepareTerraform(request *common.PrepareTerraformRequest, respon
 	if err != nil {
 		log.Fatalln("could not get working directory:", err)
 	}
+
 	if dir != releaseDir {
 		log.Fatalf("expected PWD %s, got %s:", releaseDir, dir)
 	}
+
 	testFilename := path.Join(releaseDir, "test")
 	if err := ioutil.WriteFile(testFilename, []byte("unpacked"), 0644); err != nil {
 		log.Fatalf("could not write to %s: %s", testFilename, err)
 	}
+
 	writeDebug(map[string]interface{}{
 		"Action":  "prepare_terraform",
 		"Request": &request,
 		"PWD":     dir,
 	}, "/debug/prepare-terraform.json")
+
 	response.TerraformImage = request.Env["TERRAFORM_DIGEST"]
 	response.Env = map[string]string{
 		"TEST_ENV_VAR":    request.Env["TEST_ENV_VAR"],
@@ -134,5 +148,12 @@ func (*handler) PrepareTerraform(request *common.PrepareTerraformRequest, respon
 			DisplayValue: "value-hidden",
 		},
 	}
+	response.Monitoring = &common.Monitoring{
+		APIKey: "apikey",
+		Data: map[string]string{
+			"team": "test",
+		},
+	}
+
 	return nil
 }

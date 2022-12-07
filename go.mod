@@ -3,6 +3,7 @@ module github.com/mergermarket/cdflow2
 go 1.19
 
 require (
+	github.com/DataDog/datadog-api-client-go/v2 v2.5.0
 	github.com/docker/docker v1.4.2-0.20191101170500-ac7306503d23
 	github.com/logrusorgru/aurora v0.0.0-20200102142835-e9ef32dff381
 	github.com/rs/xid v1.2.1
@@ -12,7 +13,6 @@ require (
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.5.0 // indirect
 	github.com/DataDog/zstd v1.5.0 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

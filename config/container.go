@@ -99,6 +99,11 @@ func (configContainer *Container) request(request interface{}, response interfac
 	return nil
 }
 
+type Monitoring struct {
+	APIKey string
+	Data   map[string]string
+}
+
 // ReleaseRequirements contains a list of needs.
 type ReleaseRequirements struct {
 	Needs []string
@@ -114,8 +119,8 @@ type setupConfigRequest struct {
 }
 
 type SetupConfigResponse struct {
-	MonitoringData map[string]string
-	Success        bool
+	Monitoring *Monitoring
+	Success    bool
 }
 
 // Setup requests the container does setup.
@@ -156,7 +161,7 @@ type configureReleaseConfigRequest struct {
 type ConfigureReleaseConfigResponse struct {
 	Env                map[string]map[string]string
 	AdditionalMetadata map[string]string
-	MonitoringData     map[string]string
+	Monitoring         *Monitoring
 	Success            bool
 }
 
@@ -276,7 +281,7 @@ type PrepareTerraformResponse struct {
 	TerraformBackendType             string
 	TerraformBackendConfig           map[string]string
 	TerraformBackendConfigParameters map[string]*TerrafromBackendConfigParameter
-	MonitoringData                   map[string]string
+	Monitoring                       *Monitoring
 	Success                          bool
 }
 
@@ -340,7 +345,10 @@ func SetupTerraform(state *command.GlobalState, stateShouldExist *bool, envName,
 		return nil, "", "", err
 	}
 
-	state.MonitoringClient.ConfigData = prepareTerraformResponse.MonitoringData
+	fmt.Printf("%#v", prepareTerraformResponse)
+
+	state.MonitoringClient.APIKey = prepareTerraformResponse.Monitoring.APIKey
+	state.MonitoringClient.ConfigData = prepareTerraformResponse.Monitoring.Data
 
 	imageName := prepareTerraformResponse.TerraformImage
 	if version == "" {

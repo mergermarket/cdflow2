@@ -210,21 +210,12 @@ func runCommand() (status int) {
 			return
 		}
 
-		panicErr := recover()
-		if panicErr != nil && status == 0 {
-			status = 1
-		}
-
 		state.MonitoringClient.Command = globalArgs.Command
 		state.MonitoringClient.Project = state.Component
 		state.MonitoringClient.Version = version
 		state.MonitoringClient.StatusCode = status
 
-		state.MonitoringClient.SubmitEvent(panicErr)
-
-		if panicErr != nil {
-			panic(panicErr)
-		}
+		state.MonitoringClient.SubmitEvent()
 	}()
 
 	env := util.GetEnv(os.Environ())

@@ -42,7 +42,8 @@ func RunCommand(state *command.GlobalState, env map[string]string) (returnedErro
 		return err
 	}
 
-	state.MonitoringClient.ConfigData = response.MonitoringData
+	state.MonitoringClient.APIKey = response.Monitoring.APIKey
+	state.MonitoringClient.ConfigData = response.Monitoring.Data
 
 	return nil
 }

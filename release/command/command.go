@@ -245,7 +245,8 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 	}
 
 	releaseEnv := configureReleaseResponse.Env
-	state.MonitoringClient.ConfigData = configureReleaseResponse.MonitoringData
+	state.MonitoringClient.APIKey = configureReleaseResponse.Monitoring.APIKey
+	state.MonitoringClient.ConfigData = configureReleaseResponse.Monitoring.Data
 
 	releaseMetadata := make(map[string]map[string]string)
 	for buildID, build := range state.Manifest.Builds {
