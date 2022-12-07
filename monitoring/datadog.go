@@ -29,7 +29,7 @@ func (m *DatadogClient) SubmitEvent() {
 	if m.APIKey == "" {
 		apiKey, ok := os.LookupEnv("DD_CLIENT_API_KEY")
 		if !ok {
-			fmt.Fprintf(os.Stderr, "Datadog API key not provided, skip sending event.")
+			fmt.Fprintf(os.Stderr, "Datadog API key not provided, skip sending event.\n")
 			return
 		}
 		m.APIKey = apiKey
