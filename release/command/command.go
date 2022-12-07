@@ -249,6 +249,11 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 	releaseMetadata := make(map[string]map[string]string)
 	for buildID, build := range state.Manifest.Builds {
 		env := releaseEnv[buildID]
+
+		if env == nil {
+			env = make(map[string]string)
+		}
+
 		// these are built in and cannot be overridden by the config container (since choosing the clashing name would likely be an accident)
 		env["VERSION"] = version
 		env["COMPONENT"] = state.Component
