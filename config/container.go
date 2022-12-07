@@ -119,7 +119,7 @@ type setupConfigRequest struct {
 }
 
 type SetupConfigResponse struct {
-	Monitoring *Monitoring
+	Monitoring Monitoring
 	Success    bool
 }
 
@@ -161,7 +161,7 @@ type configureReleaseConfigRequest struct {
 type ConfigureReleaseConfigResponse struct {
 	Env                map[string]map[string]string
 	AdditionalMetadata map[string]string
-	Monitoring         *Monitoring
+	Monitoring         Monitoring
 	Success            bool
 }
 
@@ -281,7 +281,7 @@ type PrepareTerraformResponse struct {
 	TerraformBackendType             string
 	TerraformBackendConfig           map[string]string
 	TerraformBackendConfigParameters map[string]*TerrafromBackendConfigParameter
-	Monitoring                       *Monitoring
+	Monitoring                       Monitoring
 	Success                          bool
 }
 
@@ -344,8 +344,6 @@ func SetupTerraform(state *command.GlobalState, stateShouldExist *bool, envName,
 	if err != nil {
 		return nil, "", "", err
 	}
-
-	fmt.Printf("%#v", prepareTerraformResponse)
 
 	state.MonitoringClient.APIKey = prepareTerraformResponse.Monitoring.APIKey
 	state.MonitoringClient.ConfigData = prepareTerraformResponse.Monitoring.Data
