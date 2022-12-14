@@ -11,6 +11,7 @@ import (
 	"github.com/mergermarket/cdflow2/docker"
 	"github.com/mergermarket/cdflow2/docker/official"
 	"github.com/mergermarket/cdflow2/manifest"
+	"github.com/mergermarket/cdflow2/monitoring"
 )
 
 // Failure represents a non-zero exit status without the need for further output.
@@ -34,15 +35,16 @@ type GlobalArgs struct {
 
 // GlobalState contains common to all commands.
 type GlobalState struct {
-	GlobalArgs   *GlobalArgs
-	Component    string
-	Commit       string
-	CodeDir      string
-	Manifest     *manifest.Manifest
-	InputStream  io.Reader
-	OutputStream io.Writer
-	ErrorStream  io.Writer
-	DockerClient docker.Iface
+	GlobalArgs       *GlobalArgs
+	Component        string
+	Commit           string
+	CodeDir          string
+	Manifest         *manifest.Manifest
+	InputStream      io.Reader
+	OutputStream     io.Writer
+	ErrorStream      io.Writer
+	DockerClient     docker.Iface
+	MonitoringClient *monitoring.DatadogClient
 }
 
 // GetGlobalState collects info common to every command.
@@ -94,6 +96,8 @@ func GetGlobalState(globalArgs *GlobalArgs, repoShouldExist bool) (*GlobalState,
 		} else {
 			state.Commit = globalArgs.Commit
 		}
+
+		state.MonitoringClient = monitoring.NewDatadogClient()
 	}
 
 	return &state, nil

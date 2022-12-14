@@ -8,6 +8,7 @@ import (
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/manifest"
+	"github.com/mergermarket/cdflow2/monitoring"
 	"github.com/mergermarket/cdflow2/setup"
 	"github.com/mergermarket/cdflow2/test"
 )
@@ -50,6 +51,7 @@ func TestRunCommand(t *testing.T) {
 				NoPullRelease:   true,
 				NoPullTerraform: true,
 			},
+			MonitoringClient: monitoring.NewDatadogClient(),
 		},
 		map[string]string{},
 	); err != nil {

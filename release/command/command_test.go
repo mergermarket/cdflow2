@@ -10,6 +10,7 @@ import (
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/manifest"
+	"github.com/mergermarket/cdflow2/monitoring"
 	release "github.com/mergermarket/cdflow2/release/command"
 	"github.com/mergermarket/cdflow2/test"
 )
@@ -168,6 +169,7 @@ func TestRunCommand(t *testing.T) {
 				NoPullRelease:   true,
 				NoPullTerraform: true,
 			},
+			MonitoringClient: monitoring.NewDatadogClient(),
 		},
 		release.CommandArgs{
 			Version: "test-version",

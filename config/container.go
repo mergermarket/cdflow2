@@ -99,6 +99,11 @@ func (configContainer *Container) request(request interface{}, response interfac
 	return nil
 }
 
+type Monitoring struct {
+	APIKey string
+	Data   map[string]string
+}
+
 // ReleaseRequirements contains a list of needs.
 type ReleaseRequirements struct {
 	Needs []string
@@ -113,8 +118,9 @@ type setupConfigRequest struct {
 	ReleaseRequirements map[string]*ReleaseRequirements
 }
 
-type setupConfigResponse struct {
-	Success bool
+type SetupConfigResponse struct {
+	Monitoring Monitoring
+	Success    bool
 }
 
 // Setup requests the container does setup.
@@ -123,8 +129,8 @@ func (configContainer *Container) Setup(
 	env map[string]string,
 	component, commit string,
 	releaseRequirements map[string]*ReleaseRequirements,
-) error {
-	var response setupConfigResponse
+) (*SetupConfigResponse, error) {
+	response := &SetupConfigResponse{}
 	if err := configContainer.request(&setupConfigRequest{
 		Action:              "setup",
 		Config:              config,
@@ -132,13 +138,13 @@ func (configContainer *Container) Setup(
 		Component:           component,
 		Commit:              commit,
 		ReleaseRequirements: releaseRequirements,
-	}, &response); err != nil {
-		return err
+	}, response); err != nil {
+		return nil, err
 	}
 	if !response.Success {
-		return command.Failure(1)
+		return response, command.Failure(1)
 	}
-	return nil
+	return response, nil
 }
 
 type configureReleaseConfigRequest struct {
@@ -155,6 +161,7 @@ type configureReleaseConfigRequest struct {
 type ConfigureReleaseConfigResponse struct {
 	Env                map[string]map[string]string
 	AdditionalMetadata map[string]string
+	Monitoring         Monitoring
 	Success            bool
 }
 
@@ -274,6 +281,7 @@ type PrepareTerraformResponse struct {
 	TerraformBackendType             string
 	TerraformBackendConfig           map[string]string
 	TerraformBackendConfigParameters map[string]*TerrafromBackendConfigParameter
+	Monitoring                       Monitoring
 	Success                          bool
 }
 
@@ -336,6 +344,9 @@ func SetupTerraform(state *command.GlobalState, stateShouldExist *bool, envName,
 	if err != nil {
 		return nil, "", "", err
 	}
+
+	state.MonitoringClient.APIKey = prepareTerraformResponse.Monitoring.APIKey
+	state.MonitoringClient.ConfigData = prepareTerraformResponse.Monitoring.Data
 
 	imageName := prepareTerraformResponse.TerraformImage
 	if version == "" {

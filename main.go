@@ -25,8 +25,7 @@ const globalOptions = `Global options:
   --no-pull-terraform          - don't pull the terraform container (must exist).
   --quiet | -q                 - hide verbose description of what's going on.
   --version                    - print the version number and exit. 
-  --help                       - print the help message and exit.
-`
+  --help                       - print the help message and exit.`
 
 const help = `
 Usage:
@@ -161,7 +160,6 @@ func usage(subcommand string) {
 	} else {
 		fmt.Println(help)
 	}
-	os.Exit(1)
 }
 
 var globalOptionErrorFormat = `
@@ -176,30 +174,49 @@ For usage run:
 `
 
 func main() {
+	os.Exit(runCommand())
+}
+
+func runCommand() (status int) {
 	globalArgs, remainingArgs, err := command.ParseArgs(os.Args[1:])
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, globalOptionErrorFormat, err)
-		os.Exit(1)
+		return 1
 	}
 	if globalArgs.Command == "" {
 		usage("")
+		return 1
 	} else if globalArgs.Command == "help" {
 		subcommand := ""
 		if len(remainingArgs) > 0 {
 			subcommand = remainingArgs[0]
 		}
 		usage(subcommand)
+		return 1
 	} else if globalArgs.Command == "version" {
 		fmt.Println(version)
-		os.Exit(0)
+		return 0
 	}
 
 	state, err := command.GetGlobalState(globalArgs, globalArgs.Command != "init")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return 1
 	}
+
+	defer func() {
+		if globalArgs.Command == "init" {
+			return
+		}
+
+		state.MonitoringClient.Command = globalArgs.Command
+		state.MonitoringClient.Project = state.Component
+		state.MonitoringClient.Version = version
+		state.MonitoringClient.StatusCode = status
+
+		state.MonitoringClient.SubmitEvent()
+	}()
 
 	env := util.GetEnv(os.Environ())
 
@@ -208,76 +225,94 @@ func main() {
 		if ok != nil {
 			fmt.Fprintln(os.Stderr, fmt.Sprintf("Error: %s", ok))
 			usage("release")
+			return 1
 		}
 		if err := release.RunCommand(state, *releaseArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
-				os.Exit(int(status))
+				return int(status)
 			}
 			fmt.Fprintln(os.Stderr, "\n"+err.Error())
-			os.Exit(1)
+			return 1
 		}
 	} else if globalArgs.Command == "deploy" {
 		deployArgs, ok := deploy.ParseArgs(remainingArgs)
 		if !ok {
 			usage("deploy")
+			return 1
 		}
+
+		state.MonitoringClient.Environment = deployArgs.EnvName
+
 		if err := deploy.RunCommand(state, deployArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
-				os.Exit(int(status))
+				return int(status)
 			}
 			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return 1
 		}
 	} else if globalArgs.Command == "shell" {
 		shellArgs, ok := shell.ParseArgs(remainingArgs)
 		if ok != nil {
 			usage("shell")
+			return 1
 		}
+
+		state.MonitoringClient.Environment = shellArgs.EnvName
+
 		if err := shell.RunCommand(state, shellArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
-				os.Exit(int(status))
+				return int(status)
 			}
 			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return 1
 		}
 
 	} else if globalArgs.Command == "setup" {
 		if len(remainingArgs) != 0 {
 			usage("setup")
+			return 1
 		}
 		if err := setup.RunCommand(state, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
-				os.Exit(int(status))
+				return int(status)
 			}
 			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return 1
 		}
 	} else if globalArgs.Command == "destroy" {
 		destroyArgs, ok := destroy.ParseArgs(remainingArgs)
 		if !ok {
 			usage("destroy")
+			return 1
 		}
+
+		state.MonitoringClient.Environment = destroyArgs.EnvName
+
 		if err := destroy.RunCommand(state, destroyArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
-				os.Exit(int(status))
+				return int(status)
 			}
 			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return 1
 		}
 	} else if globalArgs.Command == "init" {
 		initArgs, err := cinit.ParseArgs(remainingArgs)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			usage("init")
+			return 1
 		}
 		if err := cinit.RunCommand(state, initArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
-				os.Exit(int(status))
+				return int(status)
 			}
 			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return 1
 		}
 	} else {
 		usage("")
+		return 1
 	}
+
+	return 0
 }

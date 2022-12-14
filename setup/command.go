@@ -37,5 +37,13 @@ func RunCommand(state *command.GlobalState, env map[string]string) (returnedErro
 		}
 	}()
 
-	return configContainer.Setup(state.Manifest.Config.Params, env, state.Component, state.Commit, releaseRequirements)
+	response, err := configContainer.Setup(state.Manifest.Config.Params, env, state.Component, state.Commit, releaseRequirements)
+	if err != nil {
+		return err
+	}
+
+	state.MonitoringClient.APIKey = response.Monitoring.APIKey
+	state.MonitoringClient.ConfigData = response.Monitoring.Data
+
+	return nil
 }
