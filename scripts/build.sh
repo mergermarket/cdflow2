@@ -12,6 +12,8 @@ rm -f cdflow2*
 
 git archive --format=tar.gz --prefix=cdflow2-$version/ --output=cdflow2-$version.tar.gz $version
 
+export CGO_ENABLED=0
+
 GOOS=linux GOARCH=amd64 go build -o cdflow2-linux-amd64 -ldflags="-X main.version=$version" .
 GOOS=darwin GOARCH=amd64 go build -o cdflow2-darwin-amd64 -ldflags="-X main.version=$version" .
 GOOS=windows GOARCH=amd64 go build -o cdflow2-windows-amd64 -ldflags="-X main.version=$version" .
