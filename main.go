@@ -182,18 +182,18 @@ func runCommand() (status int) {
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, globalOptionErrorFormat, err)
-		return 1
+		return 2
 	}
 	if globalArgs.Command == "" {
 		usage("")
-		return 1
+		return 2
 	} else if globalArgs.Command == "help" {
 		subcommand := ""
 		if len(remainingArgs) > 0 {
 			subcommand = remainingArgs[0]
 		}
 		usage(subcommand)
-		return 1
+		return 0
 	} else if globalArgs.Command == "version" {
 		fmt.Println(version)
 		return 0
@@ -206,7 +206,7 @@ func runCommand() (status int) {
 	}
 
 	defer func() {
-		if globalArgs.Command == "init" {
+		if globalArgs.Command == "init" || status == 2 {
 			return
 		}
 
@@ -221,12 +221,13 @@ func runCommand() (status int) {
 	env := util.GetEnv(os.Environ())
 
 	if globalArgs.Command == "release" {
-		releaseArgs, ok := release.ParseArgs(remainingArgs)
-		if ok != nil {
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("Error: %s", ok))
+		releaseArgs, err := release.ParseArgs(remainingArgs)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("Error: %s", err))
 			usage("release")
-			return 1
+			return 2
 		}
+
 		if err := release.RunCommand(state, *releaseArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
 				return int(status)
@@ -235,10 +236,11 @@ func runCommand() (status int) {
 			return 1
 		}
 	} else if globalArgs.Command == "deploy" {
-		deployArgs, ok := deploy.ParseArgs(remainingArgs)
-		if !ok {
+		deployArgs, err := deploy.ParseArgs(remainingArgs)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("Error: %s", err))
 			usage("deploy")
-			return 1
+			return 2
 		}
 
 		state.MonitoringClient.Environment = deployArgs.EnvName
@@ -251,10 +253,11 @@ func runCommand() (status int) {
 			return 1
 		}
 	} else if globalArgs.Command == "shell" {
-		shellArgs, ok := shell.ParseArgs(remainingArgs)
-		if ok != nil {
+		shellArgs, err := shell.ParseArgs(remainingArgs)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("Error: %s", err))
 			usage("shell")
-			return 1
+			return 2
 		}
 
 		state.MonitoringClient.Environment = shellArgs.EnvName
@@ -269,9 +272,11 @@ func runCommand() (status int) {
 
 	} else if globalArgs.Command == "setup" {
 		if len(remainingArgs) != 0 {
+			fmt.Fprintln(os.Stderr, "Error: setup has no arguments")
 			usage("setup")
-			return 1
+			return 2
 		}
+
 		if err := setup.RunCommand(state, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
 				return int(status)
@@ -280,10 +285,11 @@ func runCommand() (status int) {
 			return 1
 		}
 	} else if globalArgs.Command == "destroy" {
-		destroyArgs, ok := destroy.ParseArgs(remainingArgs)
-		if !ok {
+		destroyArgs, err := destroy.ParseArgs(remainingArgs)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("Error: %s", err))
 			usage("destroy")
-			return 1
+			return 2
 		}
 
 		state.MonitoringClient.Environment = destroyArgs.EnvName
@@ -298,10 +304,11 @@ func runCommand() (status int) {
 	} else if globalArgs.Command == "init" {
 		initArgs, err := cinit.ParseArgs(remainingArgs)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("Error: %s", err))
 			usage("init")
-			return 1
+			return 2
 		}
+
 		if err := cinit.RunCommand(state, initArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
 				return int(status)
@@ -311,7 +318,7 @@ func runCommand() (status int) {
 		}
 	} else {
 		usage("")
-		return 1
+		return 2
 	}
 
 	return 0

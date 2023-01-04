@@ -1,6 +1,7 @@
 package destroy
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -20,10 +21,11 @@ type CommandArgs struct {
 }
 
 // ParseArgs parses command line arguments to the deploy subcommand.
-func ParseArgs(args []string) (*CommandArgs, bool) {
+func ParseArgs(args []string) (*CommandArgs, error) {
 	var result CommandArgs
 	var T = true
 	result.StateShouldExist = &T // set default to true
+
 	for _, arg := range args {
 		if arg == "-p" || arg == "--plan-only" {
 			result.PlanOnly = true
@@ -32,16 +34,19 @@ func ParseArgs(args []string) (*CommandArgs, bool) {
 		} else if result.Version == "" {
 			result.Version = arg
 		} else {
-			return nil, false
+			return nil, errors.New("unknown destroy option: " + arg)
 		}
 	}
+
 	if result.EnvName == "" {
-		return nil, false
+		return nil, errors.New("env argument is missing")
 	}
+
 	if result.Version == "" {
-		return nil, false
+		return nil, errors.New("version argument is missing")
 	}
-	return &result, true
+
+	return &result, nil
 }
 
 // RunCommand runs the release command.

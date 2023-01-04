@@ -58,7 +58,7 @@ func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error
 	} else if commandArgs.Version == "" {
 		commandArgs.Version = arg
 	} else {
-		return false, errors.New("Unknown release option: " + arg)
+		return false, errors.New("unknown release option: " + arg)
 	}
 	return false, nil
 }
@@ -82,6 +82,11 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 			return nil, err
 		}
 	}
+
+	if result.Version == "" {
+		return nil, errors.New("version argument is missing")
+	}
+
 	return &result, nil
 }
 

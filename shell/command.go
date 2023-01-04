@@ -51,7 +51,7 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 	} else if strings.HasPrefix(arg, "--version=") {
 		commandArgs.Version = strings.TrimPrefix(arg, "--version=")
 	} else {
-		return false, errors.New("Unknown global option: " + arg)
+		return false, errors.New("unknown global option: " + arg)
 	}
 	return false, nil
 }
@@ -81,7 +81,7 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 		}
 	}
 	if result.EnvName == "" {
-		return nil, errors.New("Env missing value")
+		return nil, errors.New("env argument is missing")
 	}
 	return &result, nil
 }

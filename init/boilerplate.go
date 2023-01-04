@@ -15,11 +15,6 @@ import (
 var placeHolderPattern = regexp.MustCompile(`%\{(.+?)}`)
 
 func initFromBoilerplate(state *command.GlobalState, args *CommandArgs) error {
-	err := validateArgs(state, args)
-	if err != nil {
-		return err
-	}
-
 	projectFolder := filepath.Join(state.CodeDir, args.Name)
 
 	found, err := checkFolder(state, projectFolder)
@@ -149,26 +144,6 @@ func renderTemplate(state *command.GlobalState, args *CommandArgs, folder string
 		fmt.Fprintf(state.ErrorStream, "\nFor a detailed explanation of the missing variable(s) please see boilerplate README.md\n")
 
 		return fmt.Errorf("required variables are missing")
-	}
-
-	return nil
-}
-
-func validateArgs(state *command.GlobalState, args *CommandArgs) error {
-	invalid := false
-
-	if args.Name == "" {
-		fmt.Fprintf(state.ErrorStream, "'name' argument is empty\n")
-		invalid = true
-	}
-
-	if args.Boilerplate == "" {
-		fmt.Fprintf(state.ErrorStream, "'boilerplate' argument is empty\n")
-		invalid = true
-	}
-
-	if invalid {
-		return fmt.Errorf("some arguments are missing")
 	}
 
 	return nil
