@@ -19,82 +19,70 @@ func TestParseArgs(t *testing.T) {
 			t.Errorf("PlanOnly: got %t want %t", gotArgs.PlanOnly, wantArgs.PlanOnly)
 		}
 	}
-	assertMatchBool := func(t *testing.T, got, want bool) {
+
+	assertMatchError := func(t *testing.T, err error, wantError bool) {
 		t.Helper()
-		if got != want {
-			t.Errorf("Bool: got %v want %v", got, want)
+		if wantError {
+			if err == nil {
+				t.Error("Error expected, but got nil")
+			}
+		} else if err != nil {
+			t.Errorf("Error not expected, but got %v", err)
 		}
 	}
 
 	t.Run("sad path - no args", func(t *testing.T) {
 		args := []string{""}
-		_, gotBool := destroy.ParseArgs(args)
+		_, err := destroy.ParseArgs(args)
 
-		wantBool := false
-
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, true)
 	})
 
 	t.Run("sad path - too many args", func(t *testing.T) {
 		args := []string{"foo", "bar", "baz"}
-		_, gotBool := destroy.ParseArgs(args)
+		_, err := destroy.ParseArgs(args)
 
-		wantBool := false
-
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, true)
 	})
 
 	t.Run("sad path set env", func(t *testing.T) {
 		args := []string{"foo"}
-		_, gotBool := destroy.ParseArgs(args)
+		_, err := destroy.ParseArgs(args)
 
-		var result destroy.CommandArgs
-		result.EnvName = "foo"
-		wantBool := false
-
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, true)
 	})
 
 	t.Run("set env + version", func(t *testing.T) {
 		args := []string{"foo", "bar"}
-		gotArgs, gotBool := destroy.ParseArgs(args)
+		gotArgs, err := destroy.ParseArgs(args)
 
-		var result destroy.CommandArgs
-		result.EnvName = "foo"
-		result.Version = "bar"
-		wantArgs, wantBool := &result, true
+		wantArgs := &destroy.CommandArgs{
+			EnvName: "foo",
+			Version: "bar",
+		}
 
 		assertMatchArgs(t, gotArgs, wantArgs)
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, false)
 	})
 
 	t.Run("sad path set plan-only + env", func(t *testing.T) {
 		args := []string{"-p", "foo"}
-		_, gotBool := destroy.ParseArgs(args)
+		_, err := destroy.ParseArgs(args)
 
-		var result destroy.CommandArgs
-		result.EnvName = "foo"
-		result.PlanOnly = true
-		wantBool := false
-
-		assertMatchBool(t, gotBool, wantBool)
-
-		// alternate flag
-		args = []string{"--plan-only", "foo"}
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, true)
 	})
 
 	t.Run("set plan-only + env + version", func(t *testing.T) {
 		args := []string{"-p", "foo", "bar"}
-		gotArgs, gotBool := destroy.ParseArgs(args)
+		gotArgs, err := destroy.ParseArgs(args)
 
-		var result destroy.CommandArgs
-		result.EnvName = "foo"
-		result.Version = "bar"
-		result.PlanOnly = true
-		wantArgs, wantBool := &result, true
+		wantArgs := &destroy.CommandArgs{
+			EnvName:  "foo",
+			Version:  "bar",
+			PlanOnly: true,
+		}
 
 		assertMatchArgs(t, gotArgs, wantArgs)
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, false)
 	})
 }

@@ -62,6 +62,7 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 	var T = true
 	result.StateShouldExist = &T // set default to true
 	i := 0
+
 	take := func() (string, error) {
 		i++
 		if i >= len(args) {
@@ -70,6 +71,7 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 
 		return args[i], nil
 	}
+
 	for ; i < len(args); i++ {
 		done, err := handleArgs(args[i], &result, take)
 		if err != nil {
@@ -80,9 +82,11 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 			break
 		}
 	}
+
 	if result.EnvName == "" {
 		return nil, errors.New("env argument is missing")
 	}
+
 	return &result, nil
 }
 

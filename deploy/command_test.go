@@ -247,86 +247,83 @@ func TestParseArgs(t *testing.T) {
 			t.Errorf("StateShouldExist: got %t want %t", *gotArgs.StateShouldExist, *wantArgs.StateShouldExist)
 		}
 	}
-	assertMatchBool := func(t *testing.T, got, want bool) {
+
+	assertMatchError := func(t *testing.T, err error, wantError bool) {
 		t.Helper()
-		if got != want {
-			t.Errorf("Bool: got %v want %v", got, want)
+		if wantError {
+			if err == nil {
+				t.Error("Error expected, but got nil")
+			}
+		} else if err != nil {
+			t.Errorf("Error not expected, but got %v", err)
 		}
 	}
 
 	t.Run("sad path - no args", func(t *testing.T) {
 		args := []string{""}
-		_, gotBool := deploy.ParseArgs(args)
+		_, err := deploy.ParseArgs(args)
 
-		wantBool := false
-
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, true)
 	})
 
 	t.Run("sad path - too many args", func(t *testing.T) {
 		args := []string{"foo", "bar", "baz"}
-		_, gotBool := deploy.ParseArgs(args)
+		_, err := deploy.ParseArgs(args)
 
-		wantBool := false
-
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, true)
 	})
 
 	t.Run("sad path - set env but not version", func(t *testing.T) {
 		args := []string{"foo"}
-		_, gotBool := deploy.ParseArgs(args)
+		_, err := deploy.ParseArgs(args)
 
-		var result deploy.CommandArgs
-		result.EnvName = "foo"
-		_, wantBool := &result, false
-
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, true)
 	})
 
 	t.Run("set env + version", func(t *testing.T) {
 		args := []string{"foo", "bar"}
-		gotArgs, gotBool := deploy.ParseArgs(args)
+		gotArgs, err := deploy.ParseArgs(args)
 
-		var result deploy.CommandArgs
-		result.EnvName = "foo"
-		result.Version = "bar"
-		wantArgs, wantBool := &result, true
+		wantArgs := &deploy.CommandArgs{
+			EnvName: "foo",
+			Version: "bar",
+		}
 
 		assertMatchArgs(t, gotArgs, wantArgs)
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, false)
 	})
 
 	t.Run("set plan-only + env + version + StateShouldExist", func(t *testing.T) {
 		args := []string{"-p", "foo", "bar"}
-		gotArgs, gotBool := deploy.ParseArgs(args)
+		gotArgs, err := deploy.ParseArgs(args)
 
 		var T = true
-		var result deploy.CommandArgs
-		result.EnvName = "foo"
-		result.Version = "bar"
-		result.PlanOnly = true
-		result.StateShouldExist = &T
-		wantArgs, wantBool := &result, true
+		wantArgs := &deploy.CommandArgs{
+			EnvName:          "foo",
+			Version:          "bar",
+			PlanOnly:         true,
+			StateShouldExist: &T,
+		}
 
 		assertMatchArgs(t, gotArgs, wantArgs)
 		assertMatchState(t, gotArgs, wantArgs)
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, false)
 	})
 
 	t.Run("set plan-only + env + version + stateShouldNotExist", func(t *testing.T) {
 		args := []string{"-p", "-n", "foo", "bar"}
-		gotArgs, gotBool := deploy.ParseArgs(args)
+		gotArgs, err := deploy.ParseArgs(args)
 
 		var F = false
-		var result deploy.CommandArgs
-		result.EnvName = "foo"
-		result.Version = "bar"
-		result.PlanOnly = true
-		result.StateShouldExist = &F
-		wantArgs, wantBool := &result, true
+		wantArgs := &deploy.CommandArgs{
+			EnvName:          "foo",
+			Version:          "bar",
+			PlanOnly:         true,
+			StateShouldExist: &F,
+		}
 
 		assertMatchArgs(t, gotArgs, wantArgs)
 		assertMatchState(t, gotArgs, wantArgs)
-		assertMatchBool(t, gotBool, wantBool)
+		assertMatchError(t, err, false)
 	})
 }

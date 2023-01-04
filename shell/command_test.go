@@ -267,7 +267,7 @@ func TestParseArgsWhenEnv(t *testing.T) {
 
 		_, gotError := shell.ParseArgs(args)
 
-		var wantError error = errors.New("Env missing value")
+		wantError := errors.New("env argument is missing")
 
 		assertError(t, gotError, wantError)
 
@@ -278,7 +278,7 @@ func TestParseArgsWhenEnv(t *testing.T) {
 
 		_, gotError := shell.ParseArgs(args)
 
-		var wantError error = errors.New("Env missing value")
+		wantError := errors.New("env argument is missing")
 
 		assertError(t, gotError, wantError)
 
@@ -289,7 +289,7 @@ func TestParseArgsWhenEnv(t *testing.T) {
 
 		_, gotError := shell.ParseArgs(args)
 
-		var wantError error = errors.New("missing value")
+		wantError := errors.New("missing value")
 
 		assertError(t, gotError, wantError)
 
