@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -20,7 +21,7 @@ type CommandArgs struct {
 }
 
 // ParseArgs parses command line arguments to the deploy subcommand.
-func ParseArgs(args []string) (*CommandArgs, bool) {
+func ParseArgs(args []string) (*CommandArgs, error) {
 	var result CommandArgs
 	var T = true
 	var F = false
@@ -36,13 +37,19 @@ func ParseArgs(args []string) (*CommandArgs, bool) {
 		} else if result.Version == "" {
 			result.Version = arg
 		} else {
-			return nil, false
+			return nil, errors.New("unknown deploy option: " + arg)
 		}
 	}
-	if result.EnvName == "" || result.Version == "" {
-		return nil, false
+
+	if result.EnvName == "" {
+		return nil, errors.New("env argument is missing")
 	}
-	return &result, true
+
+	if result.Version == "" {
+		return nil, errors.New("version argument is missing")
+	}
+
+	return &result, nil
 }
 
 // RunCommand runs the release command.

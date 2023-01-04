@@ -109,7 +109,7 @@ func TestParseArgsWhenEnv(t *testing.T) {
 
 		_, gotError := release.ParseArgs(args)
 
-		var wantError error = errors.New("Env missing value")
+		wantError := errors.New("version argument is missing")
 
 		assertError(t, gotError, wantError)
 
@@ -120,7 +120,7 @@ func TestParseArgsWhenEnv(t *testing.T) {
 
 		_, gotError := release.ParseArgs(args)
 
-		var wantError error = errors.New("missing value")
+		wantError := errors.New("version argument is missing")
 
 		assertError(t, gotError, wantError)
 

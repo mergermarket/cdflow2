@@ -14,10 +14,6 @@ import (
 var basicTemplate embed.FS
 
 func initFromBasicTemplate(state *command.GlobalState, args *CommandArgs) error {
-	if args.Name == "" {
-		return fmt.Errorf("'name' argument is empty")
-	}
-
 	projectFolder := filepath.Join(state.CodeDir, args.Name)
 
 	found, err := checkFolder(state, projectFolder)

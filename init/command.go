@@ -57,6 +57,10 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 		}
 	}
 
+	if result.Name == "" {
+		return nil, errors.New("name argument is missing")
+	}
+
 	return &result, nil
 }
 

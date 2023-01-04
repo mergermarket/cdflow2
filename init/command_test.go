@@ -37,28 +37,16 @@ func TestParseArgs(t *testing.T) {
 
 func TestParseArgsInvalid(t *testing.T) {
 	t.Run("boilerplate", func(t *testing.T) {
-		commandArgs, err := ParseArgs([]string{"--boilerplate", "boilerplate-url"})
-		if err != nil {
-			t.Fatal("unexpected error from parseArgs:", err)
-		}
-
-		err = RunCommand(&command.GlobalState{ErrorStream: os.Stderr, CodeDir: t.TempDir()}, commandArgs, nil)
-
+		_, err := ParseArgs([]string{"--boilerplate", "boilerplate-url"})
 		if err == nil {
-			t.Error("expected error from RunCommand, but not getting it")
+			t.Fatal("error expected from parseArgs")
 		}
 	})
 
 	t.Run("basic", func(t *testing.T) {
-		commandArgs, err := ParseArgs([]string{})
-		if err != nil {
-			t.Fatal("unexpected error from parseArgs:", err)
-		}
-
-		err = RunCommand(&command.GlobalState{ErrorStream: os.Stderr, CodeDir: t.TempDir()}, commandArgs, nil)
-
+		_, err := ParseArgs([]string{})
 		if err == nil {
-			t.Error("expected error from RunCommand, but not getting it")
+			t.Fatal("error expected from parseArgs")
 		}
 	})
 }
