@@ -98,7 +98,7 @@ func TestParseArgsWhenEnv(t *testing.T) {
 
 		_, gotError := release.ParseArgs(args)
 
-		var wantError error = errors.New("Release data not in the correct format")
+		var wantError = errors.New("release data not in the correct format")
 
 		assertError(t, gotError, wantError)
 
