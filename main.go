@@ -127,8 +127,8 @@ Usage:
 
 Options:
 
-  --name                            - Name of the new project repository
-  --boilerplate                     - git URL of the git repo to copy as boilerplate. To use a specific branch (or any valid git refspec), add "?ref=branch-name" to the end of the URL.
+  --name | -n                       - Name of the new project repository
+  --boilerplate | -b                - git URL of the git repo to copy as boilerplate. To use a specific branch (or any valid git refspec), add "?ref=branch-name" to the end of the URL.
   --{boilerplate arguments}         - Dynamic arguments for the templates files. E.g.: "--domain name --account test"
 
 Boilerplate Templates:
@@ -139,8 +139,8 @@ Boilerplate Templates:
 	The 'name' variable is predefined, using the value passed by --name.
 
     You can specify additional variables by passing arguments like:
-        --domain name"
-        --account test"
+        --domain name
+        --account test
 
 ` + globalOptions
 

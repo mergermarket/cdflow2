@@ -34,10 +34,6 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 
 // ParseArgs parse command line arguments for init command.
 func ParseArgs(args []string) (*CommandArgs, error) {
-	if len(args)%2 != 0 {
-		return nil, fmt.Errorf("argument length must be even, boolean arguments are not supported")
-	}
-
 	result := CommandArgs{Variables: map[string]string{}}
 	i := 0
 
@@ -130,25 +126,36 @@ func checkFolder(state *command.GlobalState, folder string) (bool, error) {
 }
 
 func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
-	switch arg {
-	case "--name":
+	if strings.HasPrefix(arg, "-") {
+		return handleFlag(arg, commandArgs, take)
+	} else {
+		return false, errors.New("unknown init argument: " + arg)
+	}
+}
+
+func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
+	if arg == "-n" || arg == "--name" {
 		value, err := take()
 		if err != nil {
 			return false, err
 		}
 		commandArgs.Name = value
-	case "--boilerplate":
+	} else if arg == "-b" || arg == "--boilerplate" {
 		value, err := take()
 		if err != nil {
 			return false, err
 		}
 		commandArgs.Boilerplate = value
-	default:
+	} else {
 		if !strings.HasPrefix(arg, "--") {
-			return false, fmt.Errorf("argument name must start with '--': %s", arg)
+			return false, fmt.Errorf("option name must start with '--': %s", arg)
 		}
 
 		name := strings.TrimPrefix(arg, "--")
+
+		if name == "" {
+			return false, fmt.Errorf("missing option key")
+		}
 
 		value, err := take()
 		if err != nil {
@@ -157,6 +164,5 @@ func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error
 
 		commandArgs.Variables[name] = value
 	}
-
 	return false, nil
 }

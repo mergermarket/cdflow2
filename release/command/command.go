@@ -38,11 +38,22 @@ func parseReleaseData(value string) (map[string]string, error) {
 	if len(dataStrings) == 2 {
 		return map[string]string{dataStrings[0]: dataStrings[1]}, nil
 	} else {
-		return nil, errors.New("Release data not in the correct format")
+		return nil, errors.New("release data not in the correct format")
 	}
 }
 
 func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
+	if strings.HasPrefix(arg, "-") {
+		return handleFlag(arg, commandArgs, take)
+	} else if commandArgs.Version == "" {
+		commandArgs.Version = arg
+	} else {
+		return false, errors.New("unknown release argument: " + arg)
+	}
+	return false, nil
+}
+
+func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
 	if arg == "-r" || arg == "--release-data" {
 		value, err := take()
 		if err != nil {
@@ -55,8 +66,6 @@ func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error
 		for k, v := range releaseData {
 			commandArgs.ReleaseData[k] = v
 		}
-	} else if commandArgs.Version == "" {
-		commandArgs.Version = arg
 	} else {
 		return false, errors.New("unknown release option: " + arg)
 	}
@@ -67,6 +76,7 @@ func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error
 func ParseArgs(args []string) (*CommandArgs, error) {
 	var result CommandArgs
 	result.ReleaseData = make(map[string]string)
+
 	i := 0
 	take := func() (string, error) {
 		i++

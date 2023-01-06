@@ -51,7 +51,7 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 	} else if strings.HasPrefix(arg, "--version=") {
 		commandArgs.Version = strings.TrimPrefix(arg, "--version=")
 	} else {
-		return false, errors.New("unknown global option: " + arg)
+		return false, errors.New("unknown shell option: " + arg)
 	}
 	return false, nil
 }
