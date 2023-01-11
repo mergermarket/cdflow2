@@ -19,7 +19,7 @@ import (
 // InitInitial runs terraform init as part of the release in order to download providers and modules.
 func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume string, outputStream, errorStream io.Writer) error {
 
-	cacheVolume, err := util.GetCacheVolume(dockerClient)
+	cacheVolume, err := util.GetCacheVolume(dockerClient, "terraform")
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume s
 			"TF_IN_AUTOMATION=true",
 			"TF_INPUT=0",
 			"TF_DATA_DIR=/build/.terraform",
-			"TF_PLUGIN_CACHE_DIR=/cache/terraform-plugin-cache",
+			"TF_PLUGIN_CACHE_DIR=/cache",
 		},
 		Binds: []string{
 			codeDir + ":/code",

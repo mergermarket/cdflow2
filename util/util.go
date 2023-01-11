@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-
 	"time"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/mergermarket/cdflow2/docker"
 	"github.com/rs/xid"
+
+	"github.com/mergermarket/cdflow2/docker"
 )
 
 // GetEnv takes the environment as a slice of strings (as returned by os.Environ) and returns it as a map.
@@ -46,16 +46,18 @@ func FormatCommand(command string) string {
 const cacheVolumeName = "cdflow2-cache"
 
 // GetCacheVolume returns the volume for cache at /cache (e.g. terraform providers).
-func GetCacheVolume(dockerClient docker.Iface) (string, error) {
-	exists, err := dockerClient.VolumeExists(cacheVolumeName)
+func GetCacheVolume(dockerClient docker.Iface, volumePostfix string) (string, error) {
+	volumeName := fmt.Sprintf("%s-%s", cacheVolumeName, volumePostfix)
+
+	exists, err := dockerClient.VolumeExists(volumeName)
 	if err != nil {
 		return "", err
 	}
 	if exists {
-		return cacheVolumeName, nil
+		return volumeName, nil
 	}
-	if _, err := dockerClient.CreateVolume(cacheVolumeName); err != nil {
+	if _, err := dockerClient.CreateVolume(volumeName); err != nil {
 		return "", err
 	}
-	return cacheVolumeName, nil
+	return volumeName, nil
 }
