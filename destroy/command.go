@@ -26,15 +26,11 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 	var T = true
 	result.StateShouldExist = &T // set default to true
 
-	for _, arg := range args {
-		if arg == "-p" || arg == "--plan-only" {
-			result.PlanOnly = true
-		} else if result.EnvName == "" {
-			result.EnvName = arg
-		} else if result.Version == "" {
-			result.Version = arg
-		} else {
-			return nil, errors.New("unknown destroy option: " + arg)
+	i := 0
+	for ; i < len(args); i++ {
+		_, err := handleArgs(args[i], &result)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -47,6 +43,28 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 	}
 
 	return &result, nil
+}
+
+func handleArgs(arg string, commandArgs *CommandArgs) (bool, error) {
+	if strings.HasPrefix(arg, "-") {
+		return handleFlag(arg, commandArgs)
+	} else if commandArgs.EnvName == "" {
+		commandArgs.EnvName = arg
+	} else if commandArgs.Version == "" {
+		commandArgs.Version = arg
+	} else {
+		return false, errors.New("unknown destroy argument: " + arg)
+	}
+	return false, nil
+}
+
+func handleFlag(arg string, commandArgs *CommandArgs) (bool, error) {
+	if arg == "-p" || arg == "--plan-only" {
+		commandArgs.PlanOnly = true
+	} else {
+		return false, errors.New("unknown destroy option: " + arg)
+	}
+	return false, nil
 }
 
 // RunCommand runs the release command.
