@@ -39,7 +39,7 @@ func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume s
 			"TF_IN_AUTOMATION=true",
 			"TF_INPUT=0",
 			"TF_DATA_DIR=/build/.terraform",
-			"TF_PLUGIN_CACHE_DIR=/cache",
+			//"TF_PLUGIN_CACHE_DIR=/cache",
 		},
 		Binds: []string{
 			codeDir + ":/code",
