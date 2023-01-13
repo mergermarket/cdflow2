@@ -185,7 +185,13 @@ func TestRunCommand(t *testing.T) {
 		t.Fatal("error getting debug info:", err)
 	}
 
-	test.CheckTerraformInitInitialReflectedInput(debugInfo["terraform"])
+	lines := bytes.Split(debugInfo["terraform"], []byte{'\n'})
+	if len(lines) != 3 {
+		t.Fatalf("expected two lines with a trailing newline (empty string), got %v lines:\n%v", len(lines), test.DumpLines(lines))
+	}
+
+	test.CheckTerraformInitInitialReflectedInput(lines[0])
+	test.CheckTerraformInitVersionReflectedInput(lines[1])
 
 	checkConfigureReleaseOutput(t, debugInfo["configure-release.json"])
 

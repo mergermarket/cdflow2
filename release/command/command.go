@@ -142,7 +142,7 @@ func streamOutput(terraformOutputChan chan *output, outputStream, errorStream io
 	}
 }
 
-func terraformRelease(state *command.GlobalState, buildVolume string, outputStream, errorStream io.Writer) (string, error) {
+func terraformRelease(state *command.GlobalState, buildVolume string, outputStream, errorStream io.Writer) (image string, returnedError error) {
 	dockerClient := state.DockerClient
 
 	if !state.GlobalArgs.NoPullTerraform {
@@ -167,14 +167,27 @@ func terraformRelease(state *command.GlobalState, buildVolume string, outputStre
 		log.Panicln("no repo digest for ", state.Manifest.Terraform.Image)
 	}
 
-	return savedTerraformImage, terraform.InitInitial(
-		dockerClient,
+	terraformContainer, err := terraform.NewContainer(
+		state.DockerClient,
 		savedTerraformImage,
 		state.CodeDir,
 		buildVolume,
-		outputStream,
-		errorStream,
 	)
+	if err != nil {
+		return "", err
+	}
+
+	defer func() {
+		if err := terraformContainer.Done(); err != nil {
+			if returnedError != nil {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+			} else {
+				returnedError = err
+			}
+		}
+	}()
+
+	return savedTerraformImage, terraformContainer.InitInitial(outputStream, errorStream)
 }
 
 // RunCommand runs the release command.

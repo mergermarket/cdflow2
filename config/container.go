@@ -27,7 +27,7 @@ type Container struct {
 func NewContainer(state *command.GlobalState, image, releaseVolume string) (*Container, error) {
 	dockerClient := state.DockerClient
 
-	cacheVolume, err := util.GetCacheVolume(dockerClient, "config")
+	cacheVolume, err := util.GetCacheVolume(dockerClient)
 	if err != nil {
 		return nil, err
 	}

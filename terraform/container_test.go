@@ -27,20 +27,54 @@ func TestTerraformInitInitial(t *testing.T) {
 	buildVolume := test.CreateVolume(dockerClient)
 	defer test.RemoveVolume(dockerClient, buildVolume)
 
-	// When
-	if err := terraform.InitInitial(
-		dockerClient,
-		test.GetConfig("TEST_TERRAFORM_IMAGE"),
-		test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
-		buildVolume,
-		&outputBuffer,
-		&errorBuffer,
-	); err != nil {
-		log.Fatalln("unexpected error: ", err)
+	codeDir := test.GetConfig("TEST_ROOT") + "/test/terraform/sample-code"
+	backendConfigFilename := path.Join(codeDir, "infra/backend.tf")
+	if err := os.Remove(backendConfigFilename); err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
 	}
 
+	// When
+	func() {
+		terraformContainer, err := terraform.NewContainer(
+			dockerClient,
+			test.GetConfig("TEST_TERRAFORM_IMAGE"),
+			codeDir,
+			buildVolume,
+		)
+		if err != nil {
+			t.Fatal("error creating terraform container:", err)
+		}
+		defer func() {
+			if err := terraformContainer.Done(); err != nil {
+				t.Fatal("error cleaning up terraform container:", err)
+			}
+		}()
+
+		if err := terraformContainer.InitInitial(
+			&outputBuffer,
+			&errorBuffer,
+		); err != nil {
+			log.Fatalln("unexpected error: ", err)
+		}
+
+		if err := terraformContainer.ConfigureBackend(
+			&outputBuffer,
+			&errorBuffer,
+			&config.PrepareTerraformResponse{
+				TerraformBackendType: "foo",
+				TerraformBackendConfig: map[string]string{
+					"key1": "value1",
+					"key2": "value2",
+				},
+			},
+			false,
+		); err != nil {
+			t.Fatal("unexpected error: ", err, errorBuffer.String())
+		}
+	}()
+
 	// Then
-	if outputBuffer.String() != "message to stdout\n" {
+	if outputBuffer.String() != "message to stdout\nmessage to stdout\n" {
 		log.Fatalf("unexpected stdout output: '%v'", outputBuffer.String())
 	}
 
@@ -49,7 +83,13 @@ func TestTerraformInitInitial(t *testing.T) {
 		t.Fatal("error getting debug info:", err)
 	}
 
-	test.CheckTerraformInitInitialReflectedInput(debugInfo["terraform"])
+	lines := bytes.Split(debugInfo["terraform"], []byte{'\n'})
+	if len(lines) != 4 {
+		t.Fatalf("expected three lines with a trailing newline (empty string), got %v lines:\n%v", len(lines), test.DumpLines(lines))
+	}
+
+	test.CheckTerraformInitInitialReflectedInput(lines[0])
+	test.CheckTerraformInitVersionReflectedInput(lines[1])
 
 	buildOutput, err := test.ReadVolume(dockerClient, buildVolume)
 	if err != nil {

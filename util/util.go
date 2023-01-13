@@ -46,18 +46,16 @@ func FormatCommand(command string) string {
 const cacheVolumeName = "cdflow2-cache"
 
 // GetCacheVolume returns the volume for cache at /cache (e.g. terraform providers).
-func GetCacheVolume(dockerClient docker.Iface, volumePostfix string) (string, error) {
-	volumeName := fmt.Sprintf("%s-%s", cacheVolumeName, volumePostfix)
-
-	exists, err := dockerClient.VolumeExists(volumeName)
+func GetCacheVolume(dockerClient docker.Iface) (string, error) {
+	exists, err := dockerClient.VolumeExists(cacheVolumeName)
 	if err != nil {
 		return "", err
 	}
 	if exists {
-		return volumeName, nil
+		return cacheVolumeName, nil
 	}
-	if _, err := dockerClient.CreateVolume(volumeName); err != nil {
+	if _, err := dockerClient.CreateVolume(cacheVolumeName); err != nil {
 		return "", err
 	}
-	return volumeName, nil
+	return cacheVolumeName, nil
 }
