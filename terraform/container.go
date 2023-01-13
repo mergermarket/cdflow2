@@ -220,7 +220,7 @@ func (terraformContainer *Container) removeProviders(errorStream io.Writer) erro
 
 		output := outputBuffer.String()
 		if output != "" && output != "not found" {
-			return fmt.Errorf("unable to remove '%s' directory", fullPath)
+			return fmt.Errorf("unable to remove '%s' directory, error: '%s'", fullPath, output)
 		}
 	}
 
