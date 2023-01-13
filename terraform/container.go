@@ -179,7 +179,7 @@ func (terraformContainer *Container) removeProviders(errorStream io.Writer) erro
 	err := terraformContainer.RunCommand([]string{"sh", "-c", "terraform version | head -n 1"}, nil, &output, errorStream)
 	if err != nil {
 		fmt.Fprintf(errorStream, "\n%s\n\n", util.FormatInfo(fmt.Sprintf("unable to run terraform version command: %v", err)))
-		// keep providers just to be sure when can't parse version
+		// keep providers just to be sure when can't get version
 		return nil
 	}
 
@@ -203,7 +203,7 @@ func (terraformContainer *Container) removeProviders(errorStream io.Writer) erro
 			return err
 		}
 
-		return fmt.Errorf("terraform lock file not exists with terraform version: %s", version)
+		return fmt.Errorf("terraform lock file not exists, terraform version: %s", version)
 	}
 
 	// 'plugins' the legacy cache path
@@ -211,7 +211,7 @@ func (terraformContainer *Container) removeProviders(errorStream io.Writer) erro
 		var outputBuffer bytes.Buffer
 
 		fullPath := fmt.Sprintf("%s/%s", terraformDataDir, p)
-		command := fmt.Sprintf("test -d %s && rm -rf %s || echo -n 'none'", fullPath, fullPath)
+		command := fmt.Sprintf("test -d %s && rm -rf %s || echo -n 'not found'", fullPath, fullPath)
 
 		err := terraformContainer.RunCommand([]string{"sh", "-c", command}, nil, &outputBuffer, errorStream)
 		if err != nil {
@@ -219,7 +219,7 @@ func (terraformContainer *Container) removeProviders(errorStream io.Writer) erro
 		}
 
 		output := outputBuffer.String()
-		if output != "" && output != "none" {
+		if output != "" && output != "not found" {
 			return fmt.Errorf("unable to remove '%s' directory", fullPath)
 		}
 	}
