@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,6 +25,18 @@ func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume s
 		return err
 	}
 
+	infraDir := filepath.Join(codeDir, "infra")
+	if _, err := os.Stat(infraDir); err != nil {
+		if os.IsNotExist(err) {
+			err := os.Mkdir(infraDir, 0755)
+			if err != nil {
+				return fmt.Errorf("unable to create infra directory: %v", err)
+			}
+		}
+
+		return fmt.Errorf("unable to chech infra directory existence: %v", err)
+	}
+
 	fmt.Fprintf(
 		errorStream,
 		"\n%s\n%s\n\n",
@@ -33,7 +46,7 @@ func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume s
 
 	return dockerClient.Run(&docker.RunOptions{
 		Image:      image,
-		WorkingDir: "/code/infra",
+		WorkingDir: infraDir,
 		Cmd:        []string{"init", "-backend=false"},
 		Env: []string{
 			"TF_IN_AUTOMATION=true",
@@ -62,6 +75,17 @@ type Container struct {
 
 // NewContainer creates and returns a terraformContainer for running terraform commands in.
 func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolume string) (*Container, error) {
+	infraDir := filepath.Join(codeDir, "infra")
+	if _, err := os.Stat(infraDir); err != nil {
+		if os.IsNotExist(err) {
+			err := os.Mkdir(infraDir, 0755)
+			if err != nil {
+				return nil, fmt.Errorf("unable to create infra directory: %v", err)
+			}
+		}
+
+		return nil, fmt.Errorf("unable to chech infra directory existence: %v", err)
+	}
 
 	started := make(chan string, 1)
 	defer close(started)
@@ -76,7 +100,7 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 			// output to user in case there's an error (e.g. terraform container doesn't have /bin/sleep)
 			OutputStream: &outputBuffer,
 			ErrorStream:  &outputBuffer,
-			WorkingDir:   "/code/infra",
+			WorkingDir:   infraDir,
 			Entrypoint:   []string{"/bin/sleep"},
 			Cmd:          []string{strconv.Itoa(365 * 24 * 60 * 60)}, // a long time!
 			Env:          []string{"TF_IN_AUTOMATION=true", "TF_INPUT=0", "TF_DATA_DIR=/build/.terraform"},
