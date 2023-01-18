@@ -34,7 +34,7 @@ func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume s
 			}
 		}
 
-		return fmt.Errorf("unable to chech infra directory existence: %v", err)
+		return fmt.Errorf("unable to check infra directory existence: %v", err)
 	}
 
 	fmt.Fprintf(
@@ -84,7 +84,7 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 			}
 		}
 
-		return nil, fmt.Errorf("unable to chech infra directory existence: %v", err)
+		return nil, fmt.Errorf("unable to check infra directory existence: %v", err)
 	}
 
 	started := make(chan string, 1)
