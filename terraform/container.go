@@ -46,7 +46,7 @@ func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume s
 
 	return dockerClient.Run(&docker.RunOptions{
 		Image:      image,
-		WorkingDir: infraDir,
+		WorkingDir: "/code/infra",
 		Cmd:        []string{"init", "-backend=false"},
 		Env: []string{
 			"TF_IN_AUTOMATION=true",
@@ -100,7 +100,7 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 			// output to user in case there's an error (e.g. terraform container doesn't have /bin/sleep)
 			OutputStream: &outputBuffer,
 			ErrorStream:  &outputBuffer,
-			WorkingDir:   infraDir,
+			WorkingDir:   "/code/infra",
 			Entrypoint:   []string{"/bin/sleep"},
 			Cmd:          []string{strconv.Itoa(365 * 24 * 60 * 60)}, // a long time!
 			Env:          []string{"TF_IN_AUTOMATION=true", "TF_INPUT=0", "TF_DATA_DIR=/build/.terraform"},
