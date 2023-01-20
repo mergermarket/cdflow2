@@ -38,9 +38,6 @@ cdflow2 [ GLOBALARGS ] COMMAND [ ARGS ]
 `--no-pull-terraform`
 : Don't pull the terraform container (must exist).
 
-`--quiet` | `-q`
-: Hide verbose description of what's going on.
-
 `--version`
 : Print the version number and exit.
 

@@ -23,7 +23,6 @@ const globalOptions = `Global options:
   --no-pull-config             - don't pull the config container (must exist).
   --no-pull-release            - don't pull the release container (must exist).
   --no-pull-terraform          - don't pull the terraform container (must exist).
-  --quiet | -q                 - hide verbose description of what's going on.
   --version                    - print the version number and exit. 
   --help                       - print the help message and exit.`
 
