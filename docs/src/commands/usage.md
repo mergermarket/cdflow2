@@ -16,6 +16,7 @@ cdflow2 [ GLOBALARGS ] COMMAND [ ARGS ]
 ## Commands
 
 * [`setup`](setup) - interactive setup for your project.
+* [`init`](init) - interactive init for your project.
 * [`release`](release) - build and publish a release for a later deploymment.
 * [`deploy`](deploy) - apply a release to an environment using Terraform.
 * [`destroy`](destroy) - destroy all resources in an environment.

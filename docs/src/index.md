@@ -14,6 +14,9 @@ navigation:
   - name: Usage
     url: commands/usage
     icon: Info
+  - name: Init Command
+    url: commands/init
+    icon: Init
   - name: Setup Command
     url: commands/setup
     icon: Edit
