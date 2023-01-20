@@ -1,5 +1,5 @@
 ---
-name: Release
+name: Init
 menu: Commands
 route: /commands/init
 ---
