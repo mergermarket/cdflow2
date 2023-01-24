@@ -98,7 +98,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 
 	if status.exitCode != options.SuccessStatus {
 		extra := ""
-		if err := dockerClient.client.ContainerRemove(context.Background(), response.ID, types.ContainerRemoveOptions{}); err != nil {
+		if err := dockerClient.RemoveContainer(response.ID); err != nil {
 			extra = "\nerror removing container: " + err.Error()
 		}
 		return fmt.Errorf("container exited with unsuccessful exit code %d%s", status.exitCode, extra)
@@ -109,7 +109,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 			return fmt.Errorf("error in BeforeRemove function for container: %w", err)
 		}
 	}
-	return dockerClient.client.ContainerRemove(context.Background(), response.ID, types.ContainerRemoveOptions{})
+	return dockerClient.RemoveContainer(response.ID)
 }
 
 type status struct {
@@ -449,7 +449,7 @@ func (dockerClient *Client) CreateContainer(options *docker.CreateContainerOptio
 
 // RemoveContainer removes a docker container.
 func (dockerClient *Client) RemoveContainer(id string) error {
-	return dockerClient.client.ContainerRemove(context.Background(), id, types.ContainerRemoveOptions{})
+	return dockerClient.client.ContainerRemove(context.Background(), id, types.ContainerRemoveOptions{RemoveVolumes: true})
 }
 
 // CopyFromContainer returns a tar stream for a path within a container (like `docker cp CONTAINER -`).
