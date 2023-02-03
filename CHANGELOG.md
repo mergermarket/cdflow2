@@ -4,13 +4,14 @@
 
 ### Fixed
 
-- Create infra dir if not exists before using terraform container ([#34](https://github.com/mergermarket/cdflow2/pull/34))
+- Create infra directory if not exists before using terraform container ([#34](https://github.com/mergermarket/cdflow2/pull/34))
 - Fix docker registry parsing ([#35](https://github.com/mergermarket/cdflow2/pull/35))
 - Remove container volumes automatically ([#38](https://github.com/mergermarket/cdflow2/pull/38))
 
 ### Deprecated
 
-- Deprecate quiet global argument ([#37](https://github.com/mergermarket/cdflow2/pull/37))
+- Deprecate quiet global argument ([#37](https://github.com/mergermarket/cdflow2/pull/37))  
+  It's not used anywhere in the code, so currently doesn't do anything, please remove from commands.
 
 ## [v0.55.0](https://github.com/mergermarket/cdflow2/releases/tag/v0.55.0) - 2023-01-11
 
