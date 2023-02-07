@@ -189,6 +189,10 @@ terraform apply \
 
 Note that the only built in variables are the `release` map defined in the release metadata file (you can access the environment name via the workspace - i.e. `${terraform.workspace}`).
 
+## Documentation
+
+https://developer-preview.acuris.com/opensource/cdflow2
+
 ## Subcommands
 
 ### release
