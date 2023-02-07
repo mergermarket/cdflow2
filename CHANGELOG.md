@@ -51,7 +51,7 @@
 
 ### Added
 
-- Create init command ([#26](https://github.com/mergermarket/cdflow2/pull/26))
+- Create init command ([#26](https://github.com/mergermarket/cdflow2/pull/26))  
   Docs: https://developer-preview.acuris.com/opensource/cdflow2/commands/init
 
 ## [v0.51.0](https://github.com/mergermarket/cdflow2/releases/tag/v0.51.0) - 2022-11-09
