@@ -206,6 +206,12 @@ func (terraformContainer *Container) removeProviders(errorStream io.Writer) erro
 	}
 
 	if semver.Major == 0 && semver.Minor < 14 {
+		if semver.Minor == 13 {
+			fmt.Fprintf(errorStream, "\n\n%s\n\n",
+				util.FormatWarning("WARNING! You're using terraform 0.13.x version, which is not recommended anymore for cdflow2.\n"+
+					"Please upgrade to 0.14 or newer otherwise you will see increased build times when running 'release' command."))
+		}
+
 		return nil
 	}
 
