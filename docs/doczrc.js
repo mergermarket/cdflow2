@@ -8,7 +8,8 @@ export default {
     'Project Setup',
     { name: 'Commands', menu: [
       'Usage',
-      'Setup',
+      'Setup', 
+      'Init',
       'Release',
       'Deploy',
       'Destroy',

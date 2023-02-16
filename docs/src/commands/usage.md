@@ -16,6 +16,7 @@ cdflow2 [ GLOBALARGS ] COMMAND [ ARGS ]
 ## Commands
 
 * [`setup`](setup) - interactive setup for your project.
+* [`init`](init) - interactive init for your project.
 * [`release`](release) - build and publish a release for a later deploymment.
 * [`deploy`](deploy) - apply a release to an environment using Terraform.
 * [`destroy`](destroy) - destroy all resources in an environment.
@@ -37,9 +38,6 @@ cdflow2 [ GLOBALARGS ] COMMAND [ ARGS ]
 
 `--no-pull-terraform`
 : Don't pull the terraform container (must exist).
-
-`--quiet` | `-q`
-: Hide verbose description of what's going on.
 
 `--version`
 : Print the version number and exit.

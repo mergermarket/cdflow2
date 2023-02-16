@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,6 +31,17 @@ type Container struct {
 
 // NewContainer creates and returns a terraformContainer for running terraform commands in.
 func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolume string) (*Container, error) {
+	infraDir := filepath.Join(codeDir, "infra")
+	if _, err := os.Stat(infraDir); err != nil {
+		if os.IsNotExist(err) {
+			err := os.Mkdir(infraDir, 0755)
+			if err != nil {
+				return nil, fmt.Errorf("unable to create infra directory: %v", err)
+			}
+		}
+
+		return nil, fmt.Errorf("unable to check infra directory existence: %v", err)
+	}
 
 	started := make(chan string, 1)
 	defer close(started)

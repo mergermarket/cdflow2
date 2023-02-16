@@ -15,7 +15,7 @@ set -e
 if [ -z "$PERSIST_REGISTRY" ]; then
     if docker inspect "$registry_id" 2>/dev/null >/dev/null; then
         docker stop $registry_id >/dev/null
-        docker rm $registry_id >/dev/null
+        docker rm -v $registry_id >/dev/null
         rm .test-registry-id
         registry_id=""
     fi
@@ -30,7 +30,7 @@ fi
 if [ "$PERSIST_REGISTRY" == "" ]; then
     function finish {
         docker stop $registry_id >/dev/null
-        docker rm $registry_id >/dev/null
+        docker rm -v $registry_id >/dev/null
         rm .test-registry-id
     }
     trap finish EXIT
