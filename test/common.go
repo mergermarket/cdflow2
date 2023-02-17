@@ -130,6 +130,18 @@ func CheckTerraformInitInitialReflectedInput(output []byte) {
 	}
 }
 
+// CheckTerraformInitVersionReflectedInput checks the debug output for the terraform version check during release (panics).
+func CheckTerraformInitVersionReflectedInput(output []byte) {
+	var input ReflectedInput
+	if err := json.Unmarshal(output, &input); err != nil {
+		log.Panicln("error parsing json:", err)
+	}
+
+	if !reflect.DeepEqual(input.Args, []string{"version"}) {
+		log.Fatalf("unexpected args: %v", input.Args)
+	}
+}
+
 // CheckTerraformWorkspaceList checks the debug output for the terraform list workspace command during workspace selection in deployment (panics).
 func CheckTerraformWorkspaceList(line []byte) {
 	var input ReflectedInput
