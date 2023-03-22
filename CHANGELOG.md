@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.58.0](https://github.com/mergermarket/cdflow2/releases/tag/v0.58.0) - 2023-03-22
+
+### Fixed
+
+- Fix volume in use error during release command ([#43](https://github.com/mergermarket/cdflow2/pull/43))
+
 ## [v0.57.0](https://github.com/mergermarket/cdflow2/releases/tag/v0.57.0) - 2023-02-17
 
 ### Fixed

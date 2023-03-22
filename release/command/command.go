@@ -194,14 +194,17 @@ func terraformRelease(state *command.GlobalState, buildVolume string, outputStre
 func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[string]string) (returnedError error) {
 
 	dockerClient := state.DockerClient
+	terraformOutputChan, terraformOutputStream, terraformErrorStream := getOutputCapture()
+	terraformResultChan := make(chan *terraformResult, 1)
 
 	buildVolume, err := dockerClient.CreateVolume("")
 	if err != nil {
 		return err
 	}
 	defer func() {
+		<-terraformResultChan // wait for terraformRelease to finish, otherwise buildVolume will be in use and cannot be deleted
 		if err := dockerClient.RemoveVolume(buildVolume); err != nil {
-			if returnedError != nil {
+			if returnedError != nil && returnedError.Error() != "" {
 				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
 			} else {
 				returnedError = err
@@ -210,14 +213,12 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		}
 	}()
 
-	terraformOutputChan, terraformOutputStream, terraformErrorStream := getOutputCapture()
-
-	terraformResultChan := make(chan *terraformResult, 1)
 	go func() {
 		savedTerraformImage, err := terraformRelease(state, buildVolume, terraformOutputStream, terraformErrorStream)
 		terraformOutputStream.Close()
 		terraformErrorStream.Close()
 		terraformResultChan <- &terraformResult{savedTerraformImage, err}
+		close(terraformResultChan)
 	}()
 
 	if err := config.Pull(state); err != nil {
