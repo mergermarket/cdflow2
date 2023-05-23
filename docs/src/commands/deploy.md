@@ -28,6 +28,9 @@ See [usage](./usage) for global options.
 `--new-state` | `-n`
 : Allow run without a pre-existing tfstate file.
 
+`--terraform-log-level` | `-t`
+: Set Terraform log level (TF_LOG), useful for debugging.
+
 ## Description
 
 Terraform is configured as described in [common terraform setup](common-terraform-setup), followed by commands

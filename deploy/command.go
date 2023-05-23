@@ -14,10 +14,11 @@ import (
 
 // CommandArgs contains specific arguments to the deploy command.
 type CommandArgs struct {
-	EnvName          string
-	Version          string
-	PlanOnly         bool
-	StateShouldExist *bool
+	EnvName           string
+	Version           string
+	PlanOnly          bool
+	TerraformLogLevel string
+	StateShouldExist  *bool
 }
 
 // ParseArgs parses command line arguments to the deploy subcommand.
@@ -27,8 +28,16 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 	result.StateShouldExist = &T // set default to true
 
 	i := 0
+	take := func() (string, error) {
+		i++
+		if i >= len(args) {
+			return "", errors.New("missing value")
+		}
+
+		return args[i], nil
+	}
 	for ; i < len(args); i++ {
-		_, err := handleArgs(args[i], &result)
+		_, err := handleArgs(args[i], &result, take)
 		if err != nil {
 			return nil, err
 		}
@@ -45,9 +54,9 @@ func ParseArgs(args []string) (*CommandArgs, error) {
 	return &result, nil
 }
 
-func handleArgs(arg string, commandArgs *CommandArgs) (bool, error) {
+func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
 	if strings.HasPrefix(arg, "-") {
-		return handleFlag(arg, commandArgs)
+		return handleFlag(arg, commandArgs, take)
 	} else if commandArgs.EnvName == "" {
 		commandArgs.EnvName = arg
 	} else if commandArgs.Version == "" {
@@ -58,13 +67,20 @@ func handleArgs(arg string, commandArgs *CommandArgs) (bool, error) {
 	return false, nil
 }
 
-func handleFlag(arg string, commandArgs *CommandArgs) (bool, error) {
+func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
 	var F = false
 
 	if arg == "-p" || arg == "--plan-only" {
 		commandArgs.PlanOnly = true
 	} else if arg == "-n" || arg == "--new-state" {
 		commandArgs.StateShouldExist = &F
+	} else if arg == "-t" || arg == "--terraform-log-level" {
+		value, err := take()
+		if err != nil {
+			return false, err
+		}
+
+		commandArgs.TerraformLogLevel = value
 	} else {
 		return false, errors.New("unknown deploy option: " + arg)
 	}
@@ -93,6 +109,7 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		terraformImage,
 		state.CodeDir,
 		buildVolume,
+		args.TerraformLogLevel,
 	)
 	if err != nil {
 		return err

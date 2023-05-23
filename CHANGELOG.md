@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.59.0](https://github.com/mergermarket/cdflow2/releases/tag/v0.59.0) - 2023-05-24
+
+### Added
+
+- Add an option for Terraform involved commands (release, deploy, destroy, setup) to set `TF_LOG` level.  
+
 ## [v0.58.0](https://github.com/mergermarket/cdflow2/releases/tag/v0.58.0) - 2023-03-22
 
 ### Fixed
