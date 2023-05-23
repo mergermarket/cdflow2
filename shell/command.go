@@ -13,10 +13,11 @@ import (
 
 // CommandArgs contains specific arguments to the deploy command.
 type CommandArgs struct {
-	EnvName          string
-	Version          string
-	ShellArgs        []string
-	StateShouldExist *bool
+	EnvName           string
+	Version           string
+	ShellArgs         []string
+	TerraformLogLevel string
+	StateShouldExist  *bool
 }
 
 func isTty(stream os.File) bool {
@@ -50,6 +51,13 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 		commandArgs.Version = value
 	} else if strings.HasPrefix(arg, "--version=") {
 		commandArgs.Version = strings.TrimPrefix(arg, "--version=")
+	} else if arg == "-t" || arg == "--terraform-log-level" {
+		value, err := take()
+		if err != nil {
+			return false, err
+		}
+
+		commandArgs.TerraformLogLevel = value
 	} else {
 		return false, errors.New("unknown shell option: " + arg)
 	}
@@ -112,6 +120,7 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		terraformImage,
 		state.CodeDir,
 		buildVolume,
+		args.TerraformLogLevel,
 	)
 	if err != nil {
 		return err

@@ -30,7 +30,7 @@ type Container struct {
 }
 
 // NewContainer creates and returns a terraformContainer for running terraform commands in.
-func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolume string) (*Container, error) {
+func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolume string, logLevel string) (*Container, error) {
 	infraDir := filepath.Join(codeDir, "infra")
 	if _, err := os.Stat(infraDir); err != nil {
 		if os.IsNotExist(err) {
@@ -50,6 +50,11 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 
 	var outputBuffer bytes.Buffer
 
+	env := []string{"TF_IN_AUTOMATION=true", "TF_INPUT=0", "TF_DATA_DIR=" + terraformDataDir}
+	if logLevel != "" {
+		env = append(env, "TF_LOG="+logLevel)
+	}
+
 	go func() {
 		done <- dockerClient.Run(&docker.RunOptions{
 			Image: image,
@@ -59,7 +64,7 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 			WorkingDir:   "/code/infra",
 			Entrypoint:   []string{"/bin/sleep"},
 			Cmd:          []string{strconv.Itoa(365 * 24 * 60 * 60)}, // a long time!
-			Env:          []string{"TF_IN_AUTOMATION=true", "TF_INPUT=0", "TF_DATA_DIR=" + terraformDataDir},
+			Env:          env,
 			Started:      started,
 			Init:         true,
 			NamePrefix:   "cdflow2-terraform",
