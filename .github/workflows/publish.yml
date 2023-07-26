@@ -8,11 +8,11 @@ name: Build and publish release
 jobs:
   build:
     name: Build and publish release
-    runs-on: ubuntu-latest
+    runs-on: ['self-hostted', 'linux', 'aws']
     steps:
       - name: Checkout code
         uses: actions/checkout@master
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v2
         with:
           go-version: '1.19'
       - uses: actions/cache@v1
