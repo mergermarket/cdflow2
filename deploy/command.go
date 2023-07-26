@@ -3,6 +3,7 @@ package deploy
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -14,11 +15,12 @@ import (
 
 // CommandArgs contains specific arguments to the deploy command.
 type CommandArgs struct {
-	EnvName           string
-	Version           string
-	PlanOnly          bool
-	TerraformLogLevel string
-	StateShouldExist  *bool
+	EnvName                string
+	Version                string
+	PlanOnly               bool
+	TerraformLogLevel      string
+	StateShouldExist       *bool
+	ErrorOnResourceDestroy bool
 }
 
 // ParseArgs parses command line arguments to the deploy subcommand.
@@ -74,6 +76,8 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 		commandArgs.PlanOnly = true
 	} else if arg == "-n" || arg == "--new-state" {
 		commandArgs.StateShouldExist = &F
+	} else if arg == "-e" || arg == "--error-on-destroy" {
+		commandArgs.ErrorOnResourceDestroy = true
 	} else if arg == "-t" || arg == "--terraform-log-level" {
 		value, err := take()
 		if err != nil {
@@ -85,6 +89,10 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 		return false, errors.New("unknown deploy option: " + arg)
 	}
 	return false, nil
+}
+
+func hasResourceDelete(plan string) bool {
+	return !strings.Contains(plan, "0 to destroy")
 }
 
 // RunCommand runs the release command.
@@ -165,12 +173,20 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		util.FormatInfo("creating plan"),
 		util.FormatCommand(strings.Join(planCommand, " ")),
 	)
+	var planBuff strings.Builder
+	multiWriter := io.MultiWriter(state.OutputStream, &planBuff)
 
 	if err := terraformContainer.RunCommand(
 		planCommand, prepareTerraformResponse.Env,
-		state.OutputStream, state.ErrorStream,
+		multiWriter, state.ErrorStream,
 	); err != nil {
 		return err
+	}
+
+	if args.ErrorOnResourceDestroy {
+		if hasResourceDelete(planBuff.String()) {
+			return errors.New("the plan contains resources to be deleted")
+		}
 	}
 
 	if args.PlanOnly {
