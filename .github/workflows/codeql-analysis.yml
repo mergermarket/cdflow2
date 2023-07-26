@@ -25,7 +25,7 @@ on:
 jobs:
   analyze:
     name: Analyze
-    runs-on: ['self-hostted', 'linux', 'aws']
+    runs-on: ['self-hosted', 'linux', 'aws']
     permissions:
       actions: read
       contents: read
