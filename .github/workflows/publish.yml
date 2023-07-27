@@ -8,7 +8,7 @@ name: Build and publish release
 jobs:
   build:
     name: Build and publish release
-    runs-on: ['self-hostted', 'linux', 'aws']
+    runs-on: ['self-hosted', 'linux', 'aws']
     steps:
       - name: Checkout code
         uses: actions/checkout@master
