@@ -77,7 +77,7 @@ func (m *DatadogClient) collectTags() []string {
 	tags := []string{
 		"command:" + m.Command,
 		"version:" + m.Version,
-		"cdflow_version" + m.CDFlowVersion,
+		"cdflow_version:" + m.CDFlowVersion,
 		"status_code:" + strconv.Itoa(m.StatusCode),
 	}
 
