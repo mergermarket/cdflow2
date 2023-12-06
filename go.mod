@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.5.0
-	github.com/docker/distribution v2.8.1+incompatible
+	github.com/docker/distribution v2.8.2+incompatible
 	github.com/docker/docker v1.4.2-0.20191101170500-ac7306503d23
 	github.com/logrusorgru/aurora v0.0.0-20200102142835-e9ef32dff381
 	github.com/rs/xid v1.2.1
