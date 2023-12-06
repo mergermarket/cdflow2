@@ -17,6 +17,11 @@ See [usage](./usage) for global options.
 `VERSION`
 : The version being released. We recommend using evergreen version numbers (i.e. simple incrementing integers, probably from your CI service), combined with something to identify the commit - e.g. "34-a5dbc4a7".
 
+### Options:
+
+`--terraform-log-level` | `-t`
+: Set Terraform log level (TF_LOG), useful for debugging.
+
 ## Description
 
 Release builds each of the `builds` configured in [`cdflow.yaml`](../cdflow-yaml-reference#builds-optional),

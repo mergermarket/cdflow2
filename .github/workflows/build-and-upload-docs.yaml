@@ -6,7 +6,7 @@ name: Build and upload docs
 jobs:
   this:
     name: Build and publish release
-    runs-on: ubuntu-latest
+    runs-on: 'ubuntu-latest'
     env:
       FASTLY_API_KEY: ${{ secrets.FASTLY_API_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.CAPPLATFORM_AWS_ACCESS_KEY_ID }}
@@ -14,7 +14,7 @@ jobs:
       SESSION_NAME: gh-action/${{ github.workflow }}          
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build docs
         run: scripts/build-docs.sh

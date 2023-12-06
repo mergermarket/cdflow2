@@ -17,53 +17,9 @@ import (
 	"github.com/mergermarket/cdflow2/util"
 )
 
-// InitInitial runs terraform init as part of the release in order to download providers and modules.
-func InitInitial(dockerClient docker.Iface, image, codeDir string, buildVolume string, outputStream, errorStream io.Writer) error {
-
-	cacheVolume, err := util.GetCacheVolume(dockerClient)
-	if err != nil {
-		return err
-	}
-
-	infraDir := filepath.Join(codeDir, "infra")
-	if _, err := os.Stat(infraDir); err != nil {
-		if os.IsNotExist(err) {
-			err := os.Mkdir(infraDir, 0755)
-			if err != nil {
-				return fmt.Errorf("unable to create infra directory: %v", err)
-			}
-		}
-
-		return fmt.Errorf("unable to check infra directory existence: %v", err)
-	}
-
-	fmt.Fprintf(
-		errorStream,
-		"\n%s\n%s\n\n",
-		util.FormatInfo("initialising terraform"),
-		util.FormatCommand("terraform init -backend=false"),
-	)
-
-	return dockerClient.Run(&docker.RunOptions{
-		Image:      image,
-		WorkingDir: "/code/infra",
-		Cmd:        []string{"init", "-backend=false"},
-		Env: []string{
-			"TF_IN_AUTOMATION=true",
-			"TF_INPUT=0",
-			"TF_DATA_DIR=/build/.terraform",
-			"TF_PLUGIN_CACHE_DIR=/cache/terraform-plugin-cache",
-		},
-		Binds: []string{
-			codeDir + ":/code",
-			buildVolume + ":/build",
-			cacheVolume + ":/cache",
-		},
-		NamePrefix:   "cdflow2-terraform-init",
-		OutputStream: outputStream,
-		ErrorStream:  errorStream,
-	})
-}
+const (
+	terraformDataDir = "/build/.terraform"
+)
 
 // Container stores information about a running terraform container for running terraform commands in.
 type Container struct {
@@ -74,7 +30,7 @@ type Container struct {
 }
 
 // NewContainer creates and returns a terraformContainer for running terraform commands in.
-func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolume string) (*Container, error) {
+func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolume string, logLevel string) (*Container, error) {
 	infraDir := filepath.Join(codeDir, "infra")
 	if _, err := os.Stat(infraDir); err != nil {
 		if os.IsNotExist(err) {
@@ -94,6 +50,11 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 
 	var outputBuffer bytes.Buffer
 
+	env := []string{"TF_IN_AUTOMATION=true", "TF_INPUT=0", "TF_DATA_DIR=" + terraformDataDir}
+	if logLevel != "" {
+		env = append(env, "TF_LOG="+logLevel)
+	}
+
 	go func() {
 		done <- dockerClient.Run(&docker.RunOptions{
 			Image: image,
@@ -103,7 +64,7 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string, releaseVolum
 			WorkingDir:   "/code/infra",
 			Entrypoint:   []string{"/bin/sleep"},
 			Cmd:          []string{strconv.Itoa(365 * 24 * 60 * 60)}, // a long time!
-			Env:          []string{"TF_IN_AUTOMATION=true", "TF_INPUT=0", "TF_DATA_DIR=/build/.terraform"},
+			Env:          env,
 			Started:      started,
 			Init:         true,
 			NamePrefix:   "cdflow2-terraform",
@@ -209,6 +170,84 @@ func (terraformContainer *Container) createPartialBackendConfig(codeDir, backend
 	if _, err := fmt.Fprintf(f, backendTemplate, backendType); err != nil {
 		return err
 	}
+	return nil
+}
+
+// InitInitial runs terraform init as part of the release in order to download providers and modules.
+func (terraformContainer *Container) InitInitial(outputStream, errorStream io.Writer) error {
+	fmt.Fprintf(
+		errorStream,
+		"\n%s\n%s\n\n",
+		util.FormatInfo("initialising terraform"),
+		util.FormatCommand("terraform init -backend=false"),
+	)
+
+	err := terraformContainer.RunCommand([]string{"terraform", "init", "-backend=false"}, nil, outputStream, errorStream)
+	if err != nil {
+		return err
+	}
+
+	return terraformContainer.removeProviders(errorStream)
+}
+
+func (terraformContainer *Container) removeProviders(errorStream io.Writer) error {
+	var output bytes.Buffer
+
+	err := terraformContainer.RunCommand([]string{"sh", "-c", "terraform version | head -n 1"}, nil, &output, errorStream)
+	if err != nil {
+		fmt.Fprintf(errorStream, "\n%s\n\n", util.FormatInfo(fmt.Sprintf("unable to run terraform version command: %v", err)))
+		// keep providers just to be sure when can't get version
+		return nil
+	}
+
+	version := strings.TrimPrefix(output.String(), "Terraform")
+	version = strings.TrimSpace(version)
+
+	semver, ok := util.ParseSemver(version)
+	if !ok {
+		fmt.Fprintf(errorStream, "\n%s\n", util.FormatInfo(fmt.Sprintf("unable to parse Terraform version: %s", version)))
+		// keep providers just to be sure when can't parse version
+		return nil
+	}
+
+	if semver.Major == 0 && semver.Minor < 14 {
+		if semver.Minor == 13 {
+			fmt.Fprintf(errorStream, "\n\n%s\n\n",
+				util.FormatWarning("WARNING! You're using Terraform 0.13.x version, which is not recommended anymore for cdflow2.\n"+
+					"Please upgrade to 0.14 or newer otherwise you will see increased build times when running 'release' command.\n"+
+					"See this PR for details: https://github.com/mergermarket/cdflow2/pull/33."))
+		}
+
+		return nil
+	}
+
+	ok, err = terraformContainer.CheckFileExists("/code/infra/.terraform.lock.hcl", errorStream)
+	if !ok {
+		if err != nil {
+			return err
+		}
+
+		return fmt.Errorf("terraform lock file not exists, terraform version: %s", version)
+	}
+
+	// 'plugins' the legacy cache path
+	for _, p := range []string{"plugins", "providers"} {
+		var outputBuffer bytes.Buffer
+
+		fullPath := fmt.Sprintf("%s/%s", terraformDataDir, p)
+		command := fmt.Sprintf("test -d %s && rm -rf %s || echo -n 'not found'", fullPath, fullPath)
+
+		err := terraformContainer.RunCommand([]string{"sh", "-c", command}, nil, &outputBuffer, errorStream)
+		if err != nil {
+			return err
+		}
+
+		output := outputBuffer.String()
+		if output != "" && output != "not found" {
+			return fmt.Errorf("unable to remove '%s' directory, error: '%s'", fullPath, output)
+		}
+	}
+
 	return nil
 }
 

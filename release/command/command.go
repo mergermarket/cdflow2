@@ -29,8 +29,9 @@ type output struct {
 
 // CommandArgs contains specific arguments to the deploy command.
 type CommandArgs struct {
-	ReleaseData map[string]string
-	Version     string
+	ReleaseData       map[string]string
+	Version           string
+	TerraformLogLevel string
 }
 
 func parseReleaseData(value string) (map[string]string, error) {
@@ -66,6 +67,13 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 		for k, v := range releaseData {
 			commandArgs.ReleaseData[k] = v
 		}
+	} else if arg == "-t" || arg == "--terraform-log-level" {
+		value, err := take()
+		if err != nil {
+			return false, err
+		}
+
+		commandArgs.TerraformLogLevel = value
 	} else {
 		return false, errors.New("unknown release option: " + arg)
 	}
@@ -142,7 +150,7 @@ func streamOutput(terraformOutputChan chan *output, outputStream, errorStream io
 	}
 }
 
-func terraformRelease(state *command.GlobalState, buildVolume string, outputStream, errorStream io.Writer) (string, error) {
+func terraformRelease(state *command.GlobalState, buildVolume string, outputStream, errorStream io.Writer, logLevel string) (image string, returnedError error) {
 	dockerClient := state.DockerClient
 
 	if !state.GlobalArgs.NoPullTerraform {
@@ -167,28 +175,45 @@ func terraformRelease(state *command.GlobalState, buildVolume string, outputStre
 		log.Panicln("no repo digest for ", state.Manifest.Terraform.Image)
 	}
 
-	return savedTerraformImage, terraform.InitInitial(
-		dockerClient,
+	terraformContainer, err := terraform.NewContainer(
+		state.DockerClient,
 		savedTerraformImage,
 		state.CodeDir,
 		buildVolume,
-		outputStream,
-		errorStream,
+		logLevel,
 	)
+	if err != nil {
+		return "", err
+	}
+
+	defer func() {
+		if err := terraformContainer.Done(); err != nil {
+			if returnedError != nil {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+			} else {
+				returnedError = err
+			}
+		}
+	}()
+
+	return savedTerraformImage, terraformContainer.InitInitial(outputStream, errorStream)
 }
 
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[string]string) (returnedError error) {
 
 	dockerClient := state.DockerClient
+	terraformOutputChan, terraformOutputStream, terraformErrorStream := getOutputCapture()
+	terraformResultChan := make(chan *terraformResult, 1)
 
 	buildVolume, err := dockerClient.CreateVolume("")
 	if err != nil {
 		return err
 	}
 	defer func() {
+		<-terraformResultChan // wait for terraformRelease to finish, otherwise buildVolume will be in use and cannot be deleted
 		if err := dockerClient.RemoveVolume(buildVolume); err != nil {
-			if returnedError != nil {
+			if returnedError != nil && returnedError.Error() != "" {
 				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
 			} else {
 				returnedError = err
@@ -197,14 +222,12 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		}
 	}()
 
-	terraformOutputChan, terraformOutputStream, terraformErrorStream := getOutputCapture()
-
-	terraformResultChan := make(chan *terraformResult, 1)
 	go func() {
-		savedTerraformImage, err := terraformRelease(state, buildVolume, terraformOutputStream, terraformErrorStream)
+		savedTerraformImage, err := terraformRelease(state, buildVolume, terraformOutputStream, terraformErrorStream, releaseArgs.TerraformLogLevel)
 		terraformOutputStream.Close()
 		terraformErrorStream.Close()
 		terraformResultChan <- &terraformResult{savedTerraformImage, err}
+		close(terraformResultChan)
 	}()
 
 	if err := config.Pull(state); err != nil {

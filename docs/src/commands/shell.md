@@ -22,6 +22,9 @@ See [usage](./usage) for global options.
 `--version` | `-v`
 : The released version to use to setup terraform (currently an option, but may not work without - may be made a required parameter).
 
+`--terraform-log-level` | `-t`
+: Set Terraform log level (TF_LOG), useful for debugging.
+
 ## Description
 
 Terraform is configured as described in [common terraform setup](common-terraform-setup), followed by creating a shell.

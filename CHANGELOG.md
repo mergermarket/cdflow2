@@ -1,5 +1,27 @@
 # Changelog
 
+## [v0.59.0](https://github.com/mergermarket/cdflow2/releases/tag/v0.59.0) - 2023-05-24
+
+### Added
+
+- Add an option for Terraform involved commands (release, deploy, destroy, setup) to set `TF_LOG` level.  
+
+## [v0.58.0](https://github.com/mergermarket/cdflow2/releases/tag/v0.58.0) - 2023-03-22
+
+### Fixed
+
+- Fix volume in use error during release command ([#43](https://github.com/mergermarket/cdflow2/pull/43))
+
+## [v0.57.0](https://github.com/mergermarket/cdflow2/releases/tag/v0.57.0) - 2023-02-17
+
+### Fixed
+
+- Fix terraform providers upload during release command ([#33](https://github.com/mergermarket/cdflow2/pull/33))
+
+  > WARNING!  
+  > Using terraform 0.13.x image version is not recommended anymore for cdflow2.  
+  > Please upgrade to 0.14 or newer otherwise you will see increased build times when running 'release' command.
+
 ## [v0.56.0](https://github.com/mergermarket/cdflow2/releases/tag/v0.56.0) - 2023-01-25
 
 ### Fixed
