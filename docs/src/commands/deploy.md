@@ -28,6 +28,12 @@ See [usage](./usage) for global options.
 `--new-state` | `-n`
 : Allow run without a pre-existing tfstate file.
 
+`--error-on-destroy` | `-e`
+: Error if any resources are marked to be destroyed during plan.
+
+`--terraform-log-level` | `-t`
+: Set Terraform log level (TF_LOG), useful for debugging.
+
 ## Description
 
 Terraform is configured as described in [common terraform setup](common-terraform-setup), followed by commands

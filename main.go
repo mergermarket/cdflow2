@@ -50,12 +50,13 @@ Usage:
 
 Args:
 
-  VERSION                - the version being released. We recommend using evergreen version numbers (i.e. simple incrementing integers,
-                           probably from your CI service), combined with something to identify the commit - e.g. "34-a5dbc4a7".
+  VERSION                        - the version being released. We recommend using evergreen version numbers (i.e. simple incrementing integers,
+                                   probably from your CI service), combined with something to identify the commit - e.g. "34-a5dbc4a7".
 
 Options:
 
-  --release-data | -r    - add key/value to release metadata (i.e. --release-data foo=bar).
+  --release-data | -r            - add key/value to release metadata (i.e. --release-data foo=bar).
+  --terraform-log-level | -t     - set Terraform log level (TF_LOG), useful for debugging.
 
 ` + globalOptions
 
@@ -66,13 +67,15 @@ Usage:
 
 Args:
 
-  ENV                 - the environment being deployed to.
-  VERSION             - the version being deployed (must match what was released).
+  ENV                            - the environment being deployed to.
+  VERSION                        - the version being deployed (must match what was released).
 
 Options:
 
-  --plan-only | -p    - create the terraform plan only, don't apply.
-  --new-state | -n    - allow run without a pre-existing tfstate file.
+  --plan-only | -p               - create the terraform plan only, don't apply.
+  --new-state | -n               - allow run without a pre-existing tfstate file.
+  --error-on-destroy | -e        - fail if a plan return any resources to destroy.
+  --terraform-log-level | -t     - set Terraform log level (TF_LOG), useful for debugging.
 
 ` + globalOptions
 
@@ -90,11 +93,12 @@ Usage:
 
 Args:
 
-  ENV               - the environment containing the deployment.
+  ENV                            - the environment containing the deployment.
 
 Options:
 
-  -v, --version     - followed by the name of which version to interract with (must match a pre-existing release).
+  --version | -v                 - followed by the name of which version to interract with (must match a pre-existing release).
+  --terraform-log-level | -t     - set Terraform log level (TF_LOG), useful for debugging.
 
 Shell Arguments:
 
@@ -110,12 +114,13 @@ Usage:
 
 Args:
 
-  ENV                 - the environment containing the infrastructure being destroyed.
-  VERSION             - the version to destroy (must match a pre-existing release).
+  ENV                            - the environment containing the infrastructure being destroyed.
+  VERSION                        - the version to destroy (must match a pre-existing release).
 
 Options:
 
-  --plan-only | -p    - generate an execution plan only, don't destroy.
+  --plan-only | -p               - generate an execution plan only, don't destroy.
+  --terraform-log-level | -t     - set Terraform log level (TF_LOG), useful for debugging.
 
 ` + globalOptions
 

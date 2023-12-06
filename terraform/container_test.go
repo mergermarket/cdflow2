@@ -40,6 +40,7 @@ func TestTerraformInitInitial(t *testing.T) {
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
 			codeDir,
 			buildVolume,
+			"",
 		)
 		if err != nil {
 			t.Fatal("error creating terraform container:", err)
@@ -125,6 +126,7 @@ func TestTerraformConfigureBackend(t *testing.T) {
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
 			codeDir,
 			releaseVolume,
+			"",
 		)
 		if err != nil {
 			t.Fatal("error creating terraform container:", err)
@@ -206,6 +208,7 @@ func TestSwitchWorkspaceExisting(t *testing.T) {
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
 			test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 			releaseVolume,
+			"",
 		)
 		if err != nil {
 			log.Fatalln("error creating terraform container:", err)
@@ -276,6 +279,7 @@ func TestSwitchWorkspaceNew(t *testing.T) {
 			test.GetConfig("TEST_TERRAFORM_IMAGE"),
 			test.GetConfig("TEST_ROOT")+"/test/terraform/sample-code",
 			releaseVolume,
+			"",
 		)
 		if err != nil {
 			log.Fatalln("error creating terraform container:", err)

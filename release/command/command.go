@@ -29,8 +29,9 @@ type output struct {
 
 // CommandArgs contains specific arguments to the deploy command.
 type CommandArgs struct {
-	ReleaseData map[string]string
-	Version     string
+	ReleaseData       map[string]string
+	Version           string
+	TerraformLogLevel string
 }
 
 func parseReleaseData(value string) (map[string]string, error) {
@@ -66,6 +67,13 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 		for k, v := range releaseData {
 			commandArgs.ReleaseData[k] = v
 		}
+	} else if arg == "-t" || arg == "--terraform-log-level" {
+		value, err := take()
+		if err != nil {
+			return false, err
+		}
+
+		commandArgs.TerraformLogLevel = value
 	} else {
 		return false, errors.New("unknown release option: " + arg)
 	}
@@ -142,7 +150,7 @@ func streamOutput(terraformOutputChan chan *output, outputStream, errorStream io
 	}
 }
 
-func terraformRelease(state *command.GlobalState, buildVolume string, outputStream, errorStream io.Writer) (image string, returnedError error) {
+func terraformRelease(state *command.GlobalState, buildVolume string, outputStream, errorStream io.Writer, logLevel string) (image string, returnedError error) {
 	dockerClient := state.DockerClient
 
 	if !state.GlobalArgs.NoPullTerraform {
@@ -172,6 +180,7 @@ func terraformRelease(state *command.GlobalState, buildVolume string, outputStre
 		savedTerraformImage,
 		state.CodeDir,
 		buildVolume,
+		logLevel,
 	)
 	if err != nil {
 		return "", err
@@ -214,7 +223,7 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 	}()
 
 	go func() {
-		savedTerraformImage, err := terraformRelease(state, buildVolume, terraformOutputStream, terraformErrorStream)
+		savedTerraformImage, err := terraformRelease(state, buildVolume, terraformOutputStream, terraformErrorStream, releaseArgs.TerraformLogLevel)
 		terraformOutputStream.Close()
 		terraformErrorStream.Close()
 		terraformResultChan <- &terraformResult{savedTerraformImage, err}

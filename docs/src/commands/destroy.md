@@ -25,6 +25,9 @@ See [usage](./usage) for global options.
 `--plan-only` | `-p`
 : Generate an execution plan only, don't destroy.
 
+`--terraform-log-level` | `-t`
+: Set Terraform log level (TF_LOG), useful for debugging.
+
 ## Description
 
 Terraform is configured as described in [common terraform setup](common-terraform-setup), followed by commands
