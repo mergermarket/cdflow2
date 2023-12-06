@@ -12,13 +12,14 @@ import (
 )
 
 type DatadogClient struct {
-	APIKey      string
-	Command     string
-	Environment string
-	ConfigData  map[string]string
-	Project     string
-	StatusCode  int
-	Version     string
+	APIKey        string
+	Command       string
+	Environment   string
+	ConfigData    map[string]string
+	Project       string
+	StatusCode    int
+	Version       string
+	CDFlowVersion string
 }
 
 func NewDatadogClient() *DatadogClient {
@@ -76,6 +77,7 @@ func (m *DatadogClient) collectTags() []string {
 	tags := []string{
 		"command:" + m.Command,
 		"version:" + m.Version,
+		"cdflow_version" + m.CDFlowVersion,
 		"status_code:" + strconv.Itoa(m.StatusCode),
 	}
 

@@ -216,7 +216,7 @@ func runCommand() (status int) {
 
 		state.MonitoringClient.Command = globalArgs.Command
 		state.MonitoringClient.Project = state.Component
-		state.MonitoringClient.Version = version
+		state.MonitoringClient.CDFlowVersion = version
 		state.MonitoringClient.StatusCode = status
 
 		state.MonitoringClient.SubmitEvent()
@@ -231,7 +231,7 @@ func runCommand() (status int) {
 			usage("release")
 			return 2
 		}
-
+		state.MonitoringClient.Version = releaseArgs.Version
 		if err := release.RunCommand(state, *releaseArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
 				return int(status)
@@ -248,6 +248,7 @@ func runCommand() (status int) {
 		}
 
 		state.MonitoringClient.Environment = deployArgs.EnvName
+		state.MonitoringClient.Version = deployArgs.Version
 
 		if err := deploy.RunCommand(state, deployArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
@@ -265,6 +266,7 @@ func runCommand() (status int) {
 		}
 
 		state.MonitoringClient.Environment = shellArgs.EnvName
+		state.MonitoringClient.Version = shellArgs.Version
 
 		if err := shell.RunCommand(state, shellArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
@@ -297,6 +299,7 @@ func runCommand() (status int) {
 		}
 
 		state.MonitoringClient.Environment = destroyArgs.EnvName
+		state.MonitoringClient.Version = destroyArgs.Version
 
 		if err := destroy.RunCommand(state, destroyArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
