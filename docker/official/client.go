@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
@@ -78,6 +77,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 			Binds:     binds,
 			Init:      &options.Init,
 		},
+		nil,
 		nil,
 		util.RandomName(options.NamePrefix),
 	)
@@ -396,13 +396,13 @@ func (dockerClient *Client) Exec(options *docker.ExecOptions) error {
 }
 
 // Stop stops a container.
-func (dockerClient *Client) Stop(id string, timeout time.Duration) error {
-	return dockerClient.client.ContainerStop(context.Background(), id, &timeout)
+func (dockerClient *Client) Stop(id string, timeout int) error {
+	return dockerClient.client.ContainerStop(context.Background(), id, container.StopOptions{Timeout: &timeout})
 }
 
 // CreateVolume creates a docker volume and returns its ID.
 func (dockerClient *Client) CreateVolume(name string) (string, error) {
-	volume, err := dockerClient.client.VolumeCreate(context.Background(), volume.VolumeCreateBody{
+	volume, err := dockerClient.client.VolumeCreate(context.Background(), volume.CreateOptions{
 		Name: name,
 	})
 	if err != nil {
@@ -438,6 +438,7 @@ func (dockerClient *Client) CreateContainer(options *docker.CreateContainerOptio
 		&container.HostConfig{
 			Binds: options.Binds,
 		},
+		nil,
 		nil,
 		"",
 	)

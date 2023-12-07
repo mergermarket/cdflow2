@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/docker"
@@ -430,7 +429,7 @@ func (terraformContainer *Container) RunInteractiveCommand(
 
 // Done stops and removes the terraform container.
 func (terraformContainer *Container) Done() error {
-	if err := terraformContainer.dockerClient.Stop(terraformContainer.id, 10*time.Second); err != nil {
+	if err := terraformContainer.dockerClient.Stop(terraformContainer.id, 10); err != nil {
 		return err
 	}
 	return <-terraformContainer.done
