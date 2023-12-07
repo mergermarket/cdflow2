@@ -2,7 +2,6 @@ package docker
 
 import (
 	"io"
-	"time"
 )
 
 // Iface is an interface for interracting with docker.
@@ -12,7 +11,7 @@ type Iface interface {
 	PullImage(image string, outputStream io.Writer) error
 	GetImageRepoDigests(image string) ([]string, error)
 	Exec(options *ExecOptions) error
-	Stop(id string, timeout time.Duration) error
+	Stop(id string, timeout int) error
 	CreateVolume(name string) (string, error)
 	VolumeExists(name string) (bool, error)
 	RemoveVolume(id string) error
