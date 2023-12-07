@@ -231,7 +231,7 @@ func runCommand() (status int) {
 			usage("release")
 			return 2
 		}
-		state.MonitoringClient.Version = releaseArgs.Version
+		state.MonitoringClient.ReleaseVersion = releaseArgs.Version
 		if err := release.RunCommand(state, *releaseArgs, env); err != nil {
 			if status, ok := err.(command.Failure); ok {
 				return int(status)
