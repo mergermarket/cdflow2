@@ -14,6 +14,9 @@ controlling how cdflow2 builds and deploys your code.
 # required - always "2" for cdflow2
 version: 2
 
+# optional - default is set to "config/"
+config_files_folder: "config/"
+
 # required - descibed below
 config:
   image: mergermarket/cdflow2-config-aws-simple
@@ -48,6 +51,13 @@ prevent you accidentally using the wrong version. For example:
 
 ```yaml
 version: 2
+```
+
+### `config_files_folder` (optional)
+Folder where the enviroment specific configuration files and common.json are stored. Default is `config/`
+
+```yaml
+config_files_folder: "infra_config/"
 ```
 
 ### `config` (required)
