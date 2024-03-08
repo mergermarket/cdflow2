@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/mergermarket/cdflow2/command"
@@ -153,13 +154,13 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		)
 	}
 
-	commonConfigFile := "config/common.json"
+	commonConfigFile := path.Join(state.ConfigFilesFolder, "common.json")
 	if _, err := os.Stat(commonConfigFile); !os.IsNotExist(err) {
 		planCommand = append(planCommand, "-var-file=../"+commonConfigFile)
 		destroyCommand = append(destroyCommand, "-var-file=../"+commonConfigFile)
 	}
 
-	envConfigFilename := "config/" + args.EnvName + ".json"
+	envConfigFilename := path.Join(state.ConfigFilesFolder, args.EnvName+".json")
 	if _, err := os.Stat(envConfigFilename); !os.IsNotExist(err) {
 		planCommand = append(planCommand, "-var-file=../"+envConfigFilename)
 		destroyCommand = append(destroyCommand, "-var-file=../"+envConfigFilename)
