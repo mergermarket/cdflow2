@@ -34,16 +34,17 @@ type GlobalArgs struct {
 
 // GlobalState contains common to all commands.
 type GlobalState struct {
-	GlobalArgs       *GlobalArgs
-	Component        string
-	Commit           string
-	CodeDir          string
-	Manifest         *manifest.Manifest
-	InputStream      io.Reader
-	OutputStream     io.Writer
-	ErrorStream      io.Writer
-	DockerClient     docker.Iface
-	MonitoringClient *monitoring.DatadogClient
+	GlobalArgs        *GlobalArgs
+	ConfigFilesFolder string
+	Component         string
+	Commit            string
+	CodeDir           string
+	Manifest          *manifest.Manifest
+	InputStream       io.Reader
+	OutputStream      io.Writer
+	ErrorStream       io.Writer
+	DockerClient      docker.Iface
+	MonitoringClient  *monitoring.DatadogClient
 }
 
 // GetGlobalState collects info common to every command.
@@ -76,6 +77,12 @@ func GetGlobalState(globalArgs *GlobalArgs, repoShouldExist bool) (*GlobalState,
 		}
 		if state.Manifest.Version != 2 {
 			return nil, errors.New("cdflow.yaml version must be 2 for cdflow2")
+		}
+
+		if state.Manifest.ConfigFilesFolder == "" {
+			state.ConfigFilesFolder = "config/"
+		} else {
+			state.ConfigFilesFolder = state.Manifest.ConfigFilesFolder
 		}
 
 		if globalArgs.Component == "" {
