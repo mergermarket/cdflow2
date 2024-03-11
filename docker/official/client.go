@@ -79,6 +79,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 			Init:      &options.Init,
 		},
 		nil,
+		nil,
 		util.RandomName(options.NamePrefix),
 	)
 	if err != nil {
@@ -438,6 +439,7 @@ func (dockerClient *Client) CreateContainer(options *docker.CreateContainerOptio
 		&container.HostConfig{
 			Binds: options.Binds,
 		},
+		nil,
 		nil,
 		"",
 	)
