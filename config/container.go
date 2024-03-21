@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/docker"
@@ -363,7 +362,7 @@ func SetupTerraform(state *command.GlobalState, stateShouldExist *bool, envName,
 // Done stops and removes the config container.
 func (configContainer *Container) Done() error {
 	if !configContainer.finished {
-		if err := configContainer.dockerClient.Stop(configContainer.id, 2*time.Second); err != nil {
+		if err := configContainer.dockerClient.Stop(configContainer.id, 2); err != nil {
 			return err
 		}
 	}
