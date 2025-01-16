@@ -226,9 +226,7 @@ func GetComponentFromGit() (string, error) {
 	}
 	parts := strings.Split(strings.TrimSpace(string(output)), "/")
 	name := parts[len(parts)-1]
-	if strings.HasSuffix(name, ".git") {
-		name = name[:len(name)-4]
-	}
+	name = strings.TrimSuffix(name, ".git")
 	return name, nil
 }
 
