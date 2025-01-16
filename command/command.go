@@ -27,6 +27,7 @@ type GlobalArgs struct {
 	Command         string
 	Component       string
 	Commit          string
+	ConfigParams    []string
 	NoPullConfig    bool
 	NoPullRelease   bool
 	NoPullTerraform bool
@@ -103,10 +104,26 @@ func GetGlobalState(globalArgs *GlobalArgs, repoShouldExist bool) (*GlobalState,
 			state.Commit = globalArgs.Commit
 		}
 
+		err = overrideConfigManifestParams(&state)
+		if err != nil {
+			return nil, err
+		}
+
 		state.MonitoringClient = monitoring.NewDatadogClient()
 	}
 
 	return &state, nil
+}
+
+func overrideConfigManifestParams(state *GlobalState) error {
+	for _, param := range state.GlobalArgs.ConfigParams {
+		parts := strings.SplitN(param, "=", 2)
+		if len(parts) != 2 {
+			return errors.New("config param must be of the form key=value")
+		}
+		state.Manifest.Config.Params[parts[0]] = parts[1]
+	}
+	return nil
 }
 
 func handleArg(arg string, globalArgs *GlobalArgs, take func() (string, error)) (bool, error) {
@@ -138,7 +155,13 @@ func handleSimpleFlag(arg string, globalArgs *GlobalArgs) bool {
 }
 
 func handleFlag(arg string, globalArgs *GlobalArgs, take func() (string, error)) (bool, error) {
-	if arg == "-c" || arg == "--component" {
+	if arg == "--config-param" {
+		value, err := take()
+		if err != nil {
+			return false, err
+		}
+		globalArgs.ConfigParams = append(globalArgs.ConfigParams, value)
+	} else if arg == "-c" || arg == "--component" {
 		value, err := take()
 		if err != nil {
 			return false, err
