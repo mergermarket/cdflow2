@@ -30,6 +30,9 @@ cdflow2 [ GLOBALARGS ] COMMAND [ ARGS ]
 `--commit GIT_COMMIT`
 : Override the git commit (inferred from git by default).
 
+`--config-param "name=value"`
+: Allow to set or override a config param through cmd line argument.
+
 `--no-pull-config`
 : Don't pull the config container (must exist).
 
