@@ -39,7 +39,7 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
-	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/term v0.27.0 // indirect
