@@ -20,6 +20,7 @@ const globalOptions = `Global options:
 
   --component COMPONENT_NAME   - override component name (inferred from git by default).
   --commit GIT_COMMIT          - override the git commit (inferred from git by default).
+  --config-param "key=value"   - override or set a configuration parameter.
   --no-pull-config             - don't pull the config container (must exist).
   --no-pull-release            - don't pull the release container (must exist).
   --no-pull-terraform          - don't pull the terraform container (must exist).
@@ -173,7 +174,7 @@ Error in global options:
 
 For usage run:
 
-	cdflow --help
+	cdflow2 --help
 
 `
 
