@@ -293,6 +293,19 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 		if env == nil {
 			env = make(map[string]string)
 		}
+		
+		// Iterate over each environment variable name in build.EnvVars,
+		// retrieve its value from the environment, and add it to the env map
+		// without printing the value to avoid leaking secrets.
+		for _, envvar := range build.EnvVars {
+			v := os.Getenv(envvar)
+			if v == "" {
+				fmt.Printf("\nWarning: Environment variable %s is not set in host environment.\n\n", envvar)
+			} else {
+				fmt.Printf("\n\nAdding Environment variable %s into cdflow release container.\n\n", envvar)
+			}
+			env[envvar] = v
+		}
 
 		// these are built in and cannot be overridden by the config container (since choosing the clashing name would likely be an accident)
 		env["VERSION"] = version

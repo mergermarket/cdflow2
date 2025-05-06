@@ -13,7 +13,7 @@ type Manifest struct {
 	Version           int8                       `yaml:"version"`
 	ConfigFilesFolder string                     `yaml:"config_files_folder"`
 	Config            ImageWithParams            `yaml:"config"`
-	Builds            map[string]ImageWithParams `yaml:"builds"`
+	Builds            map[string]ImageWithParamsAndEnvVars `yaml:"builds"`
 	Terraform         Terraform                  `yaml:"terraform"`
 }
 
@@ -21,6 +21,12 @@ type Manifest struct {
 type ImageWithParams struct {
 	Image  string                 `yaml:"image"`
 	Params map[string]interface{} `yaml:"params"`
+}
+
+type ImageWithParamsAndEnvVars struct {
+	Image  string                 `yaml:"image"`
+	Params map[string]interface{} `yaml:"params"`
+	EnvVars []string              `yaml:"envvars"`
 }
 
 // Terraform represents the data in the terraform key in cdflow.yaml.
