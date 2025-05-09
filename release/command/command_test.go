@@ -148,10 +148,11 @@ func TestRunCommand(t *testing.T) {
 			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
 			Manifest: &manifest.Manifest{
 				Version: 2,
-				Builds: map[string]manifest.ImageWithParams{
+				Builds: map[string]manifest.ImageWithParamsAndEnvVars{
 					"buildid": {
-						Image:  test.GetConfig("TEST_RELEASE_IMAGE"),
-						Params: map[string]interface{}{"a": "b"},
+						Image:   test.GetConfig("TEST_RELEASE_IMAGE"),
+						Params:  map[string]interface{}{"a": "b"},
+						EnvVars: []string{"FOO"},
 					},
 				},
 				Terraform: manifest.Terraform{

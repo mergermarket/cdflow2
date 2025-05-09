@@ -17,7 +17,7 @@ func TestLoad(t *testing.T) {
 	if loadedManifest.Version != 2 {
 		log.Fatalln("unexpected version:", loadedManifest.Version)
 	}
-	if !reflect.DeepEqual(loadedManifest.Builds, map[string]manifest.ImageWithParams{
+	if !reflect.DeepEqual(loadedManifest.Builds, map[string]manifest.ImageWithParamsAndEnvVars{
 		"release": {Image: "test-release-image"},
 	}) {
 		log.Fatalln("unexpected release data from manifest:", loadedManifest.Builds)
