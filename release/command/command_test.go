@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -277,5 +279,60 @@ func checkUploadReleaseOutput(t *testing.T, debugOutput []byte) {
 
 	if decoded.ReleaseMetadata["buildid"]["manifest_params"] != "{\"a\":\"b\"}" {
 		t.Fatal("unexpected manifest_params:", decoded.ReleaseMetadata["buildid"]["manifest_params"])
+	}
+}
+
+func TestPopulateEnvMap(t *testing.T) {
+
+	// Set environment variable EXISTING_VAR
+	os.Setenv("EXISTING_VAR", "test_value")
+
+	// Ensure MISSING_VAR is Not set
+	os.Unsetenv("MISSING_VAR")
+
+	// set envVars map and init env
+	envVars := []string{"EXISTING_VAR", "MISSING_VAR"}
+	env := make(map[string]string)
+
+	// Setup the ability to capture stdout
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Failed to create pipe: %v", err)
+	}
+
+	// Start stdout capture
+	originalStdout := os.Stdout
+	os.Stdout = writer
+
+	release.PopulateEnvMap(envVars, env)
+
+	// end stdout capture
+	writer.Close()
+	os.Stdout = originalStdout
+
+	// Read the captured output
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, reader)
+	if err != nil {
+		t.Fatalf("Failed to read stdout: %v", err)
+	}
+
+	// Check if EXISTING_VAR env var are in the env map and the value is correct.
+	if env["EXISTING_VAR"] != "test_value" {
+		t.Errorf("Expected EXISTING_VAR to be 'test_value', got '%s'", env["EXISTING_VAR"])
+	}
+
+	// Check if MISSING_VAR env var is NOT in the map and the value is a empty string.
+	if env["MISSING_VAR"] != "" {
+		t.Errorf("Expected MISSING_VAR to be empty string, got '%s'", env["MISSING_VAR"])
+	}
+
+	// Validate Log Output.
+	output := buf.String()
+	if !bytes.Contains([]byte(output), []byte("Adding Environment variable 'EXISTING_VAR'")) {
+		t.Errorf("Expected log about EXISTING_VAR, got: %s", output)
+	}
+	if !bytes.Contains([]byte(output), []byte("Environment variable 'MISSING_VAR' is not set")) {
+		t.Errorf("Expected log about MISSING_VAR, got: %s", output)
 	}
 }
