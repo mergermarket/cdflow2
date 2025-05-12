@@ -199,6 +199,33 @@ func terraformRelease(state *command.GlobalState, buildVolume string, outputStre
 	return savedTerraformImage, terraformContainer.InitInitial(outputStream, errorStream)
 }
 
+// PopulateEnvMap populates the provided env map with values from the host
+// environment for each variable listed in envVars, which is sourced from
+// the 'env_vars' field in a YAML configuration file.
+//
+// For each variable, it logs whether the variable is set or missing,
+// and inserts it into the env map with its value (or an empty string if unset).
+//
+// Note: Since maps are reference types in Go, modifications to the env map
+// inside this function will be reflected in the caller's scope.
+func PopulateEnvMap(envVars []string, env map[string]string) {
+	for _, envVarName := range envVars {
+		envValue := os.Getenv(envVarName)
+
+		// *Important*: We don't print the value to avoid leaking secrets.
+		if envValue == "" {
+			fmt.Printf("\n- WARN: Environment variable '%s' is not set in host environment.", envVarName)
+		} else {
+			fmt.Printf("\n- Adding Environment variable '%s' into cdflow release container.", envVarName)
+		}
+
+		env[envVarName] = envValue
+	}
+
+	// For output readability
+	fmt.Printf("\n\n")
+}
+
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[string]string) (returnedError error) {
 
@@ -293,22 +320,9 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 		if env == nil {
 			env = make(map[string]string)
 		}
-		
-		// Iterate over each environment variable name in build.EnvVars,
-		// retrieve its value from the environment, and add it to the env map
-		// without printing the value to avoid leaking secrets.
-		for _, envVarName := range build.EnvVars {
-			envValue := os.Getenv(envVarName)
-			if envValue == "" {
-				fmt.Printf("\n- WARN: Environment variable '%s' is not set in host environment.", envVarName)
-			} else {
-				fmt.Printf("\n- Adding Environment variable '%s' into cdflow release container.", envVarName)
-			}
-			env[envVarName] = envValue
-		}
 
-		// For output readability
-		fmt.Printf("\n\n")
+		// Inject build env bars into release container
+		PopulateEnvMap(build.EnvVars, env)
 
 		// these are built in and cannot be overridden by the config container (since choosing the clashing name would likely be an accident)
 		env["VERSION"] = version
