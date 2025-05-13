@@ -31,7 +31,7 @@ func TestRunCommand(t *testing.T) {
 			CodeDir:      test.GetConfig("TEST_ROOT") + "/test/release/sample-code",
 			Manifest: &manifest.Manifest{
 				Version: 2,
-				Builds: map[string]manifest.ImageWithParams{
+				Builds: map[string]manifest.ImageWithParamsAndEnvVars{
 					"release": {
 						Image: test.GetConfig("TEST_RELEASE_IMAGE"),
 					},
