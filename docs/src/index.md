@@ -52,4 +52,5 @@ and the build is published somewhere (the software is "released"), followed by o
 
 * [Install cdflow2](installation)
 * [Project Setup](project-setup)
+* [cdflow.yaml Reference](cdflow-yaml-reference)
 * [cdflow2 Design](design)
