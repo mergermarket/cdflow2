@@ -28,6 +28,11 @@ config:
 builds:
   docker:
     image: mergermarket/cdflow2-build-docker-ecr
+    # optional - list of env var that key and value should
+    # be copied to the build/release container
+    env_vars:
+      - FOO
+      - BAR
   lambda:
     image: mergermarket/cdflow2-build-lambda
     params:
@@ -112,6 +117,32 @@ The image used to do the build. Examples include:
 A dictionary of parameters passed to the build container. What parameters
 are supported depends on the build container used, so check the specific
 documentation for that image.
+
+#### `builds > [name] > env_vars` (optional)
+
+The builds.[name].env_vars configuration allows specific environment variables to be injected into the release/build container at runtime.
+
+This was needed because some builds require access to artifacts behind secure authentication.
+
+Note: this config does not define values for the variables. Instead, it copies the specified environment variables from the build environment into the container. For example, if the build environment has FOO_APIKEY=secret123 and env_vars includes FOO_APIKEY, then the build container will also have FOO_APIKEY=secret123 set.
+
+In most cases where this is used, the environment variables will also need to be passed to the container securely. To do this, you'll need to add the required secrets to your params. Here's a generic example:
+
+```
+builds:
+  docker:
+    image: mergermarket/cdflow2-build-docker-ecr
+    params:
+      buildx: true
+      platforms: linux/arm64,linux/amd64
+      secrets:
+        - 'id=FOO_APIKEY,env=FOO_APIKEY'
+    env_vars:
+      - FOO_APIKEY
+```
+
+More information can be found here:
+https://docs.docker.com/build/building/secrets/#sources
 
 ### `terraform > image` (required)
 
