@@ -1,6 +1,8 @@
 module github.com/mergermarket/cdflow2
 
-go 1.23
+go 1.23.0
+
+toolchain go1.23.4
 
 require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.5.0
