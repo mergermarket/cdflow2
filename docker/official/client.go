@@ -13,10 +13,10 @@ import (
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/docker/docker/registry"
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/mergermarket/cdflow2/docker"
@@ -25,6 +25,8 @@ import (
 
 const (
 	cdflowDockerAuthPrefix = "CDFLOW2_DOCKER_AUTH_"
+	// Docker Hub's default index hostname
+	dockerIndexHostname = "index.docker.io"
 )
 
 // Client is a concrete implementation of our docker interface that uses the official client library.
@@ -227,7 +229,7 @@ func getRegistryAuth(image string, outputStream io.Writer) (string, error) {
 	}
 
 	authBytes, err := json.Marshal(
-		types.AuthConfig{
+		registry.AuthConfig{
 			Username: username,
 			Password: password,
 		},
@@ -258,7 +260,7 @@ func getRegistryCredentials(image string) (username, password string, err error)
 }
 
 func getRegistryCredentialsLegacy(image string) (username, password string) {
-	imageRegistry := registry.IndexHostname
+	imageRegistry := dockerIndexHostname
 	if strings.Count(image, "/") > 1 {
 		imageRegistry = strings.Split(image, "/")[0]
 	}
