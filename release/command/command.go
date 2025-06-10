@@ -14,6 +14,7 @@ import (
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/release/container"
 	"github.com/mergermarket/cdflow2/terraform"
+	"github.com/mergermarket/cdflow2/trivy"
 )
 
 type terraformResult struct {
@@ -229,6 +230,25 @@ func PopulateEnvMap(envVars []string, env map[string]string) {
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[string]string) (returnedError error) {
 
+	trivyContainer, err := GetScanContainer(state, releaseArgs)
+	if err != nil {
+		return fmt.Errorf("cdflow2: error getting scan container: %w", err)
+	}
+	defer func() {
+		if err := trivyContainer.Done(); err != nil {
+			if returnedError != nil && returnedError.Error() != "" {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+			} else {
+				returnedError = err
+			}
+			return
+		}
+	}()
+
+	if err := trivyContainer.ScanRepository(state.OutputStream, state.ErrorStream); err != nil {
+		return fmt.Errorf("cdflow2: error scanning repository: %w", err)
+	}
+
 	dockerClient := state.DockerClient
 	terraformOutputChan, terraformOutputStream, terraformErrorStream := getOutputCapture()
 	terraformResultChan := make(chan *terraformResult, 1)
@@ -261,7 +281,15 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		return err
 	}
 
-	message, err := buildAndUploadRelease(state, buildVolume, releaseArgs.Version, releaseArgs.ReleaseData, terraformResultChan, terraformOutputChan, env)
+	message, err := buildAndUploadRelease(
+		state,
+		buildVolume,
+		releaseArgs.Version,
+		releaseArgs.ReleaseData,
+		*trivyContainer,
+		terraformResultChan,
+		terraformOutputChan,
+		env)
 	if err != nil {
 		return err
 	}
@@ -272,7 +300,15 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 	return nil
 }
 
-func buildAndUploadRelease(state *command.GlobalState, buildVolume, version string, releaseData map[string]string, terraformResultChan chan *terraformResult, terraformOutputChan chan *output, env map[string]string) (returnedMessage string, returnedError error) {
+func buildAndUploadRelease(
+	state *command.GlobalState,
+	buildVolume,
+	version string,
+	releaseData map[string]string,
+	trivyConatiner trivy.Container,
+	terraformResultChan chan *terraformResult,
+	terraformOutputChan chan *output,
+	env map[string]string) (returnedMessage string, returnedError error) {
 
 	releaseRequirements, err := GetReleaseRequirements(state)
 	if err != nil {
@@ -347,6 +383,10 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 			return "", fmt.Errorf("cdflow2: error running build '%v' - %w", buildID, err)
 		}
 		releaseMetadata[buildID] = metadata
+
+		if err := trivyConatiner.ScanImage(metadata["image"], state.OutputStream, state.ErrorStream); err != nil {
+			return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
+		}
 	}
 	if releaseMetadata["release"] == nil {
 		releaseMetadata["release"] = make(map[string]string)
@@ -415,4 +455,20 @@ func GetReleaseRequirements(state *command.GlobalState) (map[string]*config.Rele
 		result[buildID] = requirements
 	}
 	return result, nil
+}
+
+func GetScanContainer(state *command.GlobalState, releaseArgs CommandArgs) (*trivy.Container, error) {
+	dockerClient := state.DockerClient
+	if !state.GlobalArgs.NoPullScan {
+		fmt.Fprintf(state.ErrorStream, "\nPulling trivy image %v...\n\n", state.Manifest.Trivy.Image)
+		if err := dockerClient.PullImage(state.Manifest.Trivy.Image, state.ErrorStream); err != nil {
+			return nil, fmt.Errorf("cdflow2: error pulling trivy image: %w", err)
+		}
+	}
+	trivyConatiner, err := trivy.NewContainer(dockerClient, state.Manifest.Trivy.Image, state.CodeDir)
+	if err != nil {
+		return nil, fmt.Errorf("cdflow2: error creating trivy container: %w", err)
+	}
+
+	return trivyConatiner, nil
 }
