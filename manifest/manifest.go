@@ -36,7 +36,7 @@ type Terraform struct {
 }
 
 type Trivy struct {
-	Image  string                 `yaml:"image" default:"mergermarket/trivy:latest"`
+	Image  string                 `yaml:"image"`
 	Params map[string]interface{} `yaml:"params"`
 }
 
@@ -49,6 +49,9 @@ func Load(dir string) (*Manifest, error) {
 	var result Manifest
 	if err := yaml.Unmarshal(data, &result); err != nil {
 		return nil, fmt.Errorf("error parsing cdflow.yaml: %w", err)
+	}
+	if result.Trivy.Image == "" {
+		result.Trivy.Image = "mergermarket/trivy:latest"
 	}
 	return &result, nil
 }

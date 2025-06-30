@@ -384,8 +384,10 @@ func buildAndUploadRelease(
 		}
 		releaseMetadata[buildID] = metadata
 
-		if err := trivyConatiner.ScanImage(metadata["image"], state.OutputStream, state.ErrorStream); err != nil {
-			return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
+		if image, ok := metadata["image"]; ok {
+			if err := trivyConatiner.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
+				return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
+			}
 		}
 	}
 	if releaseMetadata["release"] == nil {
@@ -459,13 +461,19 @@ func GetReleaseRequirements(state *command.GlobalState) (map[string]*config.Rele
 
 func GetScanContainer(state *command.GlobalState, releaseArgs CommandArgs) (*trivy.Container, error) {
 	dockerClient := state.DockerClient
+	image := state.Manifest.Trivy.Image
+
 	if !state.GlobalArgs.NoPullScan {
-		fmt.Fprintf(state.ErrorStream, "\nPulling trivy image %v...\n\n", state.Manifest.Trivy.Image)
-		if err := dockerClient.PullImage(state.Manifest.Trivy.Image, state.ErrorStream); err != nil {
+		fmt.Fprintf(state.ErrorStream, "\nPulling trivy image %v...\n\n", image)
+		if err := dockerClient.PullImage(image, state.ErrorStream); err != nil {
 			return nil, fmt.Errorf("cdflow2: error pulling trivy image: %w", err)
 		}
 	}
-	trivyConatiner, err := trivy.NewContainer(dockerClient, state.Manifest.Trivy.Image, state.CodeDir)
+	trivyConatiner, err := trivy.NewContainer(
+		dockerClient,
+		image,
+		state.CodeDir,
+		state.Manifest.Trivy.Params)
 	if err != nil {
 		return nil, fmt.Errorf("cdflow2: error creating trivy container: %w", err)
 	}

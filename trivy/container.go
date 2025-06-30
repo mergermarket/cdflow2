@@ -9,16 +9,30 @@ import (
 	"github.com/mergermarket/cdflow2/docker"
 )
 
+type Config struct {
+	errorOnFindings bool
+}
+
 type Container struct {
 	dockerClient docker.Iface
 	id           string
 	done         chan error
 	codeDir      string
+	config       Config
 }
 
 const CODE_DIR = "/code"
+const CONFIG_ERROR_ON_FINDINGS = "errorOnFindings"
 
-func NewContainer(dockerClient docker.Iface, image, codeDir string) (*Container, error) {
+func NewContainer(dockerClient docker.Iface,
+	image,
+	codeDir string,
+	params map[string]interface{}) (*Container, error) {
+
+	config, err := GetConfig(params)
+	if err != nil {
+		return nil, fmt.Errorf("error getting trivy config: %w", err)
+	}
 	started := make(chan string, 1)
 	defer close(started)
 
@@ -53,6 +67,7 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string) (*Container,
 			id:           id,
 			done:         done,
 			codeDir:      codeDir,
+			config:       config,
 		}, nil
 	case err := <-done:
 		return nil, fmt.Errorf("could not start trivy container: %w\nOutput: %v", err, outputBuffer.String())
@@ -63,10 +78,10 @@ func NewContainer(dockerClient docker.Iface, image, codeDir string) (*Container,
 func (trivyContainer *Container) ScanRepository(outputStream, errorStream io.Writer) error {
 	cmd := []string{
 		"trivy",
-		"filesystem",
+		"fs",
 		"--severity", "CRITICAL",
 		"--ignore-unfixed",
-		"--exit-code", "1",
+		"--exit-code", trivyContainer.setExitCode(),
 		CODE_DIR,
 	}
 	return trivyContainer.dockerClient.Exec(
@@ -85,7 +100,7 @@ func (trivyContainer *Container) ScanImage(image string, outputStream, errorStre
 		"image",
 		"--severity", "CRITICAL",
 		"--ignore-unfixed",
-		"--exit-code", "1",
+		"--exit-code", trivyContainer.setExitCode(),
 		image,
 	}
 	return trivyContainer.dockerClient.Exec(
@@ -103,4 +118,23 @@ func (trivyContainer *Container) Done() error {
 		return err
 	}
 	return <-trivyContainer.done
+}
+
+func GetConfig(params map[string]interface{}) (Config, error) {
+	config := Config{
+		errorOnFindings: true,
+	}
+	if val, ok := params[CONFIG_ERROR_ON_FINDINGS]; ok {
+		if errorOnFindings, ok := val.(bool); ok {
+			config.errorOnFindings = errorOnFindings
+		}
+	}
+	return config, nil
+}
+
+func (trivyContainer *Container) setExitCode() string {
+	if trivyContainer.config.errorOnFindings {
+		return "1"
+	}
+	return "0"
 }
