@@ -365,7 +365,7 @@ func buildAndUploadRelease(
 		env["COMPONENT"] = state.Component
 		env["COMMIT"] = state.Commit
 		env["BUILD_ID"] = buildID
-		manifestParams, err := json.Marshal(build.Params)
+		manifestParams, err := json.Marshal(mergeMaps(build.Params, state.Manifest.Trivy.Params))
 		if err != nil {
 			return "", err
 		}
@@ -384,11 +384,14 @@ func buildAndUploadRelease(
 		}
 		releaseMetadata[buildID] = metadata
 
-		if image, ok := metadata["image"]; ok {
-			if err := trivyConatiner.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
-				return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
-			}
-		}
+		//enables trivy to scan images from the trivy container
+		//uncomment the following lines when docker defaults to buildx + containerd image store on linux
+
+		// if image, ok := metadata["image"]; ok {
+		// 	if err := trivyConatiner.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
+		// 		return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
+		// 	}
+		// }
 	}
 	if releaseMetadata["release"] == nil {
 		releaseMetadata["release"] = make(map[string]string)
@@ -479,4 +482,17 @@ func GetScanContainer(state *command.GlobalState, releaseArgs CommandArgs) (*tri
 	}
 
 	return trivyConatiner, nil
+}
+
+func mergeMaps(map1, map2 map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for key, value := range map1 {
+		result[key] = value
+	}
+
+	// Copy all elements from map2 to result
+	for key, value := range map2 {
+		result[key] = value
+	}
+	return result
 }

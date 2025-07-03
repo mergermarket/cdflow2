@@ -81,6 +81,7 @@ func (trivyContainer *Container) ScanRepository(outputStream, errorStream io.Wri
 		"fs",
 		"--severity", "CRITICAL",
 		"--ignore-unfixed",
+		"--scanners", "vuln,misconfig,secret",
 		"--exit-code", trivyContainer.setExitCode(),
 		CODE_DIR,
 	}
@@ -100,6 +101,7 @@ func (trivyContainer *Container) ScanImage(image string, outputStream, errorStre
 		"image",
 		"--severity", "CRITICAL",
 		"--ignore-unfixed",
+		"--scanners", "vuln,misconfig,secret",
 		"--exit-code", trivyContainer.setExitCode(),
 		image,
 	}

@@ -83,10 +83,10 @@ func TestTrivyLocalScan(t *testing.T) {
 	if errorBuffer.String() != "" {
 		t.Errorf("expected no error output, got: %s", errorBuffer.String())
 	}
-	if !bytes.Contains(outputBuffer.Bytes(), []byte("[trivy fs --severity CRITICAL --ignore-unfixed --exit-code 0 /code]")) {
-		t.Errorf("expected output to contain 'No issues found', got: %s", outputBuffer.String())
+	expectedString := "[trivy fs --severity CRITICAL --ignore-unfixed --scanners vuln,misconfig,secret --exit-code 0 /code]"
+	if !bytes.Contains(outputBuffer.Bytes(), []byte(expectedString)) {
+		t.Errorf("expected output to contain %s, got: %s", expectedString, outputBuffer.String())
 	}
-
 }
 
 func TestTrivyImageScan(t *testing.T) {
@@ -134,8 +134,9 @@ func TestTrivyImageScan(t *testing.T) {
 	if errorBuffer.String() != "" {
 		t.Errorf("expected no error output, got: %s", errorBuffer.String())
 	}
-	if !bytes.Contains(outputBuffer.Bytes(), []byte("[trivy image --severity CRITICAL --ignore-unfixed --exit-code 0 test-image:latest]")) {
-		t.Errorf("expected output to contain 'No issues found', got: %s", outputBuffer.String())
+	expectedString := "[trivy image --severity CRITICAL --ignore-unfixed --scanners vuln,misconfig,secret --exit-code 0 test-image:latest]"
+	if !bytes.Contains(outputBuffer.Bytes(), []byte(expectedString)) {
+		t.Errorf("expected output to contain %s, got: %s", expectedString, outputBuffer.String())
 	}
 
 }
