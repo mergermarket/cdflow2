@@ -189,6 +189,24 @@ terraform apply \
 
 Note that the only built in variables are the `release` map defined in the release metadata file (you can access the environment name via the workspace - i.e. `${terraform.workspace}`).
 
+
+### Trivy
+Trivy is a comprehensive and versatile security scanner. Trivy has scanners that look for security issues, and targets where it can find those issues.
+
+Cdflow2 will automatically scan source code using Trivy and the mergermarket/cdflow2-trivy docker image.
+The default configuration will search for Fixed Critical vulnerabilities, secrets and misconfigurations.
+It also allows to configure some aspects on the fs and iamge scan when using mergermarket/cdflow2-build-docker-ecr.
+
+```yaml
+
+    trivy:
+        image: mergermarket/cdflow2-trivy
+        params:
+            errorOnfindings: true #this is default can be set to false to 
+
+```
+
+
 ## Documentation
 
 https://developer-preview.acuris.com/opensource/cdflow2
@@ -196,13 +214,19 @@ https://developer-preview.acuris.com/opensource/cdflow2
 ## Subcommands
 
 ### release
-
+Creates a cdflow2 releaase.
+[Release subcommand docs.](/docs/src/commands/release.md)
 
 ### deploy
-
+Deploys a cdflow2 release.
+[Deploy subcommand docs.](/docs/src/commands/deploy.md)
 
 ### destroy
-
+Destroys resources referenced in the /infra
+[Destroy subcommand docs.](/docs/src/commands/destroy.md)
 
 ### shell
+Runs cdflow2 interactive shell to give access to the underlying terraform command.
+[Shell subcommand docs.](/docs/src/commands/shell.md)
+
 
