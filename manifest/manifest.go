@@ -15,6 +15,7 @@ type Manifest struct {
 	Config            ImageWithParams                      `yaml:"config"`
 	Builds            map[string]ImageWithParamsAndEnvVars `yaml:"builds"`
 	Terraform         Terraform                            `yaml:"terraform"`
+	Trivy             Trivy                                `yaml:"trivy"`
 }
 
 // ImageWithParams represents either the config or a build key in cdflow.yaml.
@@ -34,6 +35,11 @@ type Terraform struct {
 	Image string `yaml:"image"`
 }
 
+type Trivy struct {
+	Image  string                 `yaml:"image"`
+	Params map[string]interface{} `yaml:"params"`
+}
+
 // Load loads the cdflow.yaml manifest file into a Manifest struct.
 func Load(dir string) (*Manifest, error) {
 	data, err := ioutil.ReadFile(path.Join(dir, "cdflow.yaml"))
@@ -43,6 +49,9 @@ func Load(dir string) (*Manifest, error) {
 	var result Manifest
 	if err := yaml.Unmarshal(data, &result); err != nil {
 		return nil, fmt.Errorf("error parsing cdflow.yaml: %w", err)
+	}
+	if result.Trivy.Image == "" {
+		result.Trivy.Image = "mergermarket/cdflow2-trivy:latest"
 	}
 	return &result, nil
 }

@@ -64,6 +64,14 @@ docker build -q -t "$TEST_RELEASE_IMAGE" test/release
 docker push "$TEST_RELEASE_IMAGE"
 
 echo "
+    building and pushing trivy image...
+"
+
+export TEST_TRIVY_IMAGE="$registry/$prefix-trivy"
+docker build -q -t "$TEST_TRIVY_IMAGE" test/trivy
+docker push "$TEST_TRIVY_IMAGE"
+
+echo "
     running tests...
 "
 
