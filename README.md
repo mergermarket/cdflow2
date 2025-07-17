@@ -202,7 +202,7 @@ It also allows to configure some aspects on the fs and iamge scan when using mer
     trivy:
         image: mergermarket/cdflow2-trivy
         params:
-            errorOnfindings: true #this is default can be set to false to 
+            errorOnfindings: true #this will be default can be set to false to false to not block the release
 
 ```
 
@@ -228,5 +228,3 @@ Destroys resources referenced in the /infra
 ### shell
 Runs cdflow2 interactive shell to give access to the underlying terraform command.
 [Shell subcommand docs.](/docs/src/commands/shell.md)
-
-

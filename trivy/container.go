@@ -124,7 +124,7 @@ func (trivyContainer *Container) Done() error {
 
 func GetConfig(params map[string]interface{}) (Config, error) {
 	config := Config{
-		errorOnFindings: true,
+		errorOnFindings: false, // default value
 	}
 	if val, ok := params[CONFIG_ERROR_ON_FINDINGS]; ok {
 		if errorOnFindings, ok := val.(bool); ok {
