@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 	"strings"
 
@@ -314,6 +315,9 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 	state.MonitoringClient.ConfigData = configureReleaseResponse.Monitoring.Data
 
 	releaseMetadata := make(map[string]map[string]string)
+	releaseMetadata["release"] = make(map[string]string)
+	releaseMetadata["tags"] = getReleaseTagsInfo(env)
+
 	for buildID, build := range state.Manifest.Builds {
 		env := releaseEnv[buildID]
 
@@ -347,9 +351,6 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 			return "", fmt.Errorf("cdflow2: error running build '%v' - %w", buildID, err)
 		}
 		releaseMetadata[buildID] = metadata
-	}
-	if releaseMetadata["release"] == nil {
-		releaseMetadata["release"] = make(map[string]string)
 	}
 	releaseMetadata["release"]["version"] = version
 	releaseMetadata["release"]["commit"] = state.Commit
@@ -415,4 +416,29 @@ func GetReleaseRequirements(state *command.GlobalState) (map[string]*config.Rele
 		result[buildID] = requirements
 	}
 	return result, nil
+}
+
+func getReleaseTagsInfo(env map[string]string) map[string]string {
+	tags := make(map[string]string)
+
+	githubUrl := env["GITHUB_SERVER_URL"]
+	if githubUrl != "" {
+		repository := env["GITHUB_REPOSITORY"]
+		if repository != "" {
+			tags["repository"], _ = url.JoinPath(githubUrl, repository)
+		}
+		runId := env["GITHUB_RUN_ID"]
+		if runId != "" {
+			tags["job"], _ = url.JoinPath(tags["repository"], "actions", "runs", runId)
+		}
+		workflow := env["GITHUB_WORKFLOW"]
+		if workflow != "" {
+			tags["workflow"] = workflow
+		}
+		actor := env["GITHUB_ACTOR"]
+		if actor != "" {
+			tags["actor"] = actor
+		}
+	}
+	return tags
 }
