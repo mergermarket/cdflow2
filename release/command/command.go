@@ -316,7 +316,7 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 
 	releaseMetadata := make(map[string]map[string]string)
 	releaseMetadata["release"] = make(map[string]string)
-	releaseMetadata["tags"] = getReleaseTagsInfo(env)
+	releaseMetadata["release"]["tags"] = getReleaseTagsInfo(env)
 
 	for buildID, build := range state.Manifest.Builds {
 		env := releaseEnv[buildID]
@@ -418,7 +418,7 @@ func GetReleaseRequirements(state *command.GlobalState) (map[string]*config.Rele
 	return result, nil
 }
 
-func getReleaseTagsInfo(env map[string]string) map[string]string {
+func getReleaseTagsInfo(env map[string]string) string {
 	tags := make(map[string]string)
 
 	githubUrl := env["GITHUB_SERVER_URL"]
@@ -440,5 +440,10 @@ func getReleaseTagsInfo(env map[string]string) map[string]string {
 			tags["actor"] = actor
 		}
 	}
-	return tags
+	tagsBuff, err := json.Marshal(tags)
+	if err != nil {
+		log.Printf("error marshalling tags: %v", err)
+		return ""
+	}
+	return string(tagsBuff)
 }
