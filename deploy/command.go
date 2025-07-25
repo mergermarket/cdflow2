@@ -237,7 +237,3 @@ func appendConfigFiles(command []string, state *command.GlobalState, envName str
 
 	return command
 }
-
-func runCommandRefreshOnly() {
-
-}
