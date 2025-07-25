@@ -78,8 +78,6 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 		commandArgs.PlanOnly = true
 	} else if arg == "-r" || arg == "--refresh-only" {
 		commandArgs.RefreshOnly = true
-	} else if arg == "-s" || arg == "--state-should-exist" {
-		commandArgs.StateShouldExist = &F
 	} else if arg == "-n" || arg == "--new-state" {
 		commandArgs.StateShouldExist = &F
 	} else if arg == "-e" || arg == "--error-on-destroy" {
