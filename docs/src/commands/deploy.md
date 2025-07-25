@@ -25,6 +25,9 @@ See [usage](./usage) for global options.
 `--plan-only` | `-p`
 : Create the terraform plan only, don't apply.
 
+`--refresh-only` | `-r`
+: Refresh the state file only, don't apply.
+
 `--new-state` | `-n`
 : Allow run without a pre-existing tfstate file.
 

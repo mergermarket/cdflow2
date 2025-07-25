@@ -22,6 +22,7 @@ type CommandArgs struct {
 	TerraformLogLevel      string
 	StateShouldExist       *bool
 	ErrorOnResourceDestroy bool
+	RefreshOnly            bool
 }
 
 // ParseArgs parses command line arguments to the deploy subcommand.
@@ -75,6 +76,10 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 
 	if arg == "-p" || arg == "--plan-only" {
 		commandArgs.PlanOnly = true
+	} else if arg == "-r" || arg == "--refresh-only" {
+		commandArgs.RefreshOnly = true
+	} else if arg == "-s" || arg == "--state-should-exist" {
+		commandArgs.StateShouldExist = &F
 	} else if arg == "-n" || arg == "--new-state" {
 		commandArgs.StateShouldExist = &F
 	} else if arg == "-e" || arg == "--error-on-destroy" {
@@ -145,23 +150,31 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 		return err
 	}
 
+	if args.RefreshOnly {
+		refreshCommand := []string{
+			"terraform",
+			"apply",
+			"-refresh-only",
+			"-auto-approve"}
+		refreshCommand = appendConfigFiles(refreshCommand, state, args.EnvName)
+
+		if err := terraformContainer.RunCommand(
+			refreshCommand, prepareTerraformResponse.Env,
+			state.OutputStream, state.ErrorStream,
+		); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
 	planFilename := "/build/" + util.RandomName("plan")
 
 	planCommand := []string{
 		"terraform",
-		"plan",
-		"-var-file=/build/release-metadata.json",
-	}
+		"plan"}
 
-	commonConfigFile := path.Join(state.ConfigFilesFolder, "common.json")
-	if _, err := os.Stat(commonConfigFile); !os.IsNotExist(err) {
-		planCommand = append(planCommand, "-var-file=../"+commonConfigFile)
-	}
-
-	envConfigFilename := path.Join(state.ConfigFilesFolder, args.EnvName+".json")
-	if _, err := os.Stat(envConfigFilename); !os.IsNotExist(err) {
-		planCommand = append(planCommand, "-var-file=../"+envConfigFilename)
-	}
+	planCommand = appendConfigFiles(planCommand, state, args.EnvName)
 
 	planCommand = append(
 		planCommand,
@@ -209,4 +222,24 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 	}
 
 	return nil
+}
+
+func appendConfigFiles(command []string, state *command.GlobalState, envName string) []string {
+	commonConfigFile := path.Join(state.ConfigFilesFolder, "common.json")
+	if _, err := os.Stat(commonConfigFile); !os.IsNotExist(err) {
+		command = append(command, "-var-file=../"+commonConfigFile)
+	}
+
+	envConfigFilename := path.Join(state.ConfigFilesFolder, envName+".json")
+	if _, err := os.Stat(envConfigFilename); !os.IsNotExist(err) {
+		command = append(command, "-var-file=../"+envConfigFilename)
+	}
+
+	command = append(command, "-var-file=/build/release-metadata.json")
+
+	return command
+}
+
+func runCommandRefreshOnly() {
+
 }
