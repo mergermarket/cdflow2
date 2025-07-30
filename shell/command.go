@@ -37,9 +37,8 @@ func handleArgs(arg string, commandArgs *CommandArgs, take func() (string, error
 		commandArgs.EnvName = arg
 		return false, nil
 	} else {
-		commandArgs.ShellArgs = append(commandArgs.ShellArgs, arg)
+		return false, errors.New("unexpected argument: " + arg)
 	}
-	return false, nil
 }
 
 func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error)) (bool, error) {
@@ -144,7 +143,11 @@ func RunCommand(state *command.GlobalState, args *CommandArgs, env map[string]st
 	}
 
 	shellCommand := []string{"/bin/sh"}
-	shellCommandWithArgs := append(shellCommand, args.ShellArgs...)
+	shellCommandWithArgs := shellCommand
+	if len(args.ShellArgs) > 0 {
+		shellCommandWithArgs = args.ShellArgs
+
+	}
 
 	interactive := false
 	if len(args.ShellArgs) < 1 {

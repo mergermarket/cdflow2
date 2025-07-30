@@ -105,8 +105,8 @@ Options:
 Shell Arguments:
 
   The shell arguments are passed to shell 
-  ex:  (cdflow2 shell demo test.sh)
-  	   (cdflow2 shell demo -v v1.0 -- -c "echo test")
+  ex:  (cdflow2 shell demo < test.sh)
+  	   (cdflow2 shell demo -v v1.0 -- echo test)
 ` + globalOptions
 
 const destroyHelp = `
