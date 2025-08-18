@@ -246,7 +246,8 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 	}()
 
 	if err := trivyContainer.ScanRepository(state.OutputStream, state.ErrorStream); err != nil {
-		return fmt.Errorf("cdflow2: error scanning repository: %w", err)
+		//return fmt.Errorf("cdflow2: error scanning repository: %w", err)
+		log.Printf("cdflow2: error scanning repository: %v", err)
 	}
 
 	dockerClient := state.DockerClient
@@ -387,10 +388,14 @@ func buildAndUploadRelease(
 		//enables trivy to scan images from the trivy container
 		//uncomment the following lines when docker defaults to buildx + containerd image store on linux
 
-		// if image, ok := metadata["image"]; ok {
-		// 	if err := trivyConatiner.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
-		// 		return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
-		// 	}
+		if image, ok := metadata["image"]; ok {
+			if err := trivyConatiner.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
+				return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
+			}
+		}
+
+		// if val, ok := releaseMetadata[buildID]["trivy_critical_findings"]; ok {
+		// 	state.MonitoringClient.ConfigData["trivy_critical_findings"] = val
 		// }
 	}
 	if releaseMetadata["release"] == nil {
