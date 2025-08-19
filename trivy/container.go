@@ -22,6 +22,7 @@ type Container struct {
 }
 
 const CODE_DIR = "/code"
+const CRITICAL_FINDINGS_EXIT_CODE = "5"
 const CONFIG_ERROR_ON_FINDINGS = "errorOnFindings"
 
 func NewContainer(dockerClient docker.Iface,
@@ -79,44 +80,44 @@ func (trivyContainer *Container) ErrorOnFindings() bool {
 	return trivyContainer.config.errorOnFindings
 }
 
-func (trivyContainer *Container) ScanRepository(outputStream, errorStream io.Writer) error {
+func (trivyContainer *Container) ScanRepository(outputStream, errorStream io.Writer) (bool, error) {
 	cmd := []string{
 		"trivy",
 		"fs",
 		"--severity", "CRITICAL",
 		"--ignore-unfixed",
 		"--scanners", "vuln,misconfig,secret",
-		"--exit-code", "1", // trivyContainer.setExitCode(),
+		"--exit-code", CRITICAL_FINDINGS_EXIT_CODE,
 		CODE_DIR,
 	}
-	return trivyContainer.dockerClient.Exec(
+	return trivyContainer.hadleError(trivyContainer.dockerClient.Exec(
 		&docker.ExecOptions{
 			ID:           trivyContainer.id,
 			Cmd:          cmd,
 			OutputStream: outputStream,
 			ErrorStream:  errorStream,
 			Tty:          false,
-		})
+		}))
 }
 
-func (trivyContainer *Container) ScanImage(image string, outputStream, errorStream io.Writer) error {
+func (trivyContainer *Container) ScanImage(image string, outputStream, errorStream io.Writer) (bool, error) {
 	cmd := []string{
 		"trivy",
 		"image",
 		"--severity", "CRITICAL",
 		"--ignore-unfixed",
 		"--scanners", "vuln,misconfig,secret",
-		"--exit-code", "1", // trivyContainer.setExitCode(),
+		"--exit-code", CRITICAL_FINDINGS_EXIT_CODE,
 		image,
 	}
-	return trivyContainer.dockerClient.Exec(
+	return trivyContainer.hadleError(trivyContainer.dockerClient.Exec(
 		&docker.ExecOptions{
 			ID:           trivyContainer.id,
 			Cmd:          cmd,
 			OutputStream: outputStream,
 			ErrorStream:  errorStream,
 			Tty:          false,
-		})
+		}))
 }
 
 func (trivyContainer *Container) Done() error {
@@ -136,4 +137,17 @@ func GetConfig(params map[string]interface{}) (Config, error) {
 		}
 	}
 	return config, nil
+}
+
+func (trivyContainer *Container) hadleError(err error) (bool, error) {
+	if err != nil {
+		if err.Error() == "exec process exited with error status code "+CRITICAL_FINDINGS_EXIT_CODE {
+			if trivyContainer.ErrorOnFindings() {
+				return true, fmt.Errorf("trivy scan found critical issues")
+			}
+			return true, nil
+		}
+		return false, fmt.Errorf("error executing trivy command: %w", err)
+	}
+	return false, nil
 }

@@ -251,12 +251,8 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		}
 	}()
 
-	if err := trivyContainer.ScanRepository(state.OutputStream, state.ErrorStream); err != nil {
-		criticalSecurityFindings = true
-		log.Printf("cdflow2: error scanning repository: %v", err)
-		if trivyContainer.ErrorOnFindings() {
-			return fmt.Errorf("cdflow2: error scanning repository: %w", err)
-		}
+	if criticalSecurityFindings, err = trivyContainer.ScanRepository(state.OutputStream, state.ErrorStream); err != nil {
+		return fmt.Errorf("cdflow2: error scanning repository: %w", err)
 	}
 
 	dockerClient := state.DockerClient
@@ -401,13 +397,11 @@ func buildAndUploadRelease(
 		releaseMetadata[buildID] = metadata
 
 		if image, ok := metadata["image"]; ok {
-			if err := trivyContainer.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
-				state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = "true"
-				log.Printf("cdflow2: error scanning image: %v", err)
-				if trivyContainer.ErrorOnFindings() {
-					return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
-				}
+			criticalSecurityFindings := false
+			if criticalSecurityFindings, err = trivyContainer.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
+				return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
 			}
+			state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = strconv.FormatBool(criticalSecurityFindings)
 		}
 	}
 	releaseMetadata["release"]["version"] = version

@@ -71,7 +71,7 @@ func TestTrivyLocalScan(t *testing.T) {
 				t.Fatal("error cleaning up trivy container:", err)
 			}
 		}()
-		if err := trivyContainer.ScanRepository(
+		if _, err := trivyContainer.ScanRepository(
 			outputBuffer,
 			errorBuffer,
 		); err != nil {
@@ -83,7 +83,7 @@ func TestTrivyLocalScan(t *testing.T) {
 	if errorBuffer.String() != "" {
 		t.Errorf("expected no error output, got: %s", errorBuffer.String())
 	}
-	expectedString := "[trivy fs --severity CRITICAL --ignore-unfixed --scanners vuln,misconfig,secret --exit-code 1 /code]"
+	expectedString := "[trivy fs --severity CRITICAL --ignore-unfixed --scanners vuln,misconfig,secret --exit-code 5 /code]"
 	if !bytes.Contains(outputBuffer.Bytes(), []byte(expectedString)) {
 		t.Errorf("expected output to contain %s, got: %s", expectedString, outputBuffer.String())
 	}
@@ -121,7 +121,7 @@ func TestTrivyImageScan(t *testing.T) {
 				t.Fatal("error cleaning up trivy container:", err)
 			}
 		}()
-		if err := trivyContainer.ScanImage(
+		if _, err := trivyContainer.ScanImage(
 			"test-image:latest", // Replace with an actual image if needed
 			outputBuffer,
 			errorBuffer,
@@ -134,7 +134,7 @@ func TestTrivyImageScan(t *testing.T) {
 	if errorBuffer.String() != "" {
 		t.Errorf("expected no error output, got: %s", errorBuffer.String())
 	}
-	expectedString := "[trivy image --severity CRITICAL --ignore-unfixed --scanners vuln,misconfig,secret --exit-code 1 test-image:latest]"
+	expectedString := "[trivy image --severity CRITICAL --ignore-unfixed --scanners vuln,misconfig,secret --exit-code 5 test-image:latest]"
 	if !bytes.Contains(outputBuffer.Bytes(), []byte(expectedString)) {
 		t.Errorf("expected output to contain %s, got: %s", expectedString, outputBuffer.String())
 	}
