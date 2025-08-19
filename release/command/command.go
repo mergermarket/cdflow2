@@ -300,11 +300,12 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		return err
 	}
 
-	if val, ok := state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS]; ok {
-		criticalSecurityFindings = criticalSecurityFindings || val == "true"
+	if state.MonitoringClient != nil {
+		if val, ok := state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS]; ok {
+			criticalSecurityFindings = criticalSecurityFindings || val == "true"
+		}
+		state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = strconv.FormatBool(criticalSecurityFindings)
 	}
-
-	state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = strconv.FormatBool(criticalSecurityFindings)
 
 	// not in the above function to ensure docker output flushed before that finishes
 	fmt.Fprintln(state.ErrorStream, message)
