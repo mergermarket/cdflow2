@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/mergermarket/cdflow2/command"
@@ -234,7 +233,7 @@ func PopulateEnvMap(envVars []string, env map[string]string) {
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[string]string) (returnedError error) {
 
-	criticalSecurityFindings := false
+	//criticalSecurityFindings := false
 
 	trivyContainer, err := GetScanContainer(state, releaseArgs)
 	if err != nil {
@@ -251,7 +250,7 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		}
 	}()
 
-	if criticalSecurityFindings, err = trivyContainer.ScanRepository(state.OutputStream, state.ErrorStream); err != nil {
+	if _, err := trivyContainer.ScanRepository(state.OutputStream, state.ErrorStream); err != nil {
 		return fmt.Errorf("cdflow2: error scanning repository: %w", err)
 	}
 
@@ -300,12 +299,12 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		return err
 	}
 
-	if state.MonitoringClient != nil {
-		if val, ok := state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS]; ok {
-			criticalSecurityFindings = criticalSecurityFindings || val == "true"
-		}
-		state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = strconv.FormatBool(criticalSecurityFindings)
-	}
+	// if state.MonitoringClient != nil {
+	// 	if val, ok := state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS]; ok {
+	// 		criticalSecurityFindings = criticalSecurityFindings || val == "true"
+	// 	}
+	// 	state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = strconv.FormatBool(criticalSecurityFindings)
+	// }
 
 	// not in the above function to ensure docker output flushed before that finishes
 	fmt.Fprintln(state.ErrorStream, message)
@@ -401,11 +400,11 @@ func buildAndUploadRelease(
 		releaseMetadata[buildID] = metadata
 
 		if image, ok := metadata["image"]; ok {
-			criticalSecurityFindings := false
-			if criticalSecurityFindings, err = trivyContainer.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
+			//criticalSecurityFindings := false
+			if _, err := trivyContainer.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
 				return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
 			}
-			state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = strconv.FormatBool(criticalSecurityFindings)
+			//state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = strconv.FormatBool(criticalSecurityFindings)
 		}
 	}
 	releaseMetadata["release"]["version"] = version
