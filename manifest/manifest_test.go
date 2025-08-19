@@ -28,6 +28,9 @@ func TestLoad(t *testing.T) {
 	if loadedManifest.Terraform.Image != "test-terraform-image" {
 		log.Fatalln("unexpected terraform image from manifest:", loadedManifest.Terraform.Image)
 	}
+	if loadedManifest.Trivy.Image != "test-trivy-image" {
+		log.Fatalln("unexpected trivy image from manifest:", loadedManifest.Trivy.Image)
+	}
 	if loadedManifest.Config.Params["config-key"] != "config-value" {
 		log.Fatalln("unexpected config params from manifest:", loadedManifest.Config.Params)
 	}
