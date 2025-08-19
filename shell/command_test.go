@@ -58,7 +58,7 @@ func TestRunCommand(t *testing.T) {
 		t.Fatal("no repo digests for terraform container", test.GetConfig("TEST_TERRAFORM_IMAGE"))
 	}
 	terraformDigest := repoDigests[0]
-	args, _ := shell.ParseArgs([]string{"test-env", "-v", "test-version", "--", "-c", "terraform -v"})
+	args, _ := shell.ParseArgs([]string{"test-env", "-v", "test-version", "--", "terraform", "-v"})
 
 	// When
 	if err := shell.RunCommand(state, args, map[string]string{

@@ -7,14 +7,19 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/config"
 	"github.com/mergermarket/cdflow2/release/container"
 	"github.com/mergermarket/cdflow2/terraform"
+	"github.com/mergermarket/cdflow2/trivy"
 )
+
+const MONITORING_SECURITY_FINDINGS = "release_critical_security_findings"
 
 type terraformResult struct {
 	savedTerraformImage string
@@ -229,6 +234,31 @@ func PopulateEnvMap(envVars []string, env map[string]string) {
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[string]string) (returnedError error) {
 
+	criticalSecurityFindings := false
+
+	trivyContainer, err := GetScanContainer(state, releaseArgs)
+	if err != nil {
+		return fmt.Errorf("cdflow2: error getting scan container: %w", err)
+	}
+	defer func() {
+		if err := trivyContainer.Done(); err != nil {
+			if returnedError != nil && returnedError.Error() != "" {
+				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+			} else {
+				returnedError = err
+			}
+			return
+		}
+	}()
+
+	if err := trivyContainer.ScanRepository(state.OutputStream, state.ErrorStream); err != nil {
+		criticalSecurityFindings = true
+		log.Printf("cdflow2: error scanning repository: %v", err)
+		if trivyContainer.ErrorOnFindings() {
+			return fmt.Errorf("cdflow2: error scanning repository: %w", err)
+		}
+	}
+
 	dockerClient := state.DockerClient
 	terraformOutputChan, terraformOutputStream, terraformErrorStream := getOutputCapture()
 	terraformResultChan := make(chan *terraformResult, 1)
@@ -261,10 +291,21 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		return err
 	}
 
-	message, err := buildAndUploadRelease(state, buildVolume, releaseArgs.Version, releaseArgs.ReleaseData, terraformResultChan, terraformOutputChan, env)
+	message, err := buildAndUploadRelease(
+		state,
+		buildVolume,
+		releaseArgs.Version,
+		releaseArgs.ReleaseData,
+		*trivyContainer,
+		terraformResultChan,
+		terraformOutputChan,
+		env)
 	if err != nil {
 		return err
 	}
+
+	criticalSecurityFindings = criticalSecurityFindings || state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] == "true"
+	state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = strconv.FormatBool(criticalSecurityFindings)
 
 	// not in the above function to ensure docker output flushed before that finishes
 	fmt.Fprintln(state.ErrorStream, message)
@@ -272,7 +313,15 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 	return nil
 }
 
-func buildAndUploadRelease(state *command.GlobalState, buildVolume, version string, releaseData map[string]string, terraformResultChan chan *terraformResult, terraformOutputChan chan *output, env map[string]string) (returnedMessage string, returnedError error) {
+func buildAndUploadRelease(
+	state *command.GlobalState,
+	buildVolume,
+	version string,
+	releaseData map[string]string,
+	trivyContainer trivy.Container,
+	terraformResultChan chan *terraformResult,
+	terraformOutputChan chan *output,
+	env map[string]string) (returnedMessage string, returnedError error) {
 
 	releaseRequirements, err := GetReleaseRequirements(state)
 	if err != nil {
@@ -314,6 +363,9 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 	state.MonitoringClient.ConfigData = configureReleaseResponse.Monitoring.Data
 
 	releaseMetadata := make(map[string]map[string]string)
+	releaseMetadata["release"] = make(map[string]string)
+	releaseMetadata["release"]["tags"] = getReleaseTagsInfo(env)
+
 	for buildID, build := range state.Manifest.Builds {
 		env := releaseEnv[buildID]
 
@@ -347,9 +399,16 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 			return "", fmt.Errorf("cdflow2: error running build '%v' - %w", buildID, err)
 		}
 		releaseMetadata[buildID] = metadata
-	}
-	if releaseMetadata["release"] == nil {
-		releaseMetadata["release"] = make(map[string]string)
+
+		if image, ok := metadata["image"]; ok {
+			if err := trivyContainer.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
+				state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = "true"
+				log.Printf("cdflow2: error scanning image: %v", err)
+				if trivyContainer.ErrorOnFindings() {
+					return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
+				}
+			}
+		}
 	}
 	releaseMetadata["release"]["version"] = version
 	releaseMetadata["release"]["commit"] = state.Commit
@@ -415,4 +474,57 @@ func GetReleaseRequirements(state *command.GlobalState) (map[string]*config.Rele
 		result[buildID] = requirements
 	}
 	return result, nil
+}
+
+func getReleaseTagsInfo(env map[string]string) string {
+	tags := make(map[string]string)
+
+	githubUrl := env["GITHUB_SERVER_URL"]
+	if githubUrl != "" {
+		repository := env["GITHUB_REPOSITORY"]
+		if repository != "" {
+			tags["repository"], _ = url.JoinPath(githubUrl, repository)
+		}
+		runId := env["GITHUB_RUN_ID"]
+		if runId != "" {
+			tags["job"], _ = url.JoinPath(tags["repository"], "actions", "runs", runId)
+		}
+		workflow := env["GITHUB_WORKFLOW"]
+		if workflow != "" {
+			tags["workflow"] = workflow
+		}
+		actor := env["GITHUB_ACTOR"]
+		if actor != "" {
+			tags["actor"] = actor
+		}
+	}
+	tagsBuff, err := json.Marshal(tags)
+	if err != nil {
+		log.Printf("error marshalling tags: %v", err)
+		return ""
+	}
+	return string(tagsBuff)
+}
+
+func GetScanContainer(state *command.GlobalState, releaseArgs CommandArgs) (*trivy.Container, error) {
+	dockerClient := state.DockerClient
+	image := state.Manifest.Trivy.Image
+
+	if !state.GlobalArgs.NoPullScan {
+		fmt.Fprintf(state.ErrorStream, "\nPulling trivy image %v...\n\n", image)
+		if err := dockerClient.PullImage(image, state.ErrorStream); err != nil {
+			return nil, fmt.Errorf("cdflow2: error pulling trivy image: %w", err)
+		}
+	}
+	trivyConatiner, err := trivy.NewContainer(
+		dockerClient,
+		image,
+		state.CodeDir,
+		state.Manifest.Trivy.Params)
+	if err != nil {
+
+		//return nil, fmt.Errorf("cdflow2: error creating trivy container: %w", err)
+	}
+
+	return trivyConatiner, nil
 }

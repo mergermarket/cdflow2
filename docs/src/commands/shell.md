@@ -39,11 +39,16 @@ $ cdflow2 shell --version my-version live
 Or may be used to run a script (demonstrating SHELLARGS to pass arguments to the shell):
 
 ```shell-session
-$ cdflow2 shell --version my-version live -- my-script.sh
+$ cdflow2 shell --version my-version live < my-script.sh
 ```
 
-As you would expect, reading piping in the script should also work:
+As you would expect, reading pipeing in the script should also work:
 
 ```shell-session
 $ echo 'terraform -version' | cdflow2 shell --version my-version live
+```
+
+running terraform command using -- is also possible
+```shell-session
+$ cdflow2 shell aslive -v my-version -- terraform state list
 ```
