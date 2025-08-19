@@ -74,6 +74,7 @@ Args:
 Options:
 
   --plan-only | -p               - create the terraform plan only, don't apply.
+  --refresh-only | -r            - refresh the state only, don't apply.
   --new-state | -n               - allow run without a pre-existing tfstate file.
   --error-on-destroy | -e        - fail if a plan return any resources to destroy.
   --terraform-log-level | -t     - set Terraform log level (TF_LOG), useful for debugging.
@@ -104,8 +105,8 @@ Options:
 Shell Arguments:
 
   The shell arguments are passed to shell 
-  ex:  (cdflow2 shell demo test.sh)
-  	   (cdflow2 shell demo -v v1.0 -- -c "echo test")
+  ex:  (cdflow2 shell demo < test.sh)
+  	   (cdflow2 shell demo -v v1.0 -- echo test)
 ` + globalOptions
 
 const destroyHelp = `

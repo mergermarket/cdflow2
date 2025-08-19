@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -362,6 +363,9 @@ func buildAndUploadRelease(
 	state.MonitoringClient.ConfigData = configureReleaseResponse.Monitoring.Data
 
 	releaseMetadata := make(map[string]map[string]string)
+	releaseMetadata["release"] = make(map[string]string)
+	releaseMetadata["release"]["tags"] = getReleaseTagsInfo(env)
+
 	for buildID, build := range state.Manifest.Builds {
 		env := releaseEnv[buildID]
 
@@ -405,9 +409,6 @@ func buildAndUploadRelease(
 				}
 			}
 		}
-	}
-	if releaseMetadata["release"] == nil {
-		releaseMetadata["release"] = make(map[string]string)
 	}
 	releaseMetadata["release"]["version"] = version
 	releaseMetadata["release"]["commit"] = state.Commit
@@ -475,6 +476,36 @@ func GetReleaseRequirements(state *command.GlobalState) (map[string]*config.Rele
 	return result, nil
 }
 
+func getReleaseTagsInfo(env map[string]string) string {
+	tags := make(map[string]string)
+
+	githubUrl := env["GITHUB_SERVER_URL"]
+	if githubUrl != "" {
+		repository := env["GITHUB_REPOSITORY"]
+		if repository != "" {
+			tags["repository"], _ = url.JoinPath(githubUrl, repository)
+		}
+		runId := env["GITHUB_RUN_ID"]
+		if runId != "" {
+			tags["job"], _ = url.JoinPath(tags["repository"], "actions", "runs", runId)
+		}
+		workflow := env["GITHUB_WORKFLOW"]
+		if workflow != "" {
+			tags["workflow"] = workflow
+		}
+		actor := env["GITHUB_ACTOR"]
+		if actor != "" {
+			tags["actor"] = actor
+		}
+	}
+	tagsBuff, err := json.Marshal(tags)
+	if err != nil {
+		log.Printf("error marshalling tags: %v", err)
+		return ""
+	}
+	return string(tagsBuff)
+}
+
 func GetScanContainer(state *command.GlobalState, releaseArgs CommandArgs) (*trivy.Container, error) {
 	dockerClient := state.DockerClient
 	image := state.Manifest.Trivy.Image
@@ -496,17 +527,4 @@ func GetScanContainer(state *command.GlobalState, releaseArgs CommandArgs) (*tri
 	}
 
 	return trivyConatiner, nil
-}
-
-func mergeMaps(map1, map2 map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	for key, value := range map1 {
-		result[key] = value
-	}
-
-	// Copy all elements from map2 to result
-	for key, value := range map2 {
-		result[key] = value
-	}
-	return result
 }
