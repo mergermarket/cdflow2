@@ -75,6 +75,10 @@ func NewContainer(dockerClient docker.Iface,
 	}
 }
 
+func (trivyContainer *Container) ErrorOnFindings() bool {
+	return trivyContainer.config.errorOnFindings
+}
+
 func (trivyContainer *Container) ScanRepository(outputStream, errorStream io.Writer) error {
 	cmd := []string{
 		"trivy",
@@ -82,7 +86,7 @@ func (trivyContainer *Container) ScanRepository(outputStream, errorStream io.Wri
 		"--severity", "CRITICAL",
 		"--ignore-unfixed",
 		"--scanners", "vuln,misconfig,secret",
-		"--exit-code", trivyContainer.setExitCode(),
+		"--exit-code", "1", // trivyContainer.setExitCode(),
 		CODE_DIR,
 	}
 	return trivyContainer.dockerClient.Exec(
@@ -102,7 +106,7 @@ func (trivyContainer *Container) ScanImage(image string, outputStream, errorStre
 		"--severity", "CRITICAL",
 		"--ignore-unfixed",
 		"--scanners", "vuln,misconfig,secret",
-		"--exit-code", trivyContainer.setExitCode(),
+		"--exit-code", "1", // trivyContainer.setExitCode(),
 		image,
 	}
 	return trivyContainer.dockerClient.Exec(
@@ -132,11 +136,4 @@ func GetConfig(params map[string]interface{}) (Config, error) {
 		}
 	}
 	return config, nil
-}
-
-func (trivyContainer *Container) setExitCode() string {
-	if trivyContainer.config.errorOnFindings {
-		return "1"
-	}
-	return "0"
 }
