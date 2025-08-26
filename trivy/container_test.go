@@ -83,7 +83,7 @@ func TestTrivyLocalScan(t *testing.T) {
 	if errorBuffer.String() != "" {
 		t.Errorf("expected no error output, got: %s", errorBuffer.String())
 	}
-	expectedString := "[trivy fs --severity CRITICAL --ignore-unfixed --scanners vuln,misconfig,secret --exit-code 5 /code]"
+	expectedString := "[trivy fs --severity CRITICAL --ignore-unfixed --scanners vuln,secret --exit-code 5 /code]"
 	if !bytes.Contains(outputBuffer.Bytes(), []byte(expectedString)) {
 		t.Errorf("expected output to contain %s, got: %s", expectedString, outputBuffer.String())
 	}
