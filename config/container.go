@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/mergermarket/cdflow2/command"
 	"github.com/mergermarket/cdflow2/docker"
@@ -265,6 +266,7 @@ type prepareTerraformRequest struct {
 	Env              map[string]string
 	EnvName          string
 	StateShouldExist *bool
+	TerraformVersion string
 }
 
 // TerraformBackendConfigParameter
@@ -290,6 +292,7 @@ func (configContainer *Container) PrepareTerraform(
 	stateShouldExist *bool,
 	config map[string]interface{},
 	env map[string]string,
+	terraformVersion string,
 ) (*PrepareTerraformResponse, error) {
 
 	var response PrepareTerraformResponse
@@ -302,6 +305,7 @@ func (configContainer *Container) PrepareTerraform(
 		Component:        component,
 		Commit:           commit,
 		StateShouldExist: stateShouldExist,
+		TerraformVersion: terraformVersion,
 	}, &response); err != nil {
 		return nil, err
 	}
@@ -339,7 +343,10 @@ func SetupTerraform(state *command.GlobalState, stateShouldExist *bool, envName,
 		}
 	}()
 
-	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, state.Component, state.Commit, envName, stateShouldExist, state.Manifest.Config.Params, env)
+	terraformVersion := getTerraformVersion(state.Manifest.Terraform.Image)
+	fmt.Printf("Using terraform version %v\n", terraformVersion)
+
+	prepareTerraformResponse, err := configContainer.PrepareTerraform(version, state.Component, state.Commit, envName, stateShouldExist, state.Manifest.Config.Params, env, terraformVersion)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -379,4 +386,13 @@ func Pull(state *command.GlobalState) error {
 		return fmt.Errorf("error pulling config image: %w", err)
 	}
 	return nil
+}
+
+func getTerraformVersion(terraformImage string) string {
+	parts := strings.Split(terraformImage, ":")
+	if len(parts) < 2 {
+		return "latest"
+	} else {
+		return parts[len(parts)-1]
+	}
 }
