@@ -401,19 +401,11 @@ func buildAndUploadRelease(
 		releaseMetadata[buildID] = metadata
 
 		if image, ok := metadata["image"]; ok {
-<<<<<<< HEAD
-			criticalSecurityFindings := false
-			if criticalSecurityFindings, err = trivyContainer.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
-				return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
-			}
-			state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = strconv.FormatBool(criticalSecurityFindings)
-=======
 			securityFindings := false
 			if securityFindings, err = trivyContainer.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
 				return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
 			}
 			*criticalSecurityFindings = *criticalSecurityFindings || securityFindings
->>>>>>> master
 		}
 	}
 	releaseMetadata["release"]["version"] = version
