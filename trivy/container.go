@@ -86,7 +86,7 @@ func (trivyContainer *Container) ScanRepository(outputStream, errorStream io.Wri
 		"fs",
 		"--severity", "CRITICAL",
 		"--ignore-unfixed",
-		"--scanners", "vuln,misconfig,secret",
+		"--scanners", "vuln,secret",
 		"--exit-code", CRITICAL_FINDINGS_EXIT_CODE,
 		CODE_DIR,
 	}

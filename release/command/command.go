@@ -293,6 +293,7 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		releaseArgs.Version,
 		releaseArgs.ReleaseData,
 		*trivyContainer,
+		&criticalSecurityFindings,
 		terraformResultChan,
 		terraformOutputChan,
 		env)
@@ -300,7 +301,9 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		return err
 	}
 
-	criticalSecurityFindings = criticalSecurityFindings || state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] == "true"
+	if state.MonitoringClient.ConfigData == nil {
+		state.MonitoringClient.ConfigData = make(map[string]string)
+	}
 	state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = strconv.FormatBool(criticalSecurityFindings)
 
 	// not in the above function to ensure docker output flushed before that finishes
@@ -315,6 +318,7 @@ func buildAndUploadRelease(
 	version string,
 	releaseData map[string]string,
 	trivyContainer trivy.Container,
+	criticalSecurityFindings *bool,
 	terraformResultChan chan *terraformResult,
 	terraformOutputChan chan *output,
 	env map[string]string) (returnedMessage string, returnedError error) {
@@ -397,11 +401,19 @@ func buildAndUploadRelease(
 		releaseMetadata[buildID] = metadata
 
 		if image, ok := metadata["image"]; ok {
+<<<<<<< HEAD
 			criticalSecurityFindings := false
 			if criticalSecurityFindings, err = trivyContainer.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
 				return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
 			}
 			state.MonitoringClient.ConfigData[MONITORING_SECURITY_FINDINGS] = strconv.FormatBool(criticalSecurityFindings)
+=======
+			securityFindings := false
+			if securityFindings, err = trivyContainer.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
+				return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
+			}
+			*criticalSecurityFindings = *criticalSecurityFindings || securityFindings
+>>>>>>> master
 		}
 	}
 	releaseMetadata["release"]["version"] = version
