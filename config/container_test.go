@@ -172,6 +172,7 @@ func TestConfigDeploy(t *testing.T) {
 				"TEST_ENV_VAR":     "env value",
 				"TERRAFORM_DIGEST": "test terraform image digest",
 			},
+			"1.0.0",
 		)
 		if err != nil {
 			t.Fatal(err)
