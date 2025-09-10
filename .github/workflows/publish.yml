@@ -3,6 +3,9 @@ on:
     tags:
     - 'v*'
 
+permissions:
+  contents: write
+ 
 name: Build and publish release
 
 jobs:

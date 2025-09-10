@@ -1,5 +1,8 @@
 on:
   workflow_dispatch:
+  
+permissions:
+  contents: read
 
 name: Build and upload docs
 
