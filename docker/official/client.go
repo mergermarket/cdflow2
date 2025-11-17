@@ -219,6 +219,9 @@ func writePullProgress(reader io.ReadCloser, outputStream io.Writer) error {
 }
 
 func getRegistryAuth(image string, outputStream io.Writer) (string, error) {
+
+	fmt.Fprintf(outputStream, "Attempting to get Registry Auth for %s", image)
+
 	username, password, err := getRegistryCredentials(image)
 	if err != nil {
 		fmt.Fprintf(outputStream, "Unable to get registry credentials, fallback to legacy method: %v\n\n", err)
