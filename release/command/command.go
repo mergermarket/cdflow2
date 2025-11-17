@@ -156,6 +156,9 @@ func streamOutput(terraformOutputChan chan *output, outputStream, errorStream io
 }
 
 func terraformRelease(state *command.GlobalState, buildVolume string, outputStream, errorStream io.Writer, logLevel string) (image string, returnedError error) {
+
+	fmt.Printf("NSTANLEY [terraformRelease] Starting ...")
+
 	dockerClient := state.DockerClient
 
 	if !state.GlobalArgs.NoPullTerraform {
@@ -179,6 +182,8 @@ func terraformRelease(state *command.GlobalState, buildVolume string, outputStre
 	} else if savedTerraformImage == "" {
 		log.Panicln("no repo digest for ", state.Manifest.Terraform.Image)
 	}
+
+	fmt.Printf("NSTANLEY [terraformRelease] Running terraform.NewContainer ....")
 
 	terraformContainer, err := terraform.NewContainer(
 		state.DockerClient,
