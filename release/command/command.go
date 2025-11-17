@@ -227,10 +227,23 @@ func PopulateEnvMap(envVars []string, env map[string]string) {
 		env[envVarName] = envValue
 	}
 
+	fmt.Printf("\n-------------- FINDME ------------------\n")
+	for _, env := range os.Environ() {
+		// env is in KEY=VALUE format
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key, value := parts[0], parts[1]
+
+		// Check if key contains "docker" or "artifactory" (case-insensitive)
+		if strings.Contains(strings.ToLower(key), "docker") || strings.Contains(strings.ToLower(key), "artifactory") {
+			fmt.Printf("%s=%s\n", key, value)
+		}
+	}
+	fmt.Printf("\n-------------- FINDME ------------------\n")
+
 	// For output readability
-
-	fmt.Printf("\n\n\n\n\nTHIS IS NICK STANLEY TESTING DO NOT COMMIT.\n\n\n\n\n")
-
 	fmt.Printf("\n\n")
 }
 
