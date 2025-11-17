@@ -228,6 +228,9 @@ func PopulateEnvMap(envVars []string, env map[string]string) {
 	}
 
 	// For output readability
+
+	fmt.Printf("\n\n\n\n\nTHIS IS NICK STANLEY TESTING DO NOT COMMIT.\n\n\n\n\n")
+
 	fmt.Printf("\n\n")
 }
 
