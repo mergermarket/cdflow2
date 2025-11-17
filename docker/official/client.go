@@ -220,7 +220,7 @@ func writePullProgress(reader io.ReadCloser, outputStream io.Writer) error {
 
 func getRegistryAuth(image string, outputStream io.Writer) (string, error) {
 
-	fmt.Fprintf(outputStream, "Attempting to get Registry Auth for %s", image)
+	fmt.Fprintf(outputStream, "Attempting to get Registry Auth for %s\n\n", image)
 
 	username, password, err := getRegistryCredentials(image)
 	if err != nil {
@@ -230,6 +230,8 @@ func getRegistryAuth(image string, outputStream io.Writer) (string, error) {
 	if username == "" || password == "" {
 		username, password = getRegistryCredentialsLegacy(image)
 	}
+
+	fmt.Fprintf(outputStream, "Using user %s to download %s\n\n", username, image)
 
 	authBytes, err := json.Marshal(
 		registry.AuthConfig{
