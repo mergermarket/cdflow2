@@ -50,8 +50,5 @@ func Load(dir string) (*Manifest, error) {
 	if err := yaml.Unmarshal(data, &result); err != nil {
 		return nil, fmt.Errorf("error parsing cdflow.yaml: %w", err)
 	}
-	if result.Trivy.Image == "" {
-		result.Trivy.Image = "mergermarket/cdflow2-trivy:latest"
-	}
 	return &result, nil
 }
