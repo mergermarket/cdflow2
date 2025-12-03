@@ -233,26 +233,29 @@ func PopulateEnvMap(envVars []string, env map[string]string) {
 
 // RunCommand runs the release command.
 func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[string]string) (returnedError error) {
-
 	criticalSecurityFindings := false
+	trivyContainer := &trivy.Container{}
 
-	trivyContainer, err := GetScanContainer(state, releaseArgs)
-	if err != nil {
-		return fmt.Errorf("cdflow2: error getting scan container: %w", err)
-	}
-	defer func() {
-		if err := trivyContainer.Done(); err != nil {
-			if returnedError != nil && returnedError.Error() != "" {
-				returnedError = fmt.Errorf("%w, also %v", returnedError, err)
-			} else {
-				returnedError = err
-			}
-			return
+	if state.Manifest.Trivy.Image != "" {
+		var err error
+		trivyContainer, err = GetScanContainer(state, releaseArgs)
+		if err != nil {
+			return fmt.Errorf("cdflow2: error getting scan container: %w", err)
 		}
-	}()
+		defer func() {
+			if err := trivyContainer.Done(); err != nil {
+				if returnedError != nil && returnedError.Error() != "" {
+					returnedError = fmt.Errorf("%w, also %v", returnedError, err)
+				} else {
+					returnedError = err
+				}
+				return
+			}
+		}()
 
-	if criticalSecurityFindings, err = trivyContainer.ScanRepository(state.OutputStream, state.ErrorStream); err != nil {
-		return fmt.Errorf("cdflow2: error scanning repository: %w", err)
+		if criticalSecurityFindings, err = trivyContainer.ScanRepository(state.OutputStream, state.ErrorStream); err != nil {
+			return fmt.Errorf("cdflow2: error scanning repository: %w", err)
+		}
 	}
 
 	dockerClient := state.DockerClient
@@ -292,7 +295,7 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		buildVolume,
 		releaseArgs.Version,
 		releaseArgs.ReleaseData,
-		*trivyContainer,
+		trivyContainer,
 		&criticalSecurityFindings,
 		terraformResultChan,
 		terraformOutputChan,
@@ -317,7 +320,7 @@ func buildAndUploadRelease(
 	buildVolume,
 	version string,
 	releaseData map[string]string,
-	trivyContainer trivy.Container,
+	trivyContainer *trivy.Container,
 	criticalSecurityFindings *bool,
 	terraformResultChan chan *terraformResult,
 	terraformOutputChan chan *output,
@@ -402,10 +405,12 @@ func buildAndUploadRelease(
 
 		if image, ok := metadata["image"]; ok {
 			securityFindings := false
-			if securityFindings, err = trivyContainer.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
-				return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
+			if state.Manifest.Trivy.Image != "" {
+				if securityFindings, err = trivyContainer.ScanImage(image, state.OutputStream, state.ErrorStream); err != nil {
+					return "", fmt.Errorf("cdflow2: error scanning image '%v' - %w", buildID, err)
+				}
+				*criticalSecurityFindings = *criticalSecurityFindings || securityFindings
 			}
-			*criticalSecurityFindings = *criticalSecurityFindings || securityFindings
 		}
 	}
 	releaseMetadata["release"]["version"] = version
@@ -520,8 +525,7 @@ func GetScanContainer(state *command.GlobalState, releaseArgs CommandArgs) (*tri
 		state.CodeDir,
 		state.Manifest.Trivy.Params)
 	if err != nil {
-
-		//return nil, fmt.Errorf("cdflow2: error creating trivy container: %w", err)
+		return nil, fmt.Errorf("cdflow2: error creating trivy container: %w", err)
 	}
 
 	return trivyConatiner, nil
