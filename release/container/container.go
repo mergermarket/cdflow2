@@ -58,17 +58,14 @@ func Run(dockerClient docker.Iface, image, codeDir, buildVolume string, outputSt
 }
 
 func buildBinds(codeDir, buildVolume string) []string {
-
 	binds := []string{
 		codeDir + ":/code:ro",
 		buildVolume + ":/build",
 		"/var/run/docker.sock:/var/run/docker.sock",
 	}
 	fi, err := os.Stat("/etc/buildkit/buildkitd.toml")
-	if err == nil {
-		if fi.Mode().IsRegular() {
-			binds = append(binds, "/etc/buildkit/buildkitd.toml:/etc/buildkit/buildkitd.toml:ro")
-		}
+	if err == nil && fi.Mode().IsRegular() {
+		binds = append(binds, "/etc/buildkit/buildkitd.toml:/etc/buildkit/buildkitd.toml:ro")
 	}
 	return binds
 }
