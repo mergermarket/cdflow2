@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 
 	"github.com/mergermarket/cdflow2/command"
@@ -43,12 +44,8 @@ func Run(dockerClient docker.Iface, image, codeDir, buildVolume string, outputSt
 		ErrorStream:  errorStream,
 		WorkingDir:   "/code",
 		Env:          append(mapToDockerEnv(env), "CDFLOW2_CODE_DIR="+codeDir),
-		Binds: []string{
-			codeDir + ":/code:ro",
-			buildVolume + ":/build",
-			"/var/run/docker.sock:/var/run/docker.sock",
-		},
-		NamePrefix: "cdflow2-release",
+		Binds:        buildBinds(codeDir, buildVolume),
+		NamePrefix:   "cdflow2-release",
 		BeforeRemove: func(id string) error {
 			result, err := getReleaseMetadataFromContainer(dockerClient, id)
 			if err != nil {
@@ -58,6 +55,19 @@ func Run(dockerClient docker.Iface, image, codeDir, buildVolume string, outputSt
 			return nil
 		},
 	})
+}
+
+func buildBinds(codeDir, buildVolume string) []string {
+	binds := []string{
+		codeDir + ":/code:ro",
+		buildVolume + ":/build",
+		"/var/run/docker.sock:/var/run/docker.sock",
+	}
+	fi, err := os.Stat("/etc/buildkit/buildkitd.toml")
+	if err == nil && !fi.Mode().IsDir() {
+		binds = append(binds, "/etc/buildkit/buildkitd.toml:/etc/buildkit/buildkitd.toml:ro")
+	}
+	return binds
 }
 
 func getReleaseMetadataFromContainer(dockerClient docker.Iface, id string) (returnedMetadata map[string]string, returnedError error) {
