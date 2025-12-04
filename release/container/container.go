@@ -64,7 +64,7 @@ func buildBinds(codeDir, buildVolume string) []string {
 		"/var/run/docker.sock:/var/run/docker.sock",
 	}
 	fi, err := os.Stat("/etc/buildkit/buildkitd.toml")
-	if err == nil && fi.Mode().IsRegular() {
+	if err == nil && !fi.Mode().IsDir() {
 		binds = append(binds, "/etc/buildkit/buildkitd.toml:/etc/buildkit/buildkitd.toml:ro")
 	}
 	return binds
