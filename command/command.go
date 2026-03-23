@@ -31,7 +31,6 @@ type GlobalArgs struct {
 	NoPullConfig    bool
 	NoPullRelease   bool
 	NoPullTerraform bool
-	NoPullScan      bool
 }
 
 // GlobalState contains common to all commands.
@@ -147,9 +146,6 @@ func handleSimpleFlag(arg string, globalArgs *GlobalArgs) bool {
 		return true
 	} else if arg == "--no-pull-terraform" {
 		globalArgs.NoPullTerraform = true
-		return true
-	} else if arg == "--no-pull-scan" {
-		globalArgs.NoPullScan = true
 		return true
 	} else if arg == "--quiet" || arg == "-q" {
 		fmt.Fprintf(os.Stderr, "Quiet flag is deprecated, please remove from your command.\n")

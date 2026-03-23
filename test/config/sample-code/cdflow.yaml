@@ -8,5 +8,3 @@ builds:
         image: test-release-image
 terraform:
     image: test-terraform-image
-trivy:
-    image: test-trivy-image

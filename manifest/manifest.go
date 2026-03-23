@@ -15,7 +15,6 @@ type Manifest struct {
 	Config            ImageWithParams                      `yaml:"config"`
 	Builds            map[string]ImageWithParamsAndEnvVars `yaml:"builds"`
 	Terraform         Terraform                            `yaml:"terraform"`
-	Trivy             Trivy                                `yaml:"trivy"`
 }
 
 // ImageWithParams represents either the config or a build key in cdflow.yaml.
@@ -33,11 +32,6 @@ type ImageWithParamsAndEnvVars struct {
 // Terraform represents the data in the terraform key in cdflow.yaml.
 type Terraform struct {
 	Image string `yaml:"image"`
-}
-
-type Trivy struct {
-	Image  string                 `yaml:"image"`
-	Params map[string]interface{} `yaml:"params"`
 }
 
 // Load loads the cdflow.yaml manifest file into a Manifest struct.

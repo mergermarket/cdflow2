@@ -166,9 +166,6 @@ func TestRunCommand(t *testing.T) {
 						"test-manifest-config-key": "test-manifest-config-value",
 					},
 				},
-				Trivy: manifest.Trivy{
-					Image: test.GetConfig("TEST_TRIVY_IMAGE"),
-				},
 			},
 			GlobalArgs: &command.GlobalArgs{
 				NoPullConfig:    true,
