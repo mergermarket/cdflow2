@@ -2,3 +2,4 @@
 .test-registry-id
 .idea/
 /docs/dist
+.DS_Store
