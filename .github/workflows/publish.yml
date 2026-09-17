@@ -61,6 +61,16 @@ jobs:
           asset_path: ./cdflow2-darwin-amd64
           asset_name: cdflow2-darwin-amd64
           asset_content_type: application/x-mach-binary
+      - name: Upload mac ARM binary
+        id: upload-release-asset-macarm
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./cdflow2-darwin-arm64
+          asset_name: cdflow2-darwin-arm64
+          asset_content_type: application/x-mach-binary
       - name: Upload linux binary
         id: upload-release-asset-linux
         uses: actions/upload-release-asset@v1.0.1
