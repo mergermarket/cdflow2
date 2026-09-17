@@ -59,7 +59,7 @@ func downloadBoilerplate(state *command.GlobalState, url string, folder string) 
 	cmd := exec.Command("git", cmdArgs...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Fprintf(state.ErrorStream, string(output))
+		fmt.Fprintf(state.ErrorStream, "%s", string(output))
 		return err
 	}
 
