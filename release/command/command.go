@@ -33,6 +33,7 @@ type CommandArgs struct {
 	ReleaseData       map[string]string
 	Version           string
 	TerraformLogLevel string
+	SaveMetadataPath  string
 }
 
 func parseReleaseData(value string) (map[string]string, error) {
@@ -75,6 +76,15 @@ func handleFlag(arg string, commandArgs *CommandArgs, take func() (string, error
 		}
 
 		commandArgs.TerraformLogLevel = value
+	} else if arg == "-m" || arg == "--save-metadata" {
+		value, err := take()
+		if err != nil {
+			return false, err
+		}
+		if value == "" {
+			return false, errors.New("save metadata path must not be empty")
+		}
+		commandArgs.SaveMetadataPath = value
 	} else {
 		return false, errors.New("unknown release option: " + arg)
 	}
@@ -262,7 +272,7 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 		return err
 	}
 
-	message, err := buildAndUploadRelease(state, buildVolume, releaseArgs.Version, releaseArgs.ReleaseData, terraformResultChan, terraformOutputChan, env)
+	message, err := buildAndUploadRelease(state, buildVolume, releaseArgs.Version, releaseArgs.ReleaseData, releaseArgs.SaveMetadataPath, terraformResultChan, terraformOutputChan, env)
 	if err != nil {
 		return err
 	}
@@ -273,7 +283,7 @@ func RunCommand(state *command.GlobalState, releaseArgs CommandArgs, env map[str
 	return nil
 }
 
-func buildAndUploadRelease(state *command.GlobalState, buildVolume, version string, releaseData map[string]string, terraformResultChan chan *terraformResult, terraformOutputChan chan *output, env map[string]string) (returnedMessage string, returnedError error) {
+func buildAndUploadRelease(state *command.GlobalState, buildVolume, version string, releaseData map[string]string, saveMetadataPath string, terraformResultChan chan *terraformResult, terraformOutputChan chan *output, env map[string]string) (returnedMessage string, returnedError error) {
 
 	releaseRequirements, err := GetReleaseRequirements(state)
 	if err != nil {
@@ -366,6 +376,13 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 		return "", err
 	}
 
+	if saveMetadataPath != "" {
+		if err := SaveReleaseMetadata(saveMetadataPath, releaseMetadata); err != nil {
+			return "", err
+		}
+		fmt.Fprintf(state.ErrorStream, "\ncdflow2: release metadata saved to %s\n", saveMetadataPath)
+	}
+
 	terraformResult := <-terraformResultChan
 	if err := streamOutput(terraformOutputChan, state.OutputStream, state.ErrorStream); err != nil {
 		return "", err
@@ -397,6 +414,19 @@ func buildAndUploadRelease(state *command.GlobalState, buildVolume, version stri
 	}
 
 	return uploadReleaseResponse.Message, nil
+}
+
+// SaveReleaseMetadata writes the release metadata to a file on the local machine,
+// using the same encoding as the release-metadata.json included in the release.
+func SaveReleaseMetadata(path string, releaseMetadata map[string]map[string]string) error {
+	encoded, err := json.Marshal(releaseMetadata)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(path, encoded, 0644); err != nil {
+		return fmt.Errorf("error saving release metadata to %s: %w", path, err)
+	}
+	return nil
 }
 
 // GetReleaseRequirements runs the release containers in order to get their requirements.

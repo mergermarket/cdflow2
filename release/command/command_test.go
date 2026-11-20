@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -104,6 +106,28 @@ func TestParseArgsWhenEnv(t *testing.T) {
 
 		assertError(t, gotError, wantError)
 
+	})
+
+	t.Run("--save-metadata and version", func(t *testing.T) {
+		args := []string{"--save-metadata", "out/release-metadata.json", "version1"}
+
+		gotArgs, gotError := release.ParseArgs(args)
+		if gotError != nil {
+			t.Fatalf("unexpected error: %v", gotError)
+		}
+		if gotArgs.SaveMetadataPath != "out/release-metadata.json" {
+			t.Errorf("SaveMetadataPath: got %q want %q", gotArgs.SaveMetadataPath, "out/release-metadata.json")
+		}
+		if gotArgs.Version != "version1" {
+			t.Errorf("Version: got %s want %s", gotArgs.Version, "version1")
+		}
+	})
+
+	t.Run("--save-metadata missing value", func(t *testing.T) {
+		_, gotError := release.ParseArgs([]string{"version1", "-m"})
+		if gotError == nil || gotError.Error() != "missing value" {
+			t.Errorf("Error: got %v want %s", gotError, "missing value")
+		}
 	})
 
 	t.Run("empty args", func(t *testing.T) {
@@ -279,6 +303,30 @@ func checkUploadReleaseOutput(t *testing.T, debugOutput []byte) {
 
 	if decoded.ReleaseMetadata["buildid"]["manifest_params"] != "{\"a\":\"b\"}" {
 		t.Fatal("unexpected manifest_params:", decoded.ReleaseMetadata["buildid"]["manifest_params"])
+	}
+}
+
+func TestSaveReleaseMetadata(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "release-metadata.json")
+	metadata := map[string]map[string]string{
+		"release": {"version": "1-abc", "component": "test-component"},
+		"buildid": {"image": "repo/image:1"},
+	}
+
+	if err := release.SaveReleaseMetadata(path, metadata); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("error reading saved metadata: %v", err)
+	}
+	var decoded map[string]map[string]string
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("error decoding saved metadata: %v", err)
+	}
+	if !reflect.DeepEqual(decoded, metadata) {
+		t.Errorf("saved metadata: got %v want %v", decoded, metadata)
 	}
 }
 

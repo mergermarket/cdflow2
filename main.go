@@ -58,6 +58,7 @@ Options:
 
   --release-data | -r            - add key/value to release metadata (i.e. --release-data foo=bar).
   --terraform-log-level | -t     - set Terraform log level (TF_LOG), useful for debugging.
+  --save-metadata | -m FILE      - also save the release metadata (release-metadata.json) to FILE on the local machine.
 
 ` + globalOptions
 

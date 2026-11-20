@@ -22,6 +22,9 @@ See [usage](./usage) for global options.
 `--terraform-log-level` | `-t`
 : Set Terraform log level (TF_LOG), useful for debugging.
 
+`--save-metadata` | `-m` `FILE`
+: In addition to including it in the uploaded release, save the release metadata (`release-metadata.json`) to `FILE` on the local machine.
+
 ## Description
 
 Release builds each of the `builds` configured in [`cdflow.yaml`](../cdflow-yaml-reference#builds-optional),
