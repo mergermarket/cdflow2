@@ -61,6 +61,14 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 	if dockerClient.debugVolume != "" {
 		binds = append(binds, dockerClient.debugVolume+":/debug")
 	}
+	caCert, err := caCertFromEnv()
+	if err != nil {
+		return err
+	}
+	env := options.Env
+	if caCert != nil {
+		env = append(append([]string{}, env...), caCertEnv()...)
+	}
 	response, err := dockerClient.client.ContainerCreate(
 		context.Background(),
 		&container.Config{
@@ -72,7 +80,7 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 			WorkingDir:   options.WorkingDir,
 			Entrypoint:   options.Entrypoint,
 			Cmd:          options.Cmd,
-			Env:          options.Env,
+			Env:          env,
 		},
 		&container.HostConfig{
 			LogConfig: container.LogConfig{Type: "none"},
@@ -85,6 +93,16 @@ func (dockerClient *Client) Run(options *docker.RunOptions) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	if caCert != nil {
+		tarball, err := caCertTar(caCert)
+		if err != nil {
+			return err
+		}
+		if err := dockerClient.CopyToContainer(response.ID, "/", tarball); err != nil {
+			return fmt.Errorf("could not copy %s into container: %w", CACertEnvVar, err)
+		}
 	}
 
 	statusChannel := dockerClient.waitForContainerExit(response.ID)

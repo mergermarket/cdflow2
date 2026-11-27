@@ -189,6 +189,17 @@ terraform apply \
 
 Note that the only built in variables are the `release` map defined in the release metadata file (you can access the environment name via the workspace - i.e. `${terraform.workspace}`).
 
+## Running behind a TLS-intercepting proxy
+
+If your network intercepts HTTPS (e.g. AppGate, Netskope), tools inside the containers cdflow2 starts will fail with certificate errors. cdflow2 can inject a CA bundle into every container it starts:
+
+| Environment variable | Description |
+| --- | --- |
+| `CDFLOW2_CA_CERT` | Path (on the host) to a PEM CA bundle. It is copied into each container at `/etc/cdflow2/ca.pem`, and `SSL_CERT_FILE`, `AWS_CA_BUNDLE`, `REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE`, `NODE_EXTRA_CA_CERTS` and `GIT_SSL_CAINFO` are set to that path. |
+| `CDFLOW2_CA_CERT_FROM_KEYCHAIN` | macOS only. If `true` (and `CDFLOW2_CA_CERT` is not set), certificates are exported from the System, system roots and login keychains and injected as above. |
+
+`CDFLOW2_CA_CERT` takes precedence if both are set. Because `SSL_CERT_FILE` replaces the default CA bundle in the container, the bundle should include all the CAs you need (the keychain option does this for you). Tools that ignore these variables and only read the container's system CA store are not covered.
+
 ## Documentation
 
 https://developer-preview.acuris.com/opensource/cdflow2
