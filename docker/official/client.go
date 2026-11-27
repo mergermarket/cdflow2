@@ -296,6 +296,9 @@ func getRegistryCredentialsLegacy(image string) (username, password string) {
 
 // PullImage pulls and image.
 func (dockerClient *Client) PullImage(image string, outputStream io.Writer) error {
+	if outputStream == nil {
+		outputStream = io.Discard
+	}
 	RegistryAuth, err := getRegistryAuth(image, outputStream)
 	imagePullOptions := types.ImagePullOptions{}
 
